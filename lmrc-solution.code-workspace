@@ -1,0 +1,44 @@
+{
+  "folders": [
+    {
+      "name": "📊 Booking Viewer",
+      "path": "lmrc-booking-system"
+    },
+    {
+      "name": "📅 Boat Booking",
+      "path": "BoatBooking"
+    },
+    {
+      "name": "📺 Noticeboard",
+      "path": "Noticeboard"
+    },
+    {
+      "name": "🚀 Pi Deployment",
+      "path": "lmrc-pi-deployment"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.git": false
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true
+    },
+    "typescript.tsdk": "lmrc-booking-system/node_modules/typescript/lib",
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "files.associations": {
+      "*.json": "jsonc"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "ms-vscode.vscode-typescript-next"
+    ]
+  }
+}
