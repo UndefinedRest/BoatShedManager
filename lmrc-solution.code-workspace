@@ -1,6 +1,10 @@
 {
   "folders": [
     {
+      "name": "📚 Solution Documentation",
+      "path": "."
+    },
+    {
       "name": "📊 Booking Viewer",
       "path": "lmrc-booking-system"
     },
