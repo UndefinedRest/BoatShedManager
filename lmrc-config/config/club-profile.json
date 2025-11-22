@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "club": {
+    "id": "lmrc",
+    "name": "Lake Macquarie Rowing Club",
+    "shortName": "LMRC",
+    "timezone": "Australia/Sydney"
+  },
+  "branding": {
+    "logoUrl": "https://www.lakemacquarierowingclub.org.au/images/logo.png",
+    "primaryColor": "#1e40af",
+    "secondaryColor": "#0ea5e9"
+  },
+  "sessions": [
+    {
+      "id": "AM1",
+      "name": "Early Morning",
+      "startTime": "06:30",
+      "endTime": "07:30",
+      "daysOfWeek": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "color": "#60a5fa",
+      "priority": 1
+    },
+    {
+      "id": "AM2",
+      "name": "Main Morning",
+      "startTime": "07:30",
+      "endTime": "08:30",
+      "daysOfWeek": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "color": "#3b82f6",
+      "priority": 2
+    }
+  ],
+  "revSport": {
+    "baseUrl": "https://www.lakemacquarierowingclub.org.au"
+  }
+}

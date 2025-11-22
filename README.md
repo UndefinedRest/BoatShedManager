@@ -75,10 +75,18 @@ Deployment scripts, systemd service configurations, and update automation for Ra
 
 See [lmrc-pi-deployment/README.md](lmrc-pi-deployment/README.md) for detailed deployment instructions.
 
-## Documentation
+## 📚 Documentation
 
-- [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) - Future vision for multi-club commercialization
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and integration details
+**Complete documentation is available in the [docs/](docs/) folder:**
+
+- **[Documentation Hub](docs/README.md)** - Central navigation for all documentation
+- **[Architecture Overview](docs/architecture/overview.md)** - System architecture and design
+- **[Production Setup](docs/deployment/production-setup.md)** - Deploy to Raspberry Pi
+- **[Getting Started](docs/development/getting-started.md)** - Developer setup guide
+- **[Product Roadmap](docs/planning/roadmap.md)** - Future vision and plans
+- **[Action Items](docs/planning/todo.md)** - Current priorities and next steps
+
+**For Claude Code**: See [.claude/CONTEXT.md](.claude/CONTEXT.md) for session context
 
 ## Current Status
 
@@ -137,8 +145,9 @@ Proprietary - All rights reserved
 
 For issues or questions:
 - Check project-specific READMEs
-- Review troubleshooting guides in each project
-- See [lmrc-booking-system/SESSION_NOTES.md](lmrc-booking-system/SESSION_NOTES.md) for detailed technical context
+- See [Troubleshooting Guide](docs/deployment/troubleshooting.md)
+- Review [Session Notes](.claude/session-notes/) for detailed technical context
+- See [Documentation Hub](docs/README.md) for all guides
 
 ---
 
