@@ -474,6 +474,127 @@ app.delete('/api/v1/bookings/:id', deleteBooking);
 }
 ```
 
+### 4.5 Frontend Architecture Patterns
+
+The LMRC solution uses **two different frontend architectures** based on project requirements. Each has its own routing pattern and development approach.
+
+#### Multi-Page Application (Booking Viewer)
+
+**Pattern**: Vanilla JavaScript with server-rendered HTML pages
+
+**Characteristics**:
+- Multiple static HTML files (`index.html`, `tv.html`, `config.html`)
+- Each page has dedicated JavaScript file
+- No client-side routing framework
+- CSS styling with custom properties
+- Direct DOM manipulation
+
+**Server Routing**:
+```typescript
+// Explicit route handlers for each page
+app.get('/', (_req, res) => {
+  res.sendFile(join(publicPath, 'index.html'));
+});
+
+app.get('/tv', (_req, res) => {
+  res.sendFile(join(publicPath, 'tv.html'));
+});
+
+app.get('/config', (_req, res) => {
+  res.sendFile(join(publicPath, 'config.html'));
+});
+```
+
+**File Structure**:
+```
+public/
+├── index.html          # Main page
+├── tv.html            # TV display page
+├── config.html        # Configuration page
+├── css/
+│   ├── tv-display.css
+│   └── config.css
+└── js/
+    ├── tv-display.js
+    └── config.js
+```
+
+**When to Use**:
+- TV display applications (performance-critical)
+- Simple UIs with few pages
+- Projects requiring vanilla JS for compatibility
+- Real-time displays with minimal overhead
+
+**Example**: `lmrc-booking-system`
+
+---
+
+#### Single Page Application (Noticeboard)
+
+**Pattern**: React SPA with client-side routing
+
+**Characteristics**:
+- Single `index.html` entry point
+- React components for UI
+- Client-side routing (React Router or similar)
+- Component-based architecture
+- State management with React hooks
+
+**Server Routing**:
+```javascript
+// API routes
+app.get('/api/gallery', handler);
+app.get('/api/events', handler);
+app.get('/api/news', handler);
+
+// Catch-all route - serve React app for ALL other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
+```
+
+**File Structure**:
+```
+public/
+└── index.html         # Single entry point (built by React)
+
+src/
+├── components/        # React components
+├── pages/             # Page components
+├── hooks/             # Custom React hooks
+└── App.jsx           # Main React app
+```
+
+**When to Use**:
+- Complex UIs with many views
+- Applications requiring rich interactivity
+- Projects with dynamic content and state
+- Admin interfaces and dashboards
+
+**Example**: `Noticeboard`
+
+---
+
+#### Routing Pattern Guidelines
+
+**Multi-Page Apps** (Booking Viewer pattern):
+- ✅ Add explicit route handler for EVERY HTML page
+- ✅ Keep routes clean (e.g., `/config` not `/config.html`)
+- ✅ Serve static files with `express.static()`
+- ❌ Don't use catch-all routes
+
+**Single Page Apps** (Noticeboard pattern):
+- ✅ Use catch-all route (`*`) for HTML delivery
+- ✅ Handle routing client-side with React Router
+- ✅ Define API routes BEFORE catch-all route
+- ❌ Don't add explicit routes for UI pages
+
+**Both Patterns**:
+- ✅ Use `/api/v1` prefix for all API endpoints
+- ✅ Return consistent JSON response format
+- ✅ Apply CORS, helmet, and security middleware
+- ✅ Use compression for production
+
 ---
 
 ## 5. Configuration Management
