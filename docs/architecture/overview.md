@@ -1,24 +1,38 @@
 # LMRC System Architecture
 
-**Last Updated**: 2025-11-21
+**Last Updated**: 2025-11-24
 
 ---
 
 ## System Overview
 
-The LMRC Digital Solution provides digital displays for a rowing club, running on Raspberry Pi devices at the boatshed.
+The LMRC Digital Solution provides digital displays for a rowing club, running on Raspberry Pi devices at the boatshed, plus a public-facing boat booking website.
 
 ### Applications
 
+#### Raspberry Pi Applications (Internal Displays)
 1. **Booking Viewer** (`lmrc-booking-system`) - 7-day boat booking calendar
 2. **Noticeboard** (`Noticeboard`) - Digital signage with news, events, photos, weather
 
+#### Public Web Applications (Netlify)
+3. **BoatBooking** - Public boat booking website at https://lakemacrowing.au
+   - Static HTML/JavaScript site
+   - Daily automated boat list updates from RevSport via GitHub Actions
+   - Damaged boat detection and warnings
+
 ### Deployment
 
+#### Raspberry Pi Deployments
 **Platform**: Raspberry Pi 4/5 (4GB+ RAM)
 **OS**: Raspberry Pi OS (64-bit, Bookworm)
 **Process Management**: systemd services
 **Display**: Chromium in kiosk mode (fullscreen)
+
+#### Netlify Deployments
+**Platform**: Netlify CDN
+**Trigger**: GitHub push to main branch
+**Build Hook**: GitHub Actions for boat data updates
+**See**: [BoatBooking/NETLIFY_DEPLOYMENT.md](../../BoatBooking/NETLIFY_DEPLOYMENT.md)
 
 ---
 
@@ -135,7 +149,37 @@ The LMRC Digital Solution provides digital displays for a rowing club, running o
 - `lmrc-noticeboard.service` - Noticeboard
 - `lmrc-kiosk.service` - Chromium browser in fullscreen
 
-### 4. Shared Config Library (Not Yet Integrated)
+### 4. BoatBooking (Public Website)
+
+**Repository**: `BoatBooking`
+**Platform**: Netlify (https://lakemacrowing.au)
+**Purpose**: Public-facing boat booking website
+
+**Technology Stack**:
+- Static HTML/CSS/JavaScript
+- No build process (static files only)
+- GitHub Actions for automation
+- Cheerio (boat data scraping)
+
+**Data Flow**:
+1. GitHub Actions runs daily at 2am AEST
+2. Scrapes RevSport for boat names and status
+3. Updates boats.json with current data
+4. Commits to GitHub with `[skip ci]`
+5. Triggers Netlify build hook
+6. Netlify deploys updated site
+
+**Key Features**:
+- Boat list with damage detection
+- Visual damage warnings (red styling)
+- Automated daily updates
+- Zero-downtime deployments
+- Graceful degradation if scraper fails
+
+**Deployment Details**:
+See [BoatBooking/NETLIFY_DEPLOYMENT.md](../../BoatBooking/NETLIFY_DEPLOYMENT.md)
+
+### 5. Shared Config Library (Not Yet Integrated)
 
 **Repository**: `lmrc-config`
 **Purpose**: Type-safe configuration management

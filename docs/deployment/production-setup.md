@@ -1,13 +1,17 @@
 # Production Setup Guide
 
-**Last Updated**: 2025-11-22
+**Last Updated**: 2025-11-24
 **Status**: Current - systemd-based deployment
 
 ---
 
 ## Overview
 
-This guide covers deploying LMRC to a Raspberry Pi using the dual-app deployment system with **systemd** services.
+This guide covers deploying LMRC applications to a **Raspberry Pi** using the dual-app deployment system with **systemd** services.
+
+**Scope**: This guide is for Raspberry Pi deployments only (Booking Viewer and Noticeboard).
+
+**For BoatBooking** (public website): See [BoatBooking/NETLIFY_DEPLOYMENT.md](../../BoatBooking/NETLIFY_DEPLOYMENT.md) for Netlify deployment.
 
 **CRITICAL**: Production uses **systemd** for process management, NOT PM2. PM2 deployments are deprecated.
 
@@ -500,6 +504,7 @@ If you have an old PM2-based installation, see [.claude/PI_UPDATE_GUIDE_SYSTEMD.
 - [Troubleshooting](troubleshooting.md) - Common issues and solutions
 - [Operations Guide](../operations/monitoring.md) - Monitoring and maintenance
 - [Health Check Script](../../lmrc-pi-deployment/scripts/health-check.sh) - Health check reference
+- [BoatBooking Netlify Deployment](../../BoatBooking/NETLIFY_DEPLOYMENT.md) - Public website deployment
 
 ---
 

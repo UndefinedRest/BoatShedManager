@@ -70,9 +70,16 @@ Configuration, API, and reference materials.
 
 Each project has its own README with project-specific details:
 
-- **[lmrc-booking-system](../lmrc-booking-system/README.md)** - 7-day booking calendar viewer
-- **[Noticeboard](../Noticeboard/README.md)** - Digital noticeboard application
+### Raspberry Pi Deployments
+- **[lmrc-booking-system](../lmrc-booking-system/README.md)** - 7-day booking calendar viewer (Pi)
+- **[Noticeboard](../Noticeboard/README.md)** - Digital noticeboard application (Pi)
 - **[lmrc-pi-deployment](../lmrc-pi-deployment/README.md)** - Raspberry Pi deployment system
+
+### Public Web Applications
+- **[BoatBooking](../BoatBooking/README.md)** - Public boat booking website (Netlify)
+  - **Deployment**: [NETLIFY_DEPLOYMENT.md](../BoatBooking/NETLIFY_DEPLOYMENT.md)
+
+### Libraries
 - **[lmrc-config](../lmrc-config/README.md)** - Shared configuration library
 
 ---
@@ -180,4 +187,4 @@ All documentation changes should:
 
 ---
 
-**Last Updated**: 2025-11-21
+**Last Updated**: 2025-11-24
