@@ -1,7 +1,7 @@
 # LMRC Solution Conventions
 
-**Version**: 1.0.0
-**Last Updated**: 2025-11-23
+**Version**: 1.1.0
+**Last Updated**: 2025-12-04
 **Scope**: All projects in the LMRC solution
 
 This document defines the coding standards, architectural principles, and development practices for the entire LMRC solution. These conventions apply across all four projects: `lmrc-booking-system`, `BoatBooking`, `Noticeboard`, and `lmrc-pi-deployment`.
@@ -17,6 +17,7 @@ This document defines the coding standards, architectural principles, and develo
 5. [Configuration Management](#configuration-management)
 6. [Git Workflow](#git-workflow)
 7. [Documentation Standards](#documentation-standards)
+   - 7.4 [Exploration Folder (Temporary Investigations)](#74-exploration-folder-temporary-investigations)
 8. [Security Practices](#security-practices)
 9. [Error Handling](#error-handling)
 10. [Performance Guidelines](#performance-guidelines)
@@ -862,7 +863,126 @@ Maintained at repository root:
 - **TESTING_STRATEGY.md** - Testing approach and standards
 - **IMPLEMENTATION_PLAN.md** - Current development plan
 
-### 7.4 Keeping Documentation Current
+### 7.4 Exploration Folder (Temporary Investigations)
+
+**⚠️ CRITICAL PATTERN**: The `exploration/` folder is for TEMPORARY technical investigations only.
+
+#### Purpose
+- **Temporary workspace** for feasibility investigations and proof-of-concepts
+- **Throw-away location** that can be cleared and reused at any time
+- **Safe space** for experimental code that may never reach production
+- **Investigation lab** where findings MUST be extracted to permanent documentation
+
+#### Key Characteristics
+
+**🔄 Temporary & Reusable**
+- Code in `exploration/` is NOT permanent
+- Folder may be cleared or reused for different investigations
+- Can be deleted without impacting the solution
+- Not intended for long-term storage
+
+**📋 Document Findings Externally**
+- **CRITICAL**: ALL investigation findings MUST be captured in solution-level documentation
+- Never rely on `exploration/` folder existing in future sessions
+- Think of it as a scratch pad - extract value before clearing
+- Reference investigation from permanent docs, not vice versa
+
+**🔒 Security Aware**
+- May contain credentials or sensitive test data
+- All subfolders are gitignored by default
+- Only README.md files are tracked in git
+
+**⚠️ Never Production Code**
+- Code has NOT been reviewed for production use
+- May lack error handling, tests, and security hardening
+- Used for learning and validation, not deployment
+
+#### Workflow
+
+**1. Start Investigation**
+```bash
+mkdir exploration/feature-name
+cd exploration/feature-name
+npm init -y
+# Write proof-of-concept code
+```
+
+**2. Document Findings (REQUIRED)**
+
+Before closing an investigation, extract findings to permanent documentation:
+
+- `docs/research/` - Technical investigation results
+- `docs/planning/roadmap.md` - Feature planning decisions
+- Project `FEATURE_ROADMAP.md` - Feature-specific roadmaps
+- Architecture decision records (ADRs) - Design decisions
+
+**Required documentation elements**:
+- [ ] Technical findings and approach
+- [ ] Decision rationale (build vs don't build)
+- [ ] Effort estimates if building
+- [ ] Risk assessment
+- [ ] References from permanent docs to investigation
+
+**3. Clean Up (Optional)**
+```bash
+# Once findings are documented, folder can be deleted or reused
+rm -rf exploration/feature-name
+```
+
+#### Example: booking-cancellation Investigation (2025-12-04)
+
+**Investigation**: Technical feasibility of booking cancellation feature
+
+**Temporary artifacts** (in `exploration/booking-cancellation/`):
+- Proof-of-concept scripts
+- Test data and credentials (.env)
+- HTML captures from RevSport
+
+**Permanent documentation** (must exist):
+- `docs/research/booking-cancellation-investigation.md` - Full findings
+- `BoatBooking/FEATURE_ROADMAP.md` - v2.0 feature documented
+- `exploration/README.md` - Investigation summary
+
+**Key lesson**: Investigation proved technical feasibility. Findings captured in permanent docs before folder could be reused.
+
+#### When to Use exploration/
+- ✅ Investigating technical feasibility
+- ✅ Proof-of-concept for uncertain approaches
+- ✅ Testing third-party integrations
+- ✅ Researching API capabilities
+- ✅ Prototyping architecture decisions
+
+#### When NOT to Use exploration/
+- ❌ Production features (use proper project folders)
+- ❌ Long-term code storage
+- ❌ Shared libraries (use dedicated packages)
+- ❌ Documentation (use `docs/` folder)
+- ❌ Any code that needs to be referenced later (extract to real projects)
+
+#### Documentation Checklist
+
+Before closing an investigation:
+
+```markdown
+- [ ] Findings documented in `docs/research/[investigation-name].md`
+- [ ] Roadmap updated if feature is planned
+- [ ] Technical approach captured for future reference
+- [ ] Decision rationale explained
+- [ ] Risk assessment documented
+- [ ] Cost estimates provided (time, money, maintenance)
+- [ ] References from permanent docs point to investigation
+- [ ] Investigation summary added to `exploration/README.md`
+```
+
+#### Security Note
+
+If investigation uses credentials:
+- Create `.env` file (gitignored automatically)
+- Use `.env.example` for documentation (tracked)
+- NEVER commit actual credentials
+- Clear/delete credentials when investigation complete
+
+### 7.5 Keeping Documentation Current
 
 - Update docs in the SAME commit as code changes
 - Document WHY decisions were made (ADRs for major decisions)
