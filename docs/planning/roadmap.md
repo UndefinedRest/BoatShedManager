@@ -115,6 +115,101 @@ May need Netlify Functions (serverless) or could be deferred to Firebase migrati
 
 Features approved and prioritized for implementation after "Now" features complete.
 
+### Repository Structure: Monorepo Migration
+**Project**: Solution-Wide (All Projects)
+**Priority**: High
+**Effort**: ~6-9 hours (weekend project)
+**Status**: 📋 Planned - Ready for execution
+**Technical Plan**: [docs/architecture/monorepo-migration-plan.md](../architecture/monorepo-migration-plan.md)
+
+**Overview:**
+Migrate from current nested-repository anti-pattern to true monorepo structure using pnpm workspaces.
+
+**Current Pain Points Being Solved:**
+- ❌ Nested git repositories causing confusion (BoatBooking inside BoatShedManager)
+- ❌ Documentation lives separately from code (can drift out of sync)
+- ❌ No atomic commits across projects and docs
+- ❌ Inconsistent repository naming conventions
+- ❌ Complex workflow for shared library (lmrc-config)
+- ❌ Difficult to coordinate releases across projects
+
+**Post-Migration Benefits:**
+- ✅ Single source of truth for entire codebase
+- ✅ Atomic commits across projects + documentation
+- ✅ Shared dependencies work naturally (lmrc-config as workspace package)
+- ✅ Solution-wide CI/CD capabilities
+- ✅ Easier refactoring across projects
+- ✅ Consistent tooling (linting, formatting, testing)
+- ✅ Monorepo tools provide caching and parallel builds
+
+**Target Structure:**
+```
+LMRC (single monorepo)
+├── apps/
+│   ├── boat-booking/          # BoatBooking (Netlify)
+│   ├── booking-calendar/      # lmrc-booking-system (Pi)
+│   ├── noticeboard/           # Noticeboard (Pi)
+│   └── pi-deployment/         # lmrc-pi-deployment
+├── packages/
+│   └── lmrc-config/           # Shared library
+├── docs/                      # Solution-wide documentation
+└── exploration/               # Temporary investigations
+```
+
+**Technology Stack:**
+- pnpm workspaces (fast, efficient, built-in workspace support)
+- Turborepo (optional - intelligent caching and parallel builds)
+- Git subtree (preserve full git history during migration)
+
+**Migration Phases:**
+1. **Preparation** (1-2 hours): Set up workspace structure, pnpm config
+2. **Project Migration** (2-3 hours): Use git subtree to preserve history
+3. **CI/CD** (1-2 hours): Update GitHub Actions, Netlify config
+4. **Pi Deployment** (1 hour): Update systemd services, deployment scripts
+5. **Testing** (1-2 hours): Validate all deployments work
+6. **Go-Live** (30 min): Push to GitHub, archive old repos
+
+**Deployment Impact:**
+- ✅ Zero downtime (each app still deploys independently)
+- ✅ Netlify: Update base directory to `apps/boat-booking`
+- ✅ Raspberry Pi: Update systemd services to new paths
+- ✅ All deployment targets remain unchanged
+
+**Rollback Plan:**
+- Old repositories remain archived (not deleted)
+- Can revert Netlify and Pi services to old repos within minutes
+- No data loss (git history preserved in subtree merge)
+
+**Recommended Timeline:**
+- **Friday evening**: Preparation (1-2 hours)
+- **Saturday**: Migration, CI/CD, Pi updates (5-6 hours)
+- **Sunday**: Testing, go-live, validation (2-3 hours)
+- **Total**: One weekend (6-9 hours)
+
+**Success Criteria:**
+- [ ] All code in single `LMRC` repository
+- [ ] Netlify deploys BoatBooking from monorepo
+- [ ] Pi services run from monorepo
+- [ ] `pnpm install` works in root (installs all dependencies)
+- [ ] `pnpm build` builds all apps
+- [ ] Workspace dependencies work (`@lmrc/config` imports)
+- [ ] CI/CD pipelines pass
+- [ ] Old repos archived with migration notice
+
+**Dependencies:** None (can execute immediately)
+
+**Risks:** Low
+- All old repositories preserved (archived, not deleted)
+- Can roll back within minutes if issues arise
+- No impact on live deployments during migration
+
+**References:**
+- [pnpm Workspaces](https://pnpm.io/workspaces)
+- [Turborepo](https://turbo.build/)
+- [Google's Monorepo Philosophy](https://cacm.acm.org/magazines/2016/7/204032-why-google-stores-billions-of-lines-of-code-in-a-single-repository/fulltext)
+
+---
+
 ### Boat Damage Reporting
 **Project**: BoatBooking
 **Priority**: Medium
