@@ -72,6 +72,7 @@ Enable data-driven decision making for future features.
 **Priority**: High
 **Effort**: ~2-3 hours
 **Status**: 🚧 Ready to implement
+**Technical Design**: [docs/architecture/configurable-session-times-design.md](../architecture/configurable-session-times-design.md)
 
 **Purpose:**
 Allow session times to be adjusted without code changes (seasonal/daylight adjustments).
@@ -80,34 +81,103 @@ Allow session times to be adjusted without code changes (seasonal/daylight adjus
 > As a club administrator, I want to adjust session times when daylight hours change without needing a developer, so I can keep booking times aligned with rowing conditions.
 
 **Key Features:**
-- Web-based configuration page (similar to lmrc-booking-system config)
+- Web-based configuration page at `/config.html`
+- Password-protected admin interface
 - Edit session start/end times
 - Add/remove sessions dynamically
+- Enable/disable sessions
 - Preview changes before saving
-- Validates time format and logic
-- Saves to `config.json` file
+- Client + server-side validation
+- Persistent storage (sessions.json)
 
-**Implementation Approach:**
-- New `config.html` page (access via `/config`)
-- JavaScript to load/save session times
-- JSON structure for sessions configuration
-- Client-side validation
-- Server-side save endpoint (Netlify Functions or defer to Firebase)
+**Technology Stack:**
+- **Frontend**: Plain HTML + vanilla JavaScript (LMRC design system)
+- **Backend**: Netlify Functions (serverless Node.js)
+- **Storage**: Static JSON file (sessions.json)
+- **Auth**: Simple password (environment variable)
+- **Cost**: $0 (Netlify free tier)
+
+**Architecture:**
+```
+config.html → Netlify Functions → sessions.json
+                ↓
+book-a-boat.html ← loads sessions
+```
+
+**Implementation Phases:**
+1. **Backend Setup** (30 min): Netlify Function, sessions.json, env vars
+2. **Frontend UI** (1 hour): config.html with edit/add/delete/preview
+3. **Update Booking Page** (30 min): Load from sessions.json, fallback to defaults
+4. **Testing** (30 min): Validation, auth, booking flow
+5. **Deployment** (15 min): Commit, push, verify
+
+**Data Model:**
+```json
+{
+  "sessions": [
+    {
+      "id": "session-1",
+      "label": "Morning Session 1",
+      "startTime": "06:30",
+      "endTime": "07:30",
+      "display": "6:30 AM - 7:30 AM",
+      "enabled": true
+    }
+  ],
+  "metadata": {
+    "lastModified": "2025-12-14T10:30:00Z",
+    "modifiedBy": "admin",
+    "version": 2
+  }
+}
+```
+
+**Security:**
+- Password-protected config page
+- HTTPS only (Netlify enforces)
+- Client + server validation
+- Graceful fallback if config fails
 
 **Acceptance Criteria:**
-- [ ] Config page accessible at `/config`
+- [ ] Config page accessible at `/config.html`
+- [ ] Password authentication works
 - [ ] Display current session times
-- [ ] Edit existing sessions
+- [ ] Edit existing sessions (label, times, enabled status)
 - [ ] Add new sessions
-- [ ] Remove sessions
-- [ ] Validate time formats
-- [ ] Save changes persistently
-- [ ] Booking page reads from config
+- [ ] Delete sessions
+- [ ] Validate time formats (HH:MM)
+- [ ] Validate logic (start < end, at least one enabled)
+- [ ] Preview panel shows booking page format
+- [ ] Save changes via Netlify Function
+- [ ] Booking page loads from sessions.json
+- [ ] Booking page falls back to defaults if unavailable
+- [ ] Audit trail (last modified, version)
+
+**Success Metrics:**
+- Admin can change session times without developer
+- Zero downtime during config changes
+- Booking page always functional (fallback to defaults)
 
 **Dependencies:** None
 
-**Technical Note:**
-May need Netlify Functions (serverless) or could be deferred to Firebase migration for full admin panel.
+**Risks:** Low
+- All changes reversible (git history)
+- Fallback to hardcoded defaults if config breaks
+- Zero cost (Netlify free tier)
+
+**Rollback Plan:**
+- Reset via config UI
+- Git revert sessions.json
+- Delete sessions.json (falls back to defaults)
+
+**See Technical Design for**:
+- Complete API specification (GET/POST endpoints)
+- UI wireframes and component details
+- Validation rules
+- Netlify Function implementation
+- Step-by-step implementation guide
+- Security considerations
+- Testing procedures
 
 ---
 
