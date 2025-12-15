@@ -453,7 +453,47 @@ sudo ./scripts/fix-kiosk-linux-mint.sh
 # - Start kiosk service
 ```
 
-#### 4. Configure Credentials
+#### 4. Configure Kiosk Mode (**ONLY** for Desktop Linux - NOT for Raspberry Pi)
+
+**⚠️ SKIP THIS STEP IF USING RASPBERRY PI OS** - Pi is already configured correctly!
+
+**Only run this on**: Ubuntu Desktop, Linux Mint, Debian Desktop, or other desktop Linux distributions.
+
+```bash
+# Configure system for unattended kiosk operation
+sudo ./scripts/configure-kiosk-mode.sh
+
+# This will:
+# - Enable auto-login
+# - Disable screen locking
+# - Disable screensaver
+# - Disable power management (screen won't blank)
+# - Create startup scripts to maintain settings
+# - Optionally hide mouse cursor
+# - Auto-detects and skips if running on Raspberry Pi OS
+
+# Manual Alternative (GUI method for Linux Mint/Ubuntu):
+# 1. System Settings → Screensaver → Delay: Never
+# 2. Uncheck "Lock screen when screensaver is active"
+# 3. System Settings → Power Management → Turn off screen: Never
+# 4. Login Window → Enable automatic login for your user
+```
+
+**Why Desktop Linux needs this**:
+- Desktop Linux (Ubuntu, Mint) defaults to requiring login and locking for security
+- Raspberry Pi OS defaults to auto-login and no screen locking (kiosk-ready)
+- Without this configuration, desktop Linux will show login screen and lock after inactivity
+- Raspberry Pi users should skip this step entirely
+
+**Symptoms you need this** (Desktop Linux only):
+- ❌ System boots to login screen instead of auto-starting kiosk
+- ❌ Screen locks after a few minutes of inactivity
+- ❌ Screensaver activates and shows login prompt
+- ❌ Kiosk appears to be "hiding" behind lock screen
+
+**If you're on Raspberry Pi OS**: Skip to Step 5 (Configure Credentials)
+
+#### 5. Configure Credentials
 ```bash
 # Edit credentials file
 sudo nano /opt/lmrc/shared/config/credentials.env
@@ -463,7 +503,7 @@ sudo nano /opt/lmrc/shared/config/credentials.env
 # - REVSPORT_PASSWORD=your-revsport-password
 ```
 
-#### 5. Select Application
+#### 6. Select Application
 ```bash
 # Choose which app to display
 sudo /opt/lmrc/shared/scripts/select-app.sh
@@ -473,13 +513,13 @@ sudo /opt/lmrc/shared/scripts/select-app.sh
 # 2) Noticeboard
 ```
 
-#### 6. Reboot
+#### 7. Reboot
 ```bash
 # Reboot to start kiosk on boot
 sudo reboot
 ```
 
-#### 7. Verify
+#### 8. Verify
 ```bash
 # After reboot, check health
 sudo /opt/lmrc/shared/scripts/health-check.sh
@@ -610,6 +650,80 @@ sudo systemctl restart lmrc-booking-viewer.service
 # Check credentials are configured
 cat /opt/lmrc/shared/config/credentials.env | grep -v PASSWORD
 ```
+
+### Screen Locks / Returns to Login (Desktop Linux Only)
+
+**Symptom**: System shows login screen after boot or locks after a few minutes of inactivity
+
+**Platform**: This ONLY affects desktop Linux distributions (Ubuntu, Linux Mint). Raspberry Pi OS does not have this issue.
+
+**Root Cause**: Desktop Linux distributions enable screen locking and require login by default for security.
+
+**Solution 1 - Automated Script**:
+```bash
+# Run the kiosk mode configuration script
+sudo /path/to/configure-kiosk-mode.sh
+
+# This will:
+# - Enable auto-login
+# - Disable screen locking
+# - Disable screensaver
+# - Disable power management
+```
+
+**Solution 2 - Manual GUI Configuration**:
+```bash
+# Linux Mint / Cinnamon:
+1. Click Start Menu → System Settings
+2. Go to "Screensaver"
+   - Set "Delay" to "Never"
+   - Uncheck "Lock screen when screensaver is active"
+3. Go to "Power Management"
+   - Set "Turn off screen when inactive" to "Never"
+   - Set "Suspend when inactive" to "Never"
+4. Go to "Login Window"
+   - Enable "Automatically log in" and select your user
+
+# Ubuntu / GNOME:
+1. Settings → Privacy → Screen Lock
+   - Disable "Automatic Screen Lock"
+2. Settings → Power
+   - Set "Blank Screen" to "Never"
+   - Set "Automatic Suspend" to "Off"
+3. sudo nano /etc/gdm3/custom.conf
+   - Under [daemon], add: AutomaticLoginEnable=true
+   - Add: AutomaticLogin=YOUR_USERNAME
+```
+
+**Solution 3 - Command Line**:
+```bash
+# Disable screen locking
+gsettings set org.cinnamon.desktop.screensaver lock-enabled false
+gsettings set org.gnome.desktop.screensaver lock-enabled false
+
+# Disable screensaver
+gsettings set org.cinnamon.desktop.screensaver idle-activation-enabled false
+gsettings set org.gnome.desktop.screensaver idle-activation-enabled false
+
+# Disable power management
+gsettings set org.cinnamon.settings-daemon.plugins.power idle-dim false
+gsettings set org.gnome.settings-daemon.plugins.power idle-dim false
+
+# Set sleep to never
+gsettings set org.cinnamon.settings-daemon.plugins.power sleep-inactive-ac-timeout 0
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 0
+```
+
+**Verify Fix**:
+```bash
+# After reboot, system should:
+# - Auto-login without password prompt
+# - Start kiosk browser automatically
+# - Never show screensaver or lock screen
+# - Screen stays on indefinitely
+```
+
+**Raspberry Pi Users**: You should NOT see this issue. If you do, something is misconfigured - check that you're running Raspberry Pi OS (not Ubuntu Desktop for Pi).
 
 ---
 
