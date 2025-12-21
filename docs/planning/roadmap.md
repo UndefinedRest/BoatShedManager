@@ -1,8 +1,8 @@
 # LMRC Solution Roadmap
 
-**Last Updated**: 2025-12-04
+**Last Updated**: 2025-12-21
 **Status**: Active Development
-**Current Sprint**: BoatBooking - Google Analytics + Configurable Session Times
+**Current Sprint**: Repository consolidation (Monorepo migration)
 
 ---
 
@@ -25,159 +25,15 @@ This is the **single source of truth** for all feature development across the LM
 
 ## 🟢 Now (Active Development)
 
-Features currently being developed or ready for immediate implementation.
+**No features currently in active development.**
 
-### Google Analytics Integration
-**Project**: BoatBooking
-**Priority**: High
-**Effort**: ~1 hour
-**Status**: 🚧 Ready to implement
+All previously planned features for the current sprint have been completed:
+- ✅ Google Analytics Integration - Completed 2025-12-21
+- ✅ Configurable Session Times - Completed 2025-12-21
 
-**Purpose:**
-Enable data-driven decision making for future features.
+See **"Recently Completed"** section below for details.
 
-**Key Capabilities:**
-- Track page views per boat
-- Monitor "Manage my bookings" link usage (validates v2.0 booking manager need)
-- Track booking button clicks
-- Monitor session time and user behavior
-- Error tracking
-- Popular boats identification
-
-**Implementation:**
-- Google Analytics 4 (free)
-- Tag Manager for easy event tracking
-- Custom events for key actions (book button, manage bookings link)
-- Weekly/monthly usage reports
-
-**Value:**
-- **Critical** for v2.0 booking manager decision (need usage data)
-- Identifies which boats need QR codes priority
-- Validates feature priorities
-- Tracks ROI of improvements
-
-**Acceptance Criteria:**
-- [ ] GA4 property created and configured
-- [ ] Tracking code added to all pages
-- [ ] Custom events for key actions
-- [ ] Privacy policy updated (if needed)
-- [ ] Dashboard configured for key metrics
-
-**Dependencies:** None
-
----
-
-### Configurable Session Times
-**Project**: BoatBooking
-**Priority**: High
-**Effort**: ~2-3 hours
-**Status**: 🚧 Ready to implement
-**Technical Design**: [docs/architecture/configurable-session-times-design.md](../architecture/configurable-session-times-design.md)
-
-**Purpose:**
-Allow session times to be adjusted without code changes (seasonal/daylight adjustments).
-
-**User Story:**
-> As a club administrator, I want to adjust session times when daylight hours change without needing a developer, so I can keep booking times aligned with rowing conditions.
-
-**Key Features:**
-- Web-based configuration page at `/config.html`
-- Password-protected admin interface
-- Edit session start/end times
-- Add/remove sessions dynamically
-- Enable/disable sessions
-- Preview changes before saving
-- Client + server-side validation
-- Persistent storage (sessions.json)
-
-**Technology Stack:**
-- **Frontend**: Plain HTML + vanilla JavaScript (LMRC design system)
-- **Backend**: Netlify Functions (serverless Node.js)
-- **Storage**: Static JSON file (sessions.json)
-- **Auth**: Simple password (environment variable)
-- **Cost**: $0 (Netlify free tier)
-
-**Architecture:**
-```
-config.html → Netlify Functions → sessions.json
-                ↓
-book-a-boat.html ← loads sessions
-```
-
-**Implementation Phases:**
-1. **Backend Setup** (30 min): Netlify Function, sessions.json, env vars
-2. **Frontend UI** (1 hour): config.html with edit/add/delete/preview
-3. **Update Booking Page** (30 min): Load from sessions.json, fallback to defaults
-4. **Testing** (30 min): Validation, auth, booking flow
-5. **Deployment** (15 min): Commit, push, verify
-
-**Data Model:**
-```json
-{
-  "sessions": [
-    {
-      "id": "session-1",
-      "label": "Morning Session 1",
-      "startTime": "06:30",
-      "endTime": "07:30",
-      "display": "6:30 AM - 7:30 AM",
-      "enabled": true
-    }
-  ],
-  "metadata": {
-    "lastModified": "2025-12-14T10:30:00Z",
-    "modifiedBy": "admin",
-    "version": 2
-  }
-}
-```
-
-**Security:**
-- Password-protected config page
-- HTTPS only (Netlify enforces)
-- Client + server validation
-- Graceful fallback if config fails
-
-**Acceptance Criteria:**
-- [ ] Config page accessible at `/config.html`
-- [ ] Password authentication works
-- [ ] Display current session times
-- [ ] Edit existing sessions (label, times, enabled status)
-- [ ] Add new sessions
-- [ ] Delete sessions
-- [ ] Validate time formats (HH:MM)
-- [ ] Validate logic (start < end, at least one enabled)
-- [ ] Preview panel shows booking page format
-- [ ] Save changes via Netlify Function
-- [ ] Booking page loads from sessions.json
-- [ ] Booking page falls back to defaults if unavailable
-- [ ] Audit trail (last modified, version)
-
-**Success Metrics:**
-- Admin can change session times without developer
-- Zero downtime during config changes
-- Booking page always functional (fallback to defaults)
-
-**Dependencies:** None
-
-**Risks:** Low
-- All changes reversible (git history)
-- Fallback to hardcoded defaults if config breaks
-- Zero cost (Netlify free tier)
-
-**Rollback Plan:**
-- Reset via config UI
-- Git revert sessions.json
-- Delete sessions.json (falls back to defaults)
-
-**See Technical Design for**:
-- Complete API specification (GET/POST endpoints)
-- UI wireframes and component details
-- Validation rules
-- Netlify Function implementation
-- Step-by-step implementation guide
-- Security considerations
-- Testing procedures
+**Next Priority:** See **"Next (Prioritized Backlog)"** section for upcoming features
 
 ---
 
@@ -473,6 +329,40 @@ Send notifications for booking confirmations, reminders, and cancellations.
 
 ## Recently Completed ✅
 
+### BoatBooking v1.4.0 (2025-12-21)
+**Project**: BoatBooking
+
+- ✅ **Google Analytics 4 Integration** - Comprehensive tracking for data-driven decisions
+  - GA4 tracking code added to book-a-boat.html
+  - Measurement ID: G-X5KVZ5WXH3
+  - Custom events: Page views (with boat_id), booking clicks, availability clicks, manage bookings clicks, date changes
+  - Damaged boat warnings tracked
+  - Dashboard configured for weekly/monthly reports
+  - Critical data collection for v2.0 booking manager decision (tracking "Manage my bookings" usage)
+  - Complete setup documentation: `GOOGLE_ANALYTICS_SETUP.md`
+
+- ✅ **Configurable Session Times** - Web-based session time configuration without code changes
+  - Admin interface at `/config.html` with password protection (ADMIN_PASSWORD env var)
+  - Netlify Function API endpoint: GET/POST `/.netlify/functions/sessions`
+  - Session data storage: `sessions.json` (git-tracked for audit trail)
+  - Full CRUD operations: Add, edit, delete, enable/disable sessions
+  - Live preview panel showing booking page appearance
+  - Comprehensive validation: Client-side + server-side (time format, logical checks)
+  - Dynamic session loading on booking page with graceful fallback to defaults
+  - Zero cost (Netlify free tier)
+  - Complete documentation:
+    - Technical design: `docs/architecture/configurable-session-times-design.md`
+    - Testing guide: `TESTING_SESSION_CONFIG.md` (33 tests)
+    - Deployment guide: `DEPLOYMENT_SESSION_CONFIG.md`
+  - Enables seasonal time adjustments without developer involvement
+  - Resolves technical debt: Session times no longer hardcoded
+
+**Implementation Time**: 2-3 hours total
+**Files Added**: 6 new files (config.html, sessions.js, sessions.json, 3 documentation files)
+**Files Modified**: 1 (book-a-boat.html)
+
+---
+
 ### BoatBooking v1.3.0 (2025-12-04)
 **Project**: BoatBooking
 
@@ -523,12 +413,15 @@ Send notifications for booking confirmations, reminders, and cancellations.
 ### BoatBooking
 
 #### Hardcoded Configuration
-**Impact**: Medium
+**Impact**: Low (reduced from Medium)
 **Effort**: Small (30 min)
 
 - `BASE_URL` hardcoded in JavaScript
-- ✅ `CONTACT_EMAIL` recently made configurable
-- Session times hardcoded (being addressed in "Now" section)
+- ✅ `CONTACT_EMAIL` made configurable (v1.2.0)
+- ✅ Session times now configurable via web UI (v1.4.0)
+
+**Remaining Items**:
+- `BASE_URL` still hardcoded
 
 **Solution**:
 - Move to `config.json` file
@@ -550,12 +443,10 @@ Send notifications for booking confirmations, reminders, and cancellations.
 
 ---
 
-#### No Analytics/Monitoring
-**Impact**: Low
-**Effort**: Small (1 hour)
-**Status**: ✅ Moved to "Now" - Active development
+#### ~~No Analytics/Monitoring~~
+**Status**: ✅ RESOLVED (v1.4.0 - 2025-12-21)
 
-See: [Google Analytics Integration](#google-analytics-integration) in "Now" section
+Google Analytics 4 integration completed. See [Recently Completed](#recently-completed-) section
 
 ---
 
