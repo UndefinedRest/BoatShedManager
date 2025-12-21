@@ -29,7 +29,6 @@ This is the **single source of truth** for all feature development across the LM
 
 All previously planned features for the current sprint have been completed:
 - ✅ Google Analytics Integration - Completed 2025-12-21
-- ✅ Configurable Session Times - Completed 2025-12-21
 
 See **"Recently Completed"** section below for details.
 
@@ -133,6 +132,92 @@ LMRC (single monorepo)
 - [pnpm Workspaces](https://pnpm.io/workspaces)
 - [Turborepo](https://turbo.build/)
 - [Google's Monorepo Philosophy](https://cacm.acm.org/magazines/2016/7/204032-why-google-stores-billions-of-lines-of-code-in-a-single-repository/fulltext)
+
+---
+
+### Configurable Session Times
+**Project**: BoatBooking
+**Priority**: Medium
+**Effort**: Unknown - Requires database backend
+**Status**: ⚠️ **ATTEMPTED AND ROLLED BACK** (2025-12-21)
+**Technical Design**: [docs/architecture/configurable-session-times-design.md](../architecture/configurable-session-times-design.md) *(preserved for reference)*
+
+**User Story:**
+> As a club administrator, I want to adjust session times when daylight hours change without needing a developer, so I can keep booking times aligned with rowing conditions.
+
+**What We Attempted (2025-12-21):**
+Implemented a web-based configuration UI with Netlify Functions for session management. **Rolled back after deployment testing revealed fundamental limitations.**
+
+**Why It Failed:**
+1. **Netlify Functions have read-only filesystem** - Cannot write to files in serverless environment
+2. **Netlify Blobs requires additional setup** - Not available by default, threw `MissingBlobsEnvironmentError`
+3. **Environment variable approach provides no value** - Still requires manual Netlify Dashboard work:
+   - Edit sessions via config.html
+   - Copy generated JSON
+   - Open Netlify Dashboard
+   - Paste JSON into `SESSIONS_CONFIG` environment variable
+   - Trigger manual redeploy
+   - **Result**: More steps than just editing the environment variable directly!
+
+**Fundamental Problem:**
+The feature requires **persistent writable storage**, which Netlify's free tier serverless environment does not provide out-of-the-box.
+
+**Actual Requirements for This Feature:**
+- ✅ Web-based admin interface
+- ✅ Password-protected editing
+- ✅ Validation
+- ✅ Preview
+- ❌ **Persistent storage that functions can write to** ← This is the blocker
+
+**What Would Actually Work:**
+1. **Firebase Realtime Database** or **Firestore**
+   - Free tier: 1GB storage, 50K reads/day, 20K writes/day
+   - Functions can read/write directly
+   - Real-time updates
+   - Would integrate with existing Firebase migration proposal
+
+2. **Supabase (PostgreSQL)**
+   - Free tier: 500MB database, unlimited API requests
+   - Direct database access from functions
+   - More powerful querying
+
+3. **Different hosting platform**
+   - Vercel with KV storage
+   - Railway with PostgreSQL
+   - Fly.io with persistent volumes
+
+**Recommendation:**
+⏸️ **Defer until Firebase migration** (see "Proposed" section)
+- Firebase migration already planned for boat management
+- Would provide the database needed for session configuration
+- Can add session configuration to admin panel alongside boat management
+- Solves the problem permanently with proper architecture
+
+**Alternative (Low-Tech Solution):**
+If seasonal adjustments are infrequent (2-4 times per year), **manual environment variable editing** is actually simpler:
+1. Go to Netlify Dashboard → Environment variables
+2. Edit `SESSIONS_CONFIG` JSON directly
+3. Redeploy
+4. **Total time**: ~2 minutes
+5. **No broken promises**: Honest about what it is
+
+**Lessons Learned:**
+- Always validate persistent storage capabilities before designing features that require it
+- Serverless platforms have fundamental limitations (read-only filesystem)
+- Environment variables can store data, but require manual updates through platform UI
+- "Simple" solutions that add more steps than the original problem are not solutions
+- Database-backed features require databases - can't fake it with serverless functions alone
+
+**Git History:**
+- Commits 856ba02, 85f6981, 0d75169: Initial implementation and two failed fix attempts
+- Commits 54ee48e, b2420ac, 8f678ab: Rollback reverts (2025-12-21)
+- All implementation code removed, design documentation preserved for future reference
+
+**If Reconsidering:**
+- ✅ Keep: Technical design document (good architecture reference)
+- ✅ Keep: Lessons learned (documented here)
+- ❌ Don't: Attempt without database backend
+- ✅ Do: Include in Firebase migration scope
 
 ---
 
@@ -329,7 +414,7 @@ Send notifications for booking confirmations, reminders, and cancellations.
 
 ## Recently Completed ✅
 
-### BoatBooking v1.4.0 (2025-12-21)
+### BoatBooking v1.3.1 (2025-12-21)
 **Project**: BoatBooking
 
 - ✅ **Google Analytics 4 Integration** - Comprehensive tracking for data-driven decisions
@@ -340,26 +425,6 @@ Send notifications for booking confirmations, reminders, and cancellations.
   - Dashboard configured for weekly/monthly reports
   - Critical data collection for v2.0 booking manager decision (tracking "Manage my bookings" usage)
   - Complete setup documentation: `GOOGLE_ANALYTICS_SETUP.md`
-
-- ✅ **Configurable Session Times** - Web-based session time configuration without code changes
-  - Admin interface at `/config.html` with password protection (ADMIN_PASSWORD env var)
-  - Netlify Function API endpoint: GET/POST `/.netlify/functions/sessions`
-  - Session data storage: `sessions.json` (git-tracked for audit trail)
-  - Full CRUD operations: Add, edit, delete, enable/disable sessions
-  - Live preview panel showing booking page appearance
-  - Comprehensive validation: Client-side + server-side (time format, logical checks)
-  - Dynamic session loading on booking page with graceful fallback to defaults
-  - Zero cost (Netlify free tier)
-  - Complete documentation:
-    - Technical design: `docs/architecture/configurable-session-times-design.md`
-    - Testing guide: `TESTING_SESSION_CONFIG.md` (33 tests)
-    - Deployment guide: `DEPLOYMENT_SESSION_CONFIG.md`
-  - Enables seasonal time adjustments without developer involvement
-  - Resolves technical debt: Session times no longer hardcoded
-
-**Implementation Time**: 2-3 hours total
-**Files Added**: 6 new files (config.html, sessions.js, sessions.json, 3 documentation files)
-**Files Modified**: 1 (book-a-boat.html)
 
 ---
 
