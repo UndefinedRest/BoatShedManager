@@ -1,0 +1,38 @@
+# Netlify DB POC Configuration
+
+[build]
+  # No build step required for this POC
+  command = "echo 'No build step'"
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  # Use Node.js 20 (required for Netlify DB)
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
+
+# Environment variables (set in Netlify Dashboard)
+# Required:
+#   ADMIN_PASSWORD - Password for config.html admin interface
+# Auto-configured by Netlify DB:
+#   DATABASE_URL - Neon PostgreSQL connection string
+
+# Redirects for cleaner URLs
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer-when-downgrade"
+
+# Dev server configuration
+[dev]
+  command = "echo 'Netlify Dev running'"
+  targetPort = 8888
+  autoLaunch = false

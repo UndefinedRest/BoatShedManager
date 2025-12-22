@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Page Test - Netlify DB POC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e40af 0%, #0ea5e9 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #1e40af;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 16px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .panel {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .panel h2 {
+            color: #1e40af;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            font-size: 18px;
+        }
+
+        .session-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .session-button {
+            background: #0ea5e9;
+            color: white;
+            padding: 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .session-button:hover {
+            background: #0284c7;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        .session-button small {
+            display: block;
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 2px solid #fecaca;
+            color: #dc2626;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info {
+            background: #f0f9ff;
+            border: 2px solid #bfdbfe;
+            color: #1e40af;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .links a:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .metadata {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚣 Book a Session</h1>
+            <p>Netlify DB POC - Testing Dynamic Session Loading</p>
+            <span class="badge">PROOF OF CONCEPT</span>
+        </div>
+
+        <div class="panel">
+            <h2>📅 Available Sessions</h2>
+
+            <div class="info">
+                <strong>💡 Testing:</strong> Sessions are loaded from Netlify DB (Neon PostgreSQL).
+                Changes made in config.html will appear here after saving!
+            </div>
+
+            <div id="content" class="loading">
+                ⏳ Loading sessions from database...
+            </div>
+
+            <div id="metadata" class="metadata" style="display: none;"></div>
+        </div>
+
+        <div class="links">
+            <a href="/config.html">⚙️ Configure Sessions</a>
+            <a href="/.netlify/functions/test-connection">🔌 Test DB Connection</a>
+        </div>
+    </div>
+
+    <script>
+        async function loadSessions() {
+            try {
+                console.log('Fetching sessions from Netlify DB...');
+
+                const response = await fetch('/.netlify/functions/sessions');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('Sessions loaded:', data);
+
+                renderSessions(data);
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                showError(error.message);
+            }
+        }
+
+        function renderSessions(data) {
+            const contentDiv = document.getElementById('content');
+            const metadataDiv = document.getElementById('metadata');
+
+            // Filter enabled sessions
+            const enabledSessions = data.sessions.filter(s => s.enabled);
+
+            if (enabledSessions.length === 0) {
+                contentDiv.innerHTML = '<div class="error">No enabled sessions found</div>';
+                return;
+            }
+
+            // Render session buttons
+            contentDiv.innerHTML = '';
+            contentDiv.className = 'session-buttons';
+
+            enabledSessions.forEach(session => {
+                const button = document.createElement('button');
+                button.className = 'session-button';
+                button.innerHTML = `
+                    ${session.label}
+                    <small>${session.display}</small>
+                `;
+                button.onclick = () => bookSession(session);
+                contentDiv.appendChild(button);
+            });
+
+            // Show metadata
+            metadataDiv.style.display = 'block';
+            metadataDiv.innerHTML = `
+                <strong>Database Info:</strong>
+                Last Modified: ${new Date(data.metadata.lastModified).toLocaleString()} |
+                Modified By: ${data.metadata.modifiedBy} |
+                Version: ${data.metadata.version} |
+                Sessions: ${enabledSessions.length} enabled / ${data.sessions.length} total
+            `;
+        }
+
+        function bookSession(session) {
+            alert(`Booking session: ${session.label}\nTime: ${session.display}\n\n(This is a POC - no actual booking happens)`);
+            console.log('Would book:', session);
+        }
+
+        function showError(message) {
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = `
+                <div class="error">
+                    <strong>❌ Error Loading Sessions</strong><br>
+                    ${message}<br><br>
+                    <small>Check console for details</small>
+                </div>
+            `;
+        }
+
+        // Load sessions on page load
+        loadSessions();
+
+        // Auto-refresh every 10 seconds (to see config changes)
+        setInterval(loadSessions, 10000);
+    </script>
+</body>
+</html>

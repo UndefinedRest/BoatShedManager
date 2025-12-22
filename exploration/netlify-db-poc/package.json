@@ -1,0 +1,28 @@
+{
+  "name": "netlify-db-poc",
+  "version": "1.0.0",
+  "description": "Proof of Concept: Netlify DB (Neon PostgreSQL) for Session Configuration",
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required'"
+  },
+  "keywords": [
+    "netlify",
+    "neon",
+    "postgresql",
+    "serverless",
+    "database"
+  ],
+  "author": "Lake Macquarie Rowing Club",
+  "license": "MIT",
+  "dependencies": {
+    "@netlify/neon": "^0.10.1"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.36.4"
+  },
+  "engines": {
+    "node": ">=20.12.2"
+  }
+}
