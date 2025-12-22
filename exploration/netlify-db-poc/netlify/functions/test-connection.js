@@ -6,7 +6,7 @@
  * GET /.netlify/functions/test-connection - Test database connectivity
  */
 
-import { neon } from '@netlify/neon'
+import { neon } from '@neondatabase/serverless'
 
 export default async (req, context) => {
   const headers = {

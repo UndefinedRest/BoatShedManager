@@ -27,7 +27,7 @@ netlify-db-poc/
 ├── index.html                    # Test booking page (loads sessions from DB)
 ├── config.html                   # Admin interface (edit sessions)
 ├── schema.sql                    # Database schema (PostgreSQL)
-├── package.json                  # Dependencies (@netlify/neon)
+├── package.json                  # Dependencies (@neondatabase/serverless)
 ├── netlify.toml                  # Netlify configuration
 ├── netlify/functions/
 │   ├── sessions.js               # GET/POST sessions API
@@ -42,7 +42,10 @@ netlify-db-poc/
 ### Prerequisites
 
 - Node.js 20.12.2 or later
-- Netlify CLI: `npm install -g netlify-cli`
+- Netlify CLI: **Install globally first:**
+  ```bash
+  npm install -g netlify-cli
+  ```
 - Git (for deployment)
 
 ### Local Development
@@ -333,7 +336,7 @@ netlify deploy --prod
 
 ```bash
 cd BoatBooking
-npm install @netlify/neon
+npm install @neondatabase/serverless
 ```
 
 ### Step 3: Initialize Production Database

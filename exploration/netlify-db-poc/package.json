@@ -17,11 +17,9 @@
   "author": "Lake Macquarie Rowing Club",
   "license": "MIT",
   "dependencies": {
-    "@netlify/neon": "^0.10.1"
+    "@neondatabase/serverless": "^0.10.3"
   },
-  "devDependencies": {
-    "netlify-cli": "^17.36.4"
-  },
+  "devDependencies": {},
   "engines": {
     "node": ">=20.12.2"
   }

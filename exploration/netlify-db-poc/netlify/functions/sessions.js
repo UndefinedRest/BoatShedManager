@@ -7,7 +7,7 @@
  * POST /.netlify/functions/sessions - Update sessions (password protected)
  */
 
-import { neon } from '@netlify/neon'
+import { neon } from '@neondatabase/serverless'
 
 // CORS headers for all responses
 const headers = {
