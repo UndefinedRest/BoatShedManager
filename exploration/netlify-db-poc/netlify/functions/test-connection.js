@@ -18,7 +18,7 @@ export default async (req, context) => {
     console.log('Testing Netlify DB connection...')
 
     // Initialize Neon SQL client
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
     // Test query
     const result = await sql`SELECT NOW() as current_time, version() as pg_version`

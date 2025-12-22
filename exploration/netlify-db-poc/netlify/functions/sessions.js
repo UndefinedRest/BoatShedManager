@@ -24,7 +24,7 @@ export default async (req, context) => {
   }
 
   // Initialize Neon SQL client (auto-uses NETLIFY_DATABASE_URL)
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
   // ============================================================
   // GET - Retrieve sessions

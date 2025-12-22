@@ -33,6 +33,5 @@
 
 # Dev server configuration
 [dev]
-  command = "echo 'Netlify Dev running'"
-  targetPort = 8888
+  # No dev command needed - Netlify Dev serves static files and functions automatically
   autoLaunch = false
