@@ -144,53 +144,54 @@ export default async (req, context) => {
 
       console.log(`POST /sessions - Updating ${sessions.length} sessions`)
 
-      // 4. Update database in transaction
-      await sql.transaction(async (sql) => {
-        // Delete all existing sessions
-        await sql`DELETE FROM sessions`
+      // 4. Update database (sequential queries for Neon serverless)
+      // Note: Neon serverless driver has limited transaction support
+      // For production, consider using Neon's transaction array syntax
 
-        // Insert new sessions
-        for (const session of sessions) {
-          // Normalize times to HH:MM format (strip seconds if present)
-          const startTime = session.startTime.substring(0, 5)
-          const endTime = session.endTime.substring(0, 5)
+      // Delete all existing sessions
+      await sql`DELETE FROM sessions`
 
-          await sql`
-            INSERT INTO sessions (id, label, start_time, end_time, display, enabled, sort_order)
-            VALUES (
-              ${session.id},
-              ${session.label},
-              ${startTime},
-              ${endTime},
-              ${session.display},
-              ${session.enabled},
-              ${session.sortOrder || 0}
-            )
-          `
-        }
-
-        // Update metadata
-        const currentVersion = await sql`SELECT value FROM metadata WHERE key = 'version'`
-        const newVersion = parseInt(currentVersion[0]?.value || '0') + 1
+      // Insert new sessions
+      for (const session of sessions) {
+        // Normalize times to HH:MM format (strip seconds if present)
+        const startTime = session.startTime.substring(0, 5)
+        const endTime = session.endTime.substring(0, 5)
 
         await sql`
-          UPDATE metadata
-          SET value = ${new Date().toISOString()}
-          WHERE key = 'last_modified'
+          INSERT INTO sessions (id, label, start_time, end_time, display, enabled, sort_order)
+          VALUES (
+            ${session.id},
+            ${session.label},
+            ${startTime},
+            ${endTime},
+            ${session.display},
+            ${session.enabled},
+            ${session.sortOrder || 0}
+          )
         `
+      }
 
-        await sql`
-          UPDATE metadata
-          SET value = 'admin'
-          WHERE key = 'modified_by'
-        `
+      // Update metadata
+      const currentVersion = await sql`SELECT value FROM metadata WHERE key = 'version'`
+      const newVersion = parseInt(currentVersion[0]?.value || '0') + 1
 
-        await sql`
-          UPDATE metadata
-          SET value = ${newVersion.toString()}
-          WHERE key = 'version'
-        `
-      })
+      await sql`
+        UPDATE metadata
+        SET value = ${new Date().toISOString()}
+        WHERE key = 'last_modified'
+      `
+
+      await sql`
+        UPDATE metadata
+        SET value = 'admin'
+        WHERE key = 'modified_by'
+      `
+
+      await sql`
+        UPDATE metadata
+        SET value = ${newVersion.toString()}
+        WHERE key = 'version'
+      `
 
       console.log('Sessions updated successfully')
 
