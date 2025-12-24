@@ -138,86 +138,256 @@ LMRC (single monorepo)
 ### Configurable Session Times
 **Project**: BoatBooking
 **Priority**: Medium
-**Effort**: Unknown - Requires database backend
-**Status**: ⚠️ **ATTEMPTED AND ROLLED BACK** (2025-12-21)
+**Effort**: ~4-6 hours (implementation) + migration from POC
+**Status**: ✅ **POC VALIDATED** (2025-12-24) - Ready for Implementation
+**POC Location**: [exploration/netlify-db-poc/](../../exploration/netlify-db-poc/)
 **Technical Design**: [docs/architecture/configurable-session-times-design.md](../architecture/configurable-session-times-design.md) *(preserved for reference)*
 
 **User Story:**
 > As a club administrator, I want to adjust session times when daylight hours change without needing a developer, so I can keep booking times aligned with rowing conditions.
 
-**What We Attempted (2025-12-21):**
-Implemented a web-based configuration UI with Netlify Functions for session management. **Rolled back after deployment testing revealed fundamental limitations.**
+---
 
-**Why It Failed:**
-1. **Netlify Functions have read-only filesystem** - Cannot write to files in serverless environment
-2. **Netlify Blobs requires additional setup** - Not available by default, threw `MissingBlobsEnvironmentError`
-3. **Environment variable approach provides no value** - Still requires manual Netlify Dashboard work:
-   - Edit sessions via config.html
-   - Copy generated JSON
-   - Open Netlify Dashboard
-   - Paste JSON into `SESSIONS_CONFIG` environment variable
-   - Trigger manual redeploy
-   - **Result**: More steps than just editing the environment variable directly!
+## ✅ Proof of Concept (2025-12-24)
 
-**Fundamental Problem:**
-The feature requires **persistent writable storage**, which Netlify's free tier serverless environment does not provide out-of-the-box.
+**Status**: **SUCCESSFUL** - All requirements validated with Netlify DB (Neon PostgreSQL)
 
-**Actual Requirements for This Feature:**
-- ✅ Web-based admin interface
-- ✅ Password-protected editing
-- ✅ Validation
-- ✅ Preview
-- ❌ **Persistent storage that functions can write to** ← This is the blocker
+### What We Validated
 
-**What Would Actually Work:**
-1. **Firebase Realtime Database** or **Firestore**
-   - Free tier: 1GB storage, 50K reads/day, 20K writes/day
-   - Functions can read/write directly
-   - Real-time updates
-   - Would integrate with existing Firebase migration proposal
+**✅ All Core Requirements Met:**
+- Web-based admin interface with live preview
+- Password-protected editing (environment variable auth)
+- Validation (time formats, enabled sessions, overlaps)
+- Real-time session updates (no redeploy needed)
+- **Persistent writable storage** (PostgreSQL database)
+- High performance (<50ms for cached requests)
+- Zero cost within free tier limits
 
-2. **Supabase (PostgreSQL)**
-   - Free tier: 500MB database, unlimited API requests
-   - Direct database access from functions
-   - More powerful querying
+**Performance Results:**
+- First visit: 200-400ms (with skeleton UI, no visible loading state)
+- Repeat visits: **<50ms** (edge cache + localStorage)
+- Admin updates: Instant via database (no build/deploy)
 
-3. **Different hosting platform**
-   - Vercel with KV storage
-   - Railway with PostgreSQL
-   - Fly.io with persistent volumes
+### Technical Stack (Validated)
 
-**Recommendation:**
-⏸️ **Defer until Firebase migration** (see "Proposed" section)
-- Firebase migration already planned for boat management
-- Would provide the database needed for session configuration
-- Can add session configuration to admin panel alongside boat management
-- Solves the problem permanently with proper architecture
+**Database:**
+- **Netlify DB** (powered by Neon PostgreSQL)
+- Serverless PostgreSQL with auto-scaling
+- Free tier: 0.5 GB storage, 100 CU-hours/month (sufficient for LMRC)
+- Auto-provisioned with `netlify db init` command
+- Connection pooling built-in
 
-**Alternative (Low-Tech Solution):**
-If seasonal adjustments are infrequent (2-4 times per year), **manual environment variable editing** is actually simpler:
-1. Go to Netlify Dashboard → Environment variables
-2. Edit `SESSIONS_CONFIG` JSON directly
-3. Redeploy
-4. **Total time**: ~2 minutes
-5. **No broken promises**: Honest about what it is
+**Backend:**
+- Netlify Functions (Node.js 20)
+- `@neondatabase/serverless` driver (HTTP-optimized)
+- RESTful API: GET `/sessions`, POST `/sessions` (password protected)
+- Sequential queries (Neon serverless limitation, adequate for POC)
 
-**Lessons Learned:**
-- Always validate persistent storage capabilities before designing features that require it
-- Serverless platforms have fundamental limitations (read-only filesystem)
-- Environment variables can store data, but require manual updates through platform UI
-- "Simple" solutions that add more steps than the original problem are not solutions
-- Database-backed features require databases - can't fake it with serverless functions alone
+**Frontend:**
+- Optimistic UI with localStorage cache
+- Skeleton screen animations (perceived performance)
+- HTTP cache headers: `stale-while-revalidate` + Netlify durable cache
+- Preload links for faster initial fetch
 
-**Git History:**
+**Performance Optimizations:**
+1. Edge caching (5min fresh, 30min stale-while-revalidate)
+2. Netlify CDN durable caching across edge nodes
+3. localStorage optimistic UI (instant render)
+4. Skeleton screens (no blank loading states)
+5. Preload hints for API endpoints
+
+### Database Schema
+
+```sql
+-- Sessions table
+CREATE TABLE sessions (
+    id VARCHAR(50) PRIMARY KEY,
+    label VARCHAR(100) NOT NULL,
+    start_time TIME NOT NULL,        -- HH:MM format
+    end_time TIME NOT NULL,          -- HH:MM format
+    display VARCHAR(50) NOT NULL,    -- Human-readable (e.g., "6:30 AM - 7:30 AM")
+    enabled BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Metadata table (audit trail)
+CREATE TABLE metadata (
+    key VARCHAR(50) PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Key Features:**
+- Auto-updating timestamps via triggers
+- Indexed queries (enabled, sort_order)
+- Version tracking in metadata
+- Last modified timestamp + user tracking
+
+### Implementation Approach
+
+**Phase 1: Database Setup**
+1. Run `netlify db init` to provision Neon database
+2. Set `ADMIN_PASSWORD` environment variable
+3. Deploy setup function to create schema
+4. Verify connection with test endpoint
+
+**Phase 2: API Implementation**
+- `GET /sessions` - Returns all sessions + metadata
+- `POST /sessions` - Updates sessions (password protected)
+- Validation: time formats, enabled count, non-overlapping
+- Time normalization (accepts both HH:MM and HH:MM:SS)
+
+**Phase 3: Admin Interface**
+- Password-protected login screen
+- Session editor with add/edit/delete/reorder
+- Live preview panel (shows how booking page will look)
+- Form validation with user-friendly errors
+- Mobile-responsive design
+
+**Phase 4: Booking Page Integration**
+- Replace hardcoded sessions with API fetch
+- Optimistic UI (render from cache instantly)
+- Skeleton screens during initial load
+- Auto-refresh on cache expiry
+
+**Phase 5: Performance Optimization**
+- Edge caching with stale-while-revalidate
+- Durable cache directive
+- localStorage caching
+- Preload hints
+
+### Migration Path (POC → Production)
+
+**8-Step Process** (documented in [POC README](../../exploration/netlify-db-poc/README.md)):
+
+1. **Create production database** - `netlify db init` in BoatBooking
+2. **Copy database schema** - Run setup function in production
+3. **Migrate functions** - Copy sessions.js to BoatBooking/netlify/functions/
+4. **Copy admin interface** - Copy config.html to BoatBooking/
+5. **Update booking page** - Integrate session loading from API
+6. **Set environment variables** - `ADMIN_PASSWORD` in production
+7. **Test thoroughly** - Validate all endpoints work
+8. **Deploy** - Push to GitHub, Netlify auto-deploys
+
+**Estimated Migration Effort**: 4-6 hours
+- 2 hours: Copy and adapt code
+- 1 hour: Testing and validation
+- 1 hour: Documentation updates
+- 1-2 hours: Buffer for issues
+
+---
+
+## Previous Attempts (Failed - 2025-12-21)
+
+**Attempt 1: Filesystem Storage** ❌
+- **Approach**: Write JSON to file in Netlify Functions
+- **Result**: Read-only filesystem in serverless environment
+- **Lesson**: Serverless platforms cannot write to disk
+
+**Attempt 2: Netlify Blobs** ❌
+- **Approach**: Use Netlify Blobs API for storage
+- **Result**: `MissingBlobsEnvironmentError` - not available by default
+- **Lesson**: Platform features require explicit setup and may not be available on all plans
+
+**Attempt 3: Environment Variables** ❌
+- **Approach**: Store JSON in `SESSIONS_CONFIG` env var
+- **Result**: Requires manual Netlify Dashboard editing + redeploy (defeats purpose)
+- **Lesson**: Environment variables are not a database replacement
+
+**Fundamental Problem Identified:**
+The feature requires **persistent writable storage** that functions can access without manual platform UI interaction.
+
+**Solution Found:**
+Netlify DB provides PostgreSQL database with serverless driver optimized for Netlify Functions - exactly what was needed.
+
+---
+
+## Cost Analysis
+
+**Netlify DB (Neon) Free Tier:**
+- Storage: 0.5 GB (LMRC needs <1 MB for sessions)
+- Compute: 100 CU-hours/month (LMRC usage: ~2-5 CU-hours/month)
+- API requests: Unlimited
+- **Cost**: $0/month for LMRC use case
+
+**Scaling (Multi-Club Future):**
+- Single club: Free tier sufficient
+- 10 clubs: ~$10/month (database-per-tenant pattern)
+- 100 clubs: ~$50-100/month
+- Database auto-scales, scales-to-zero when idle
+
+---
+
+## Lessons Learned
+
+**✅ What Worked:**
+- Netlify DB perfectly suited for this use case
+- Performance optimizations deliver <50ms perceived load times
+- PostgreSQL provides powerful querying and ACID guarantees
+- Serverless drivers (Neon) work well with Netlify Functions
+- Optimistic UI + edge caching = instant user experience
+
+**⚠️ Challenges Overcome:**
+- Neon serverless driver has limited transaction support (use sequential queries)
+- Time format normalization needed (HTML inputs return HH:MM:SS)
+- Environment variable setup required for dev vs production contexts
+- Dev server configuration required adjustment for Netlify Functions
+
+**📚 Technical Insights:**
+- Always research platform-provided database options first
+- Edge caching + localStorage = powerful combination for read-heavy data
+- Skeleton screens improve perceived performance more than actual speed
+- Connection pooling critical for serverless database access
+- Sequential queries adequate for low-traffic admin operations
+
+---
+
+## Recommendation
+
+**Status**: ✅ **READY FOR IMPLEMENTATION**
+
+**Next Steps:**
+1. Review POC at [exploration/netlify-db-poc/](../../exploration/netlify-db-poc/)
+2. Approve migration to BoatBooking production
+3. Schedule implementation (estimated 4-6 hours)
+4. Follow 8-step migration process
+5. Document admin workflow for club administrators
+
+**Alternative Considered:**
+Firebase migration (previously recommended) would also work but:
+- Netlify DB is simpler (built-in, one command setup)
+- Already validated in working POC
+- Zero cost for LMRC
+- No external accounts needed (uses Netlify)
+- PostgreSQL more familiar than Firestore for future features
+
+**Recommendation**: Proceed with Netlify DB approach (validated in POC)
+
+---
+
+## Git History
+
+**Failed Attempts (2025-12-21):**
 - Commits 856ba02, 85f6981, 0d75169: Initial implementation and two failed fix attempts
-- Commits 54ee48e, b2420ac, 8f678ab: Rollback reverts (2025-12-21)
-- All implementation code removed, design documentation preserved for future reference
+- Commits 54ee48e, b2420ac, 8f678ab: Rollback reverts
 
-**If Reconsidering:**
-- ✅ Keep: Technical design document (good architecture reference)
-- ✅ Keep: Lessons learned (documented here)
-- ❌ Don't: Attempt without database backend
-- ✅ Do: Include in Firebase migration scope
+**Successful POC (2025-12-24):**
+- Located in: `exploration/netlify-db-poc/`
+- Commits: 01a0391 (POC setup), 49304a2 (lessons learned), 75dc4f9, 85ca58e (fixes), 1787a4d (performance), 8c444a6 (validation), db5d838 (transactions)
+- Status: Complete and validated
+
+---
+
+## References
+
+- **POC Source**: [exploration/netlify-db-poc/](../../exploration/netlify-db-poc/)
+- **POC README**: [exploration/netlify-db-poc/README.md](../../exploration/netlify-db-poc/README.md)
+- **Netlify DB Docs**: https://docs.netlify.com/netlify-db/
+- **Neon PostgreSQL**: https://neon.tech/
+- **Performance Research**: Research agent findings (2025-12-24)
 
 ---
 
