@@ -131,6 +131,8 @@ export default async (req, context) => {
       // 3. Validate sessions
       const validationErrors = validateSessions(sessions)
       if (validationErrors.length > 0) {
+        console.error('Validation failed:', validationErrors)
+        console.error('Received sessions:', JSON.stringify(sessions, null, 2))
         return new Response(
           JSON.stringify({
             error: 'Validation Failed',
@@ -149,13 +151,17 @@ export default async (req, context) => {
 
         // Insert new sessions
         for (const session of sessions) {
+          // Normalize times to HH:MM format (strip seconds if present)
+          const startTime = session.startTime.substring(0, 5)
+          const endTime = session.endTime.substring(0, 5)
+
           await sql`
             INSERT INTO sessions (id, label, start_time, end_time, display, enabled, sort_order)
             VALUES (
               ${session.id},
               ${session.label},
-              ${session.startTime},
-              ${session.endTime},
+              ${startTime},
+              ${endTime},
               ${session.display},
               ${session.enabled},
               ${session.sortOrder || 0}
@@ -237,7 +243,8 @@ function validateSessions(sessions) {
     errors.push('At least one session must be enabled')
   }
 
-  const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/
+  // Accept both HH:MM and HH:MM:SS formats
+  const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/
 
   sessions.forEach((session, index) => {
     const prefix = `Session ${index + 1}`
@@ -253,16 +260,20 @@ function validateSessions(sessions) {
     if (!session.startTime) {
       errors.push(`${prefix}: Start time is required`)
     } else if (!timeRegex.test(session.startTime)) {
-      errors.push(`${prefix}: Invalid start time format (must be HH:MM)`)
+      errors.push(`${prefix}: Invalid start time format (must be HH:MM or HH:MM:SS)`)
     }
 
     if (!session.endTime) {
       errors.push(`${prefix}: End time is required`)
     } else if (!timeRegex.test(session.endTime)) {
-      errors.push(`${prefix}: Invalid end time format (must be HH:MM)`)
+      errors.push(`${prefix}: Invalid end time format (must be HH:MM or HH:MM:SS)`)
     }
 
-    if (session.startTime && session.endTime && session.startTime >= session.endTime) {
+    // Normalize times for comparison (strip seconds if present)
+    const startTimeNormalized = session.startTime?.substring(0, 5)
+    const endTimeNormalized = session.endTime?.substring(0, 5)
+
+    if (startTimeNormalized && endTimeNormalized && startTimeNormalized >= endTimeNormalized) {
       errors.push(`${prefix}: Start time must be before end time`)
     }
 
