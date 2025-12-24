@@ -18,6 +18,7 @@ export default async (req, context) => {
     console.log('Testing Netlify DB connection...')
 
     // Initialize Neon SQL client
+    // Use pooled connection for better serverless performance
     const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
     // Test query

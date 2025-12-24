@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Preload sessions API for faster loading -->
+    <link rel="preload" href="/sessions" as="fetch" crossorigin>
     <title>Booking Page Test - Netlify DB POC</title>
     <style>
         * {
@@ -155,6 +157,52 @@
             padding-top: 15px;
             border-top: 1px solid #e2e8f0;
         }
+
+        /* Skeleton loading animation */
+        .skeleton-animation {
+            background: linear-gradient(90deg, #e0e7ff 25%, #c7d2fe 50%, #e0e7ff 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s ease-in-out infinite;
+            pointer-events: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .skeleton-animation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: inherit;
+        }
+
+        .skeleton-text {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            height: 1em;
+            margin: 5px 0;
+        }
+
+        .skeleton-text-lg {
+            width: 70%;
+            height: 1.2em;
+        }
+
+        .skeleton-text-sm {
+            width: 50%;
+            height: 0.9em;
+        }
+
+        @keyframes skeleton-loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -182,16 +230,42 @@
 
         <div class="links">
             <a href="/config.html">⚙️ Configure Sessions</a>
-            <a href="/.netlify/functions/test-connection">🔌 Test DB Connection</a>
+            <a href="/test-connection">🔌 Test DB Connection</a>
         </div>
     </div>
 
     <script>
         async function loadSessions() {
+            // 1. Check localStorage cache first (Optimistic UI pattern)
+            const cached = localStorage.getItem('sessions_cache');
+            const cacheTime = localStorage.getItem('sessions_cache_time');
+            const CACHE_DURATION = 300000; // 5 minutes in milliseconds
+
+            if (cached && cacheTime) {
+                const age = Date.now() - parseInt(cacheTime);
+                if (age < CACHE_DURATION) {
+                    // Cache is fresh - render immediately for instant perceived performance
+                    console.log(`Loading from cache (${Math.round(age/1000)}s old)...`);
+                    renderSessions(JSON.parse(cached));
+                } else {
+                    // Cache is stale - show skeleton while fetching
+                    console.log('Cache expired, showing skeleton...');
+                    showSkeleton();
+                }
+            } else {
+                // No cache - show skeleton while fetching
+                console.log('No cache found, showing skeleton...');
+                showSkeleton();
+            }
+
+            // 2. Fetch fresh data in background (even if we showed cached data)
             try {
                 console.log('Fetching sessions from Netlify DB...');
 
-                const response = await fetch('/.netlify/functions/sessions');
+                const response = await fetch('/sessions', {
+                    priority: 'high',
+                    cache: 'no-cache' // Respect HTTP cache headers but bypass browser cache
+                });
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -200,11 +274,57 @@
                 const data = await response.json();
                 console.log('Sessions loaded:', data);
 
+                // 3. Update cache
+                localStorage.setItem('sessions_cache', JSON.stringify(data));
+                localStorage.setItem('sessions_cache_time', Date.now().toString());
+
+                // 4. Render (will smoothly update if showing cached data)
                 renderSessions(data);
             } catch (error) {
                 console.error('Error loading sessions:', error);
-                showError(error.message);
+
+                // If we have cached data, keep showing it with a warning
+                if (cached) {
+                    console.warn('Using stale cache due to fetch error');
+                    renderSessions(JSON.parse(cached));
+                    showStaleDataWarning();
+                } else {
+                    // No cache and fetch failed - show error
+                    showError(error.message);
+                }
             }
+        }
+
+        function showSkeleton() {
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = `
+                <div class="session-buttons">
+                    <div class="session-button skeleton-animation">
+                        <div class="skeleton-text skeleton-text-lg"></div>
+                        <small><div class="skeleton-text skeleton-text-sm"></div></small>
+                    </div>
+                    <div class="session-button skeleton-animation">
+                        <div class="skeleton-text skeleton-text-lg"></div>
+                        <small><div class="skeleton-text skeleton-text-sm"></div></small>
+                    </div>
+                    <div class="session-button skeleton-animation">
+                        <div class="skeleton-text skeleton-text-lg"></div>
+                        <small><div class="skeleton-text skeleton-text-sm"></div></small>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showStaleDataWarning() {
+            const metadataDiv = document.getElementById('metadata');
+            const warning = document.createElement('div');
+            warning.className = 'stale-warning';
+            warning.innerHTML = '⚠️ Showing cached data (unable to fetch updates)';
+            warning.style.cssText = 'color: #f59e0b; margin-top: 10px; font-size: 12px;';
+            metadataDiv.appendChild(warning);
+
+            // Auto-remove warning after 5 seconds
+            setTimeout(() => warning.remove(), 5000);
         }
 
         function renderSessions(data) {
@@ -263,9 +383,6 @@
 
         // Load sessions on page load
         loadSessions();
-
-        // Auto-refresh every 10 seconds (to see config changes)
-        setInterval(loadSessions, 10000);
     </script>
 </body>
 </html>

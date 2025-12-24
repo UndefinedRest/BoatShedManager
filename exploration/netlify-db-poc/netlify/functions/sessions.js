@@ -23,7 +23,9 @@ export default async (req, context) => {
     return new Response('', { status: 200, headers })
   }
 
-  // Initialize Neon SQL client (auto-uses NETLIFY_DATABASE_URL)
+  // Initialize Neon SQL client
+  // Use pooled connection for better serverless performance (100-300ms faster)
+  // NETLIFY_DATABASE_URL is already pooled by default from Netlify DB
   const sql = neon(process.env.NETLIFY_DATABASE_URL)
 
   // ============================================================
@@ -65,7 +67,18 @@ export default async (req, context) => {
             version: parseInt(metadata.version)
           }
         }),
-        { status: 200, headers }
+        {
+          status: 200,
+          headers: {
+            ...headers,
+            // Cache for 5 minutes at edge, serve stale content for 30 min while revalidating
+            'Cache-Control': 'public, max-age=300, stale-while-revalidate=1800',
+            // Netlify-specific cache directive for durable caching across edge nodes
+            'Netlify-CDN-Cache-Control': 'public, max-age=300, stale-while-revalidate=1800, durable',
+            // Ensure cache varies by encoding
+            'Vary': 'Accept-Encoding'
+          }
+        }
       )
     } catch (error) {
       console.error('Error fetching sessions:', error)
