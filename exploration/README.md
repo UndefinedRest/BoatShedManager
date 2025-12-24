@@ -64,6 +64,33 @@ rm -rf exploration/feature-name/*
 
 ## Past Investigations
 
+### netlify-db-poc (2025-12-24)
+**Status**: ✅ Complete - POC validated, findings documented
+**Outcome**: Ready for production implementation
+
+**Findings captured in**:
+- `docs/planning/roadmap.md` - "Configurable Session Times" section (complete technical details)
+- All implementation code snippets preserved in roadmap
+- Database schema, API functions, and performance optimizations documented
+
+**Key learnings**:
+- Netlify DB (Neon PostgreSQL) perfectly suited for serverless persistent storage
+- Auto-provisioned with one command (`netlify db init`)
+- Performance: <50ms with edge caching + localStorage optimistic UI
+- Skeleton screens improve perceived performance more than actual speed
+- Neon serverless driver has limited transaction support (use sequential queries)
+- Time format normalization needed (HTML inputs return HH:MM:SS)
+- Free tier sufficient for LMRC ($0/month)
+
+**Implementation validated**:
+- ✅ Database schema with triggers and indexes
+- ✅ RESTful API (GET/POST sessions endpoint)
+- ✅ Password-protected admin interface
+- ✅ Optimistic UI with localStorage cache
+- ✅ Edge caching with stale-while-revalidate
+- ✅ Skeleton loading animations
+- ✅ Time format validation and normalization
+
 ### booking-cancellation (2025-12-04)
 **Status**: ✅ Complete - Findings documented
 **Outcome**: v1.0 shipped (simple link), v2.0 documented in roadmap

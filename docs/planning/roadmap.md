@@ -138,10 +138,11 @@ LMRC (single monorepo)
 ### Configurable Session Times
 **Project**: BoatBooking
 **Priority**: Medium
-**Effort**: ~4-6 hours (implementation) + migration from POC
+**Effort**: ~4-6 hours (implementation)
 **Status**: ✅ **POC VALIDATED** (2025-12-24) - Ready for Implementation
-**POC Location**: [exploration/netlify-db-poc/](../../exploration/netlify-db-poc/)
 **Technical Design**: [docs/architecture/configurable-session-times-design.md](../architecture/configurable-session-times-design.md) *(preserved for reference)*
+
+**Note**: POC code was developed in `exploration/netlify-db-poc/` (temporary - may be deleted). All technical details and findings are documented below for permanent reference.
 
 **User Story:**
 > As a club administrator, I want to adjust session times when daylight hours change without needing a developer, so I can keep booking times aligned with rowing conditions.
@@ -261,19 +262,59 @@ CREATE TABLE metadata (
 
 ### Migration Path (POC → Production)
 
-**8-Step Process** (documented in [POC README](../../exploration/netlify-db-poc/README.md)):
+**8-Step Process**:
 
-1. **Create production database** - `netlify db init` in BoatBooking
-2. **Copy database schema** - Run setup function in production
-3. **Migrate functions** - Copy sessions.js to BoatBooking/netlify/functions/
-4. **Copy admin interface** - Copy config.html to BoatBooking/
-5. **Update booking page** - Integrate session loading from API
-6. **Set environment variables** - `ADMIN_PASSWORD` in production
-7. **Test thoroughly** - Validate all endpoints work
-8. **Deploy** - Push to GitHub, Netlify auto-deploys
+1. **Create production database**
+   - Run `netlify db init` in BoatBooking project directory
+   - Netlify provisions Neon PostgreSQL database automatically
+   - Database URL injected as `NETLIFY_DATABASE_URL` environment variable
+
+2. **Deploy database schema**
+   - Create `netlify/functions/setup.js` with schema creation logic
+   - Execute SQL to create `sessions` and `metadata` tables
+   - Add indexes, triggers, and default data
+   - Run once via `https://yoursite.netlify.app/setup` endpoint
+
+3. **Migrate session API function**
+   - Create `netlify/functions/sessions.js`
+   - Implement GET endpoint (returns sessions + metadata)
+   - Implement POST endpoint (updates sessions, password protected)
+   - Add validation logic (time formats, enabled count, non-overlapping)
+   - Include cache headers for performance
+
+4. **Copy admin interface**
+   - Create `config.html` at BoatBooking root
+   - Password-protected login screen
+   - Session editor with add/edit/delete/reorder
+   - Live preview panel showing booking page appearance
+   - Form validation with user-friendly errors
+
+5. **Update booking page**
+   - Replace hardcoded sessions with API fetch to `/sessions`
+   - Add optimistic UI (render from localStorage cache)
+   - Add skeleton screens during initial load
+   - Handle error states gracefully
+
+6. **Set environment variables**
+   - `ADMIN_PASSWORD` in Netlify production environment
+   - Use strong password (will protect config.html access)
+   - Database URL auto-configured by Netlify DB
+
+7. **Test thoroughly**
+   - Verify GET /sessions returns data correctly
+   - Test POST /sessions with correct password
+   - Validate all session editing operations (add/edit/delete/reorder)
+   - Check booking page loads sessions properly
+   - Test cache behavior and performance
+
+8. **Deploy**
+   - Push to GitHub (triggers Netlify auto-deploy)
+   - Monitor deployment logs
+   - Validate production endpoints
+   - Document admin workflow for club administrators
 
 **Estimated Migration Effort**: 4-6 hours
-- 2 hours: Copy and adapt code
+- 2 hours: Implement functions and schema
 - 1 hour: Testing and validation
 - 1 hour: Documentation updates
 - 1-2 hours: Buffer for issues
@@ -375,19 +416,239 @@ Firebase migration (previously recommended) would also work but:
 - Commits 54ee48e, b2420ac, 8f678ab: Rollback reverts
 
 **Successful POC (2025-12-24):**
-- Located in: `exploration/netlify-db-poc/`
+- Developed in: `exploration/netlify-db-poc/` (temporary folder - findings extracted below)
 - Commits: 01a0391 (POC setup), 49304a2 (lessons learned), 75dc4f9, 85ca58e (fixes), 1787a4d (performance), 8c444a6 (validation), db5d838 (transactions)
-- Status: Complete and validated
+- Status: Complete and validated - all findings documented in this roadmap
+
+---
+
+## Implementation Code Snippets
+
+### Database Setup Function (setup.js)
+
+```javascript
+import { neon } from '@neondatabase/serverless'
+
+export default async (req, context) => {
+  const sql = neon(process.env.NETLIFY_DATABASE_URL)
+
+  // Create sessions table
+  await sql`
+    CREATE TABLE sessions (
+      id VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(100) NOT NULL,
+      start_time TIME NOT NULL,
+      end_time TIME NOT NULL,
+      display VARCHAR(50) NOT NULL,
+      enabled BOOLEAN DEFAULT true,
+      sort_order INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `
+
+  // Create metadata table
+  await sql`
+    CREATE TABLE metadata (
+      key VARCHAR(50) PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `
+
+  // Add indexes
+  await sql`CREATE INDEX idx_sessions_enabled ON sessions(enabled)`
+  await sql`CREATE INDEX idx_sessions_sort ON sessions(sort_order)`
+
+  // Insert default sessions
+  await sql`
+    INSERT INTO sessions (id, label, start_time, end_time, display, enabled, sort_order)
+    VALUES
+      ('session-1', 'Morning Session 1', '06:30', '07:30', '6:30 AM - 7:30 AM', true, 1),
+      ('session-2', 'Morning Session 2', '07:30', '08:30', '7:30 AM - 8:30 AM', true, 2)
+  `
+
+  // Insert metadata
+  await sql`
+    INSERT INTO metadata (key, value)
+    VALUES
+      ('last_modified', CURRENT_TIMESTAMP::TEXT),
+      ('modified_by', 'system'),
+      ('version', '1')
+  `
+
+  // Create auto-update trigger
+  await sql`
+    CREATE OR REPLACE FUNCTION update_updated_at_column()
+    RETURNS TRIGGER AS $func$
+    BEGIN
+      NEW.updated_at = CURRENT_TIMESTAMP;
+      RETURN NEW;
+    END;
+    $func$ language 'plpgsql'
+  `
+
+  await sql`
+    CREATE TRIGGER update_sessions_updated_at
+      BEFORE UPDATE ON sessions
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column()
+  `
+
+  const result = await sql`SELECT COUNT(*) as count FROM sessions`
+
+  return new Response(JSON.stringify({
+    success: true,
+    message: 'Database schema created successfully',
+    sessionsCreated: parseInt(result[0].count)
+  }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+export const config = { path: "/setup" }
+```
+
+### Sessions API Function (sessions.js)
+
+```javascript
+import { neon } from '@neondatabase/serverless'
+
+const headers = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Content-Type': 'application/json'
+}
+
+export default async (req, context) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('', { status: 200, headers })
+  }
+
+  const sql = neon(process.env.NETLIFY_DATABASE_URL)
+
+  // GET - Retrieve sessions
+  if (req.method === 'GET') {
+    const sessions = await sql`
+      SELECT id, label, start_time, end_time, display, enabled, sort_order
+      FROM sessions
+      ORDER BY sort_order ASC
+    `
+
+    const metadataRows = await sql`SELECT key, value FROM metadata`
+    const metadata = Object.fromEntries(
+      metadataRows.map(row => [row.key, row.value])
+    )
+
+    return new Response(JSON.stringify({ sessions, metadata }), {
+      status: 200,
+      headers: {
+        ...headers,
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=1800',
+        'Netlify-CDN-Cache-Control': 'public, max-age=300, stale-while-revalidate=1800, durable'
+      }
+    })
+  }
+
+  // POST - Update sessions (password protected)
+  if (req.method === 'POST') {
+    const authHeader = req.headers.get('authorization')
+    const password = authHeader?.replace('Bearer ', '')
+
+    if (!password || password !== process.env.ADMIN_PASSWORD) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers })
+    }
+
+    const { sessions } = await req.json()
+
+    // Validate sessions (implement validation logic here)
+
+    // Update database
+    await sql`DELETE FROM sessions`
+
+    for (const session of sessions) {
+      const startTime = session.startTime.substring(0, 5)  // Normalize HH:MM:SS to HH:MM
+      const endTime = session.endTime.substring(0, 5)
+
+      await sql`
+        INSERT INTO sessions (id, label, start_time, end_time, display, enabled, sort_order)
+        VALUES (${session.id}, ${session.label}, ${startTime}, ${endTime},
+                ${session.display}, ${session.enabled}, ${session.sortOrder || 0})
+      `
+    }
+
+    // Update metadata
+    await sql`UPDATE metadata SET value = ${new Date().toISOString()} WHERE key = 'last_modified'`
+    await sql`UPDATE metadata SET value = 'admin' WHERE key = 'modified_by'`
+
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Sessions updated successfully'
+    }), { status: 200, headers })
+  }
+}
+
+export const config = { path: "/sessions" }
+```
+
+### Optimistic UI Pattern (for booking page)
+
+```javascript
+async function loadSessions() {
+  // 1. Check localStorage cache first
+  const cached = localStorage.getItem('sessions_cache')
+  const cacheTime = localStorage.getItem('sessions_cache_time')
+  const CACHE_DURATION = 300000  // 5 minutes
+
+  if (cached && cacheTime) {
+    const age = Date.now() - parseInt(cacheTime)
+    if (age < CACHE_DURATION) {
+      console.log(`Loading from cache (${Math.round(age/1000)}s old)`)
+      renderSessions(JSON.parse(cached))
+    } else {
+      showSkeleton()
+    }
+  } else {
+    showSkeleton()
+  }
+
+  // 2. Fetch fresh data
+  try {
+    const response = await fetch('/sessions', {
+      priority: 'high',
+      cache: 'no-cache'
+    })
+
+    const data = await response.json()
+
+    // 3. Update cache
+    localStorage.setItem('sessions_cache', JSON.stringify(data))
+    localStorage.setItem('sessions_cache_time', Date.now().toString())
+
+    // 4. Render
+    renderSessions(data)
+  } catch (error) {
+    if (cached) {
+      renderSessions(JSON.parse(cached))  // Use stale cache on error
+    } else {
+      showError(error.message)
+    }
+  }
+}
+```
 
 ---
 
 ## References
 
-- **POC Source**: [exploration/netlify-db-poc/](../../exploration/netlify-db-poc/)
-- **POC README**: [exploration/netlify-db-poc/README.md](../../exploration/netlify-db-poc/README.md)
-- **Netlify DB Docs**: https://docs.netlify.com/netlify-db/
+- **Netlify DB Documentation**: https://docs.netlify.com/netlify-db/
 - **Neon PostgreSQL**: https://neon.tech/
-- **Performance Research**: Research agent findings (2025-12-24)
+- **Neon Serverless Driver**: https://neon.tech/docs/serverless/serverless-driver
+- **Performance Research**: UX optimization findings (2025-12-24)
+- **Stale-While-Revalidate**: https://web.dev/stale-while-revalidate/
 
 ---
 
