@@ -69,6 +69,48 @@ The cloud platform serves web pages; any device with a browser can display the b
 - **Alternative**: Android TV box with Fully Kiosk Browser (customer-provided, DIY)
 - **Not recommended**: Smart TV native browser (unreliable auto-start, high support burden)
 
+## Club Onboarding: Self-Service Journey
+
+New clubs must be able to sign up and get a working booking board **without manual intervention from us**. The target experience:
+
+### Onboarding Flow
+
+```
+1. SIGN UP          Club admin visits rowingboards.io → creates account
+                    (email, password, club name, chosen subdomain)
+                           │
+2. CONNECT REVSPORT Enter RevSport URL and credentials
+                    Platform validates by attempting a test scrape
+                           │
+3. CONFIGURE BOARD  Select display preferences:
+                    - Branding (logo, colours)
+                    - Which boats to show (auto-detected from RevSport, admin confirms)
+                    - Boat categories (race boats, tinnies, etc.)
+                    - Refresh interval preferences
+                           │
+4. FIRST SCRAPE     Platform runs initial scrape → populates board
+                    Club admin sees their board live at clubname.rowingboards.io
+                           │
+5. SHARE WITH       Club shares URL with members for remote viewing
+   MEMBERS          Optionally: set up Pi in boatshed pointing at the URL
+```
+
+### Key Requirements
+- **Zero-touch from us**: No manual database entries, no config files to edit, no deployment steps
+- **Validation at each step**: Test RevSport credentials before proceeding; show errors clearly if credentials are wrong or URL is unreachable
+- **Time to live board**: Target <10 minutes from signup to seeing real booking data
+- **Guided experience**: Non-technical club admins must be able to complete setup without documentation
+- **Boat auto-detection**: Scrape RevSport to discover the club's fleet automatically; admin confirms/edits rather than entering from scratch
+- **Preview before publish**: Show the board with real data before making it live
+
+### Onboarding by Phase
+
+| Phase | Onboarding Method |
+|-------|------------------|
+| **A** (Cloud MVP) | Manual onboarding: platform operator creates club in DB, assists with setup |
+| **B** (Self-Service) | Self-service: full signup wizard, admin dashboard, no operator involvement |
+| **C+** (Growth) | Self-service + automated billing (Stripe), free trial, marketing site with signup |
+
 ## Architecture Overview
 
 ```

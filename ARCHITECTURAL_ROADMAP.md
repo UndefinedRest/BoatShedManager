@@ -328,16 +328,39 @@ Implementation: CSS media queries + optional `?mode=` override. No separate code
 
 ---
 
-#### [A7] Render Deployment Configuration
-**Effort**: S (1 week) | **Risk**: Low | **Dependencies**: A1-A5
+#### [A7] Render Deployment & Environment Separation
+**Effort**: M (2 weeks) | **Risk**: Low | **Dependencies**: A1-A5
+
+Three environments, appropriate for the scale of this project:
+
+| Environment | Purpose | Infrastructure | Deploy Trigger |
+|-------------|---------|---------------|---------------|
+| **Development** | Local coding, unit tests, fast iteration | Local machine (Node.js, SQLite or local PostgreSQL) | Manual (`npm run dev`) |
+| **Staging** | Integration testing, pre-production validation, stakeholder demos | Render: separate services + separate DB (free/starter plans) | Auto-deploy on push to `staging` branch |
+| **Production** | Live clubs, real data | Render: production services + production DB | Auto-deploy on push to `main` branch |
+
+**Why three environments**:
+- **Development**: Essential for day-to-day work. Runs locally, fast feedback loop. Can use SQLite for development or a local PostgreSQL instance to match production.
+- **Staging**: Catches deployment-specific issues that local cannot replicate — Render environment variables, Puppeteer in cloud containers, database migrations against a real PostgreSQL instance, subdomain routing. Also serves as a demo environment for showing potential clubs. Staging uses a separate database with test/seed data, never real club credentials.
+- **Production**: Real clubs, real RevSport credentials, real member data. Protected by strict deployment process.
+
+**Deployment rules**:
+- Feature branches → pull request → merge to `staging` → auto-deploy to staging
+- After validation on staging → merge `staging` to `main` → auto-deploy to production
+- Database migrations run automatically on deploy (Drizzle migrate)
+- Rollback: Render supports instant rollback to previous deploy
+- Environment variables are **separate per environment** (different `ENCRYPTION_KEY`, `JWT_SECRET`, `DATABASE_URL`)
+
+**Render configuration** (per environment):
 
 ```yaml
-# render.yaml
+# render.yaml (production - similar structure for staging with different names/plans)
 services:
   - type: web
     name: rowing-boards-web
     env: node
     plan: free  # upgrade to starter ($7/mo) when needed
+    branch: main  # staging uses 'staging' branch
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
@@ -356,6 +379,7 @@ services:
     name: rowing-boards-scraper
     env: node
     plan: starter  # needs memory for Puppeteer
+    branch: main
     buildCommand: npm install
     startCommand: npm run worker
     envVars:
@@ -373,7 +397,9 @@ databases:
     plan: starter  # $7/month, 1GB storage
 ```
 
-- Auto-deploy from GitHub on push to `main`
+**Staging cost**: ~$7/month (starter DB). Web service and worker can run on free plans for staging since performance isn't critical.
+
+- Auto-deploy from GitHub (staging branch → staging, main branch → production)
 - Web service serves frontend + API
 - Worker process runs Puppeteer scraping (separate process, own memory allocation)
 - UptimeRobot pings `/api/v1/health` every 5 min (prevents free-tier spin-down on web service)
@@ -391,26 +417,48 @@ databases:
 - Cutover: Point Pi's Chromium kiosk at `lmrc.rowingboards.io` instead of `localhost:3000`
 - Keep Pi's local server as fallback (if cloud goes down, revert kiosk URL)
 
+**Phase A onboarding**: Manual. Platform operator adds clubs directly in the database and assists with initial configuration. Acceptable for 1-3 clubs during alpha.
+
 ---
 
 ### Phase B: Self-Service & Admin Dashboard
 
-#### [B1] Admin Dashboard (React)
+#### [B1] Club Onboarding Wizard
+**Effort**: L (4-6 weeks) | **Risk**: Medium | **Dependencies**: B2, A4, A5
+
+Self-service signup and setup flow so new clubs can onboard **without platform operator involvement**:
+
+1. **Signup**: Club admin creates account (email, password, club name, subdomain)
+2. **Connect RevSport**: Enter RevSport URL and credentials → platform validates by running a test scrape. Clear error feedback if credentials fail or URL is unreachable.
+3. **Auto-detect fleet**: Scrape RevSport to discover the club's boats automatically. Admin reviews, confirms, and categorises (race, tinny, etc.) rather than entering from scratch.
+4. **Configure display**: Branding (logo, colours), display preferences, refresh intervals. Live preview with real scraped data before going live.
+5. **Go live**: First full scrape runs, board becomes accessible at `clubname.rowingboards.io`. Admin shares URL with members.
+
+**Key requirements**:
+- Zero manual steps from platform operator (no DB edits, no config files)
+- Validation at each step with clear, non-technical error messages
+- Target: <10 minutes from signup to live board with real data
+- Guided flow for non-technical club administrators (no documentation required)
+- Boat auto-detection eliminates manual data entry
+
+---
+
+#### [B2] Admin Dashboard (React)
 **Effort**: L (4-6 weeks) | **Risk**: Medium | **Dependencies**: Phase A
 
-Web-based admin interface for club administrators:
+Web-based admin interface for club administrators (hosts the onboarding wizard and ongoing management):
 
-- **Club setup wizard**: Enter RevSport URL, credentials, club name, branding
 - **Boat management**: Add/edit/remove boats, map to RevSport IDs, set display order, categorise (race/tinny)
 - **Branding editor**: Logo upload, colour picker, preview board with changes
 - **Refresh schedule**: Visual time-block editor for scraping frequency
 - **Status page**: Scrape health, last successful sync, error log
+- **Club settings**: Update RevSport credentials, subdomain, timezone
 
 Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [B2] Admin Authentication
+#### [B3] Admin Authentication
 **Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: A1
 
 - Email + password auth for club admins
@@ -422,8 +470,8 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [B3] Stripe Subscription Integration
-**Effort**: M (2-3 weeks) | **Risk**: Medium | **Dependencies**: B1
+#### [B4] Stripe Subscription Integration
+**Effort**: M (2-3 weeks) | **Risk**: Medium | **Dependencies**: B2
 
 - Stripe Checkout for new subscriptions
 - Stripe Customer Portal for billing management
@@ -434,7 +482,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [B4] Tinnies Support
+#### [B5] Tinnies Support
 **Effort**: S (1 week) | **Risk**: Low | **Dependencies**: A5, A6
 
 - Add `boat_category` field to boats table (already in schema: `race`, `tinny`)
@@ -445,7 +493,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [B5] RevSport Email Booking Links
+#### [B6] RevSport Email Booking Links
 **Effort**: S (1 week) | **Risk**: Low | **Dependencies**: None
 
 - Document how clubs can add booking board URL to their RevSport email templates
@@ -621,13 +669,15 @@ A8 LMRC Migration ────────────┴── Phase A Complete
                                         │
                               ┌─────────┤
                               │         │
-                    B1 Admin Dashboard   B2 Admin Auth
+                    B2 Admin Dashboard   B3 Admin Auth
                               │         │
                               ├─────────┤
                               │         │
-                    B3 Stripe │    B4 Tinnies
+               B1 Onboarding Wizard     │
                               │         │
-                              │    B5 Email Links
+                    B4 Stripe │    B5 Tinnies
+                              │         │
+                              │    B6 Email Links
                               │
                               └── Phase B Complete
                                         │
@@ -723,6 +773,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 1.1 | 2026-01-27 | Added #014: Cloud-hosted booking board (Render free tier) |
 | 2.0 | 2026-01-28 | Major revision: Cloud-first SaaS architecture pivot. Replaced Pi-centric phases with SaaS phases (A-D). Added database schema, Render deployment config, technology stack, security architecture. Superseded items #001-#008 with cloud equivalents. Incorporated Claude.ai SaaS analysis and committee feedback. |
 | 2.1 | 2026-01-28 | Enforced display-only principle: removed QR code booking (C1) and QR code generation (B4) from backlog. Booking entry is out of scope for the SaaS platform; clubs use their existing tools. Renumbered Phase B and C items. |
+| 2.2 | 2026-01-28 | Added [B1] Club Onboarding Wizard for self-service club signup. Added environment separation strategy (dev/staging/production) to [A7]. Renumbered Phase B items (B1-B6). |
 
 ---
 
