@@ -117,6 +117,16 @@ Transform the LMRC Booking Viewer into a **commercial product** that can be depl
 - Git-based updates
 - Working production system at LMRC
 
+### Phase 1.5: Remote Access (Under Consideration)
+- **Cloud-hosted booking board** for members to view bookings away from the boatshed
+- Deploy existing Express app to free-tier cloud hosting (e.g., Render)
+- Read-only mode: no config changes, no cache clearing from cloud instance
+- Custom subdomain: `bookings.lakemacrowing.au`
+- Coexists with local Pi deployment (both run independently)
+- Keep-alive monitoring to prevent free-tier spin-down
+- No additional cost (free hosting tier + free uptime monitoring)
+- Minimal code changes: read-only middleware guard, ephemeral filesystem handling, startup cache warming
+
 ### Phase 2: Configuration Wizard (Next Major Version)
 - Web-based setup wizard
 - Simplified configuration UI
@@ -268,11 +278,12 @@ Transform the LMRC Booking Viewer into a **commercial product** that can be depl
 ## Next Steps (When Ready)
 
 ### Immediate (Next 6 months)
-1. Design setup wizard UX flow
-2. Create wizard prototype
-3. Implement secure credential storage
-4. Centralize club configuration
-5. Test with second club (pilot customer)
+1. **Cloud-hosted booking board** - deploy read-only booking viewer to free cloud hosting for remote member access (see Phase 1.5)
+2. Design setup wizard UX flow
+3. Create wizard prototype
+4. Implement secure credential storage
+5. Centralize club configuration
+6. Test with second club (pilot customer)
 
 ### Medium-term (6-12 months)
 1. Multi-club deployment testing
@@ -299,6 +310,6 @@ Transform the LMRC Booking Viewer into a **commercial product** that can be depl
 
 ---
 
-**Last Updated**: 2025-10-29
+**Last Updated**: 2026-01-27
 **Status**: Roadmap / Vision
 **Priority**: Future (post v1.0.0)

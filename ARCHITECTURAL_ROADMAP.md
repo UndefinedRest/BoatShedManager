@@ -1524,6 +1524,95 @@ interface Plugin {
 
 ---
 
+### Near-Term: Current Deployment Enhancements
+
+These items address immediate needs for the current LMRC single-club deployment and do not depend on the multi-club architecture work above.
+
+#### [P2] #014: Cloud-Hosted Booking Board (Remote Access)
+
+**Effort**: S (1-2 weeks)
+**Risk**: Low
+**Dependencies**: None (uses existing codebase as-is)
+**Target Release**: Pre-v1.5 (can be done independently)
+
+**Problem**: The booking board is only accessible locally at the boatshed on the Raspberry Pi. The Pi is powered down when the shed is not in use, so members cannot check boat availability remotely. While the Pi is reachable via Tailscale at `100.101.107.30:3000`, this requires the device to be powered on.
+
+**Proposed Solution**:
+Deploy the existing Express application to **Render** (free tier) as a read-only cloud instance at `bookings.lakemacrowing.au`. Both the Pi (local boatshed display) and cloud (remote member access) deployments coexist independently.
+
+**Architecture**:
+```
+Club Members (browser)
+    │
+    v
+bookings.lakemacrowing.au (CNAME → Render)
+    │
+    v
+Render Free Tier (Express, US-Oregon)
+    ├─ Static: index.html, CSS, JS
+    ├─ GET /api/v1/bookings   → in-memory cache (10 min TTL)
+    ├─ GET /api/v1/config     → club config from env vars
+    ├─ GET /api/v1/health     → pinged by UptimeRobot
+    └─ POST endpoints         → disabled (read-only mode)
+    │
+    │ (on cache miss, every ~10 min)
+    v
+RevSport API (lakemacquarierowingclub.org.au)
+
+UptimeRobot (free) → pings /health every 5 min (prevents spin-down)
+```
+
+**Platform Decision: Render Free Tier**
+- Deploys directly from GitHub (auto-deploy on push to main)
+- 750 hours/month free (sufficient for always-on with keep-alive)
+- Built-in SSL and custom domain support
+- Node.js buildpack auto-detects package.json
+- UptimeRobot (free) pings health endpoint every 5 minutes to prevent spin-down
+
+**Alternatives Evaluated**:
+| Platform | Verdict | Reason |
+|----------|---------|--------|
+| Fly.io | Eliminated | No real free tier; requires credit card; usage-based billing risk |
+| Koyeb | Not recommended | No Australian region (high latency); scales to zero after 1 hour |
+| Netlify Functions | Not feasible | 10-second timeout on free tier; RevSport scraping takes 10-20+ seconds |
+| GitHub Actions cron | Over budget | Every 15 min = ~4,300 runs/month; exceeds 2,000 min/month free tier |
+
+**Code Changes Required**:
+
+1. **Read-only guard middleware** (`src/server/routes/api.ts`)
+   - Add `READONLY_MODE` env var check
+   - Return 403 for POST endpoints: `/cache/clear`, `/config/tv-display`, `/config/tv-display/reset`
+
+2. **Disable /config page** (`src/server/app.ts`)
+   - Skip `/config` route when `READONLY_MODE=true`, redirect to `/`
+
+3. **Handle ephemeral filesystem** (`src/services/tvDisplayConfigService.ts`)
+   - In read-only mode, always return `DEFAULT_TV_DISPLAY_CONFIG`
+   - Skip filesystem reads/writes (Render has ephemeral disk)
+
+4. **Enable HTTPS upgrade in production** (`src/server/app.ts`)
+   - Change `upgradeInsecureRequests` from `null` to `[]` when `NODE_ENV=production`
+
+5. **Startup cache warming** (`src/server/index.ts`)
+   - Trigger background data fetch on startup so first user request is served from cache
+
+6. **Render blueprint** (new file: `render.yaml`)
+   - Defines web service config: Node runtime, build/start commands, env vars, free plan
+
+**DNS Configuration**:
+- Add CNAME record in CrazyDomains (or Netlify DNS if that manages the zone):
+  `bookings` → `lmrc-booking-viewer.onrender.com`
+- Render auto-provisions SSL certificate for the custom domain
+
+**Trade-offs**:
+- US-Oregon region (free tier limitation) adds ~150-200ms latency for Australian users on cached responses
+- First request after cache expiry takes 15-30s (RevSport scraping from US-based server)
+- If Render removes free tier in future, migrate to Railway ($5/month) or a VPS
+
+**Relationship to Multi-Club Roadmap**: This is a tactical solution for LMRC's immediate need. The v3.0 Remote Management Portal (#009) would supersede this with a proper cloud architecture supporting multiple clubs.
+
+---
+
 ## Dependencies and Critical Path
 
 ### Dependency Graph
@@ -1809,6 +1898,7 @@ Reference documents already in the solution:
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-10-30 | Initial creation - comprehensive architectural roadmap |
+| 1.1 | 2026-01-27 | Added #014: Cloud-hosted booking board (Render free tier) for remote member access |
 
 ---
 
