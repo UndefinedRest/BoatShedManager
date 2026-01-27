@@ -17,13 +17,21 @@ This document outlines the technical work required to evolve the LMRC Booking Bo
 **Target State**: Multi-tenant SaaS platform serving 100+ rowing clubs via `clubname.rowingboards.io`
 **Approach**: Evolve the existing codebase incrementally (not a rewrite)
 
+### Fundamental Principle: Display Only
+
+The SaaS platform is a **read-only booking board**. It scrapes and displays booking data. It does not create, edit, or delete bookings. Booking entry remains the responsibility of each club's existing tools (RevSport, the separate LMRC boat booking page on Netlify, etc.).
+
+This principle applies across all phases A-B. Booking entry integration is deferred to Phase D at earliest, and only if customer demand warrants it. This keeps the platform simple, reduces risk (no write-back to RevSport), and gets to market faster.
+
+The platform still requires administration and configuration — clubs need to set their RevSport credentials/URL and configure the look and feel of their board. This admin functionality is in scope from Phase A.
+
 ### Phase Summary
 
 | Phase | Theme | Key Technical Work | Target Clubs |
 |-------|-------|-------------------|-------------|
-| **A** (Cloud MVP) | Get it running in the cloud | PostgreSQL, multi-tenancy, subdomain routing, responsive layouts | 1-3 |
-| **B** (Self-Service) | Let clubs onboard themselves | Admin dashboard, Stripe, auth, boat management | 5-10 |
-| **C** (Advanced) | Grow features and customer base | QR booking, noticeboard, custom domains, BullMQ | 10-30 |
+| **A** (Cloud MVP) | Display + admin in the cloud | PostgreSQL, multi-tenancy, subdomain routing, responsive layouts, basic admin | 1-3 |
+| **B** (Self-Service) | Let clubs onboard themselves | Full admin dashboard, Stripe, auth, boat management | 5-10 |
+| **C** (Advanced) | Grow features and customer base | Noticeboard, custom domains, BullMQ, hardware bundles | 10-30 |
 | **D** (Scale) | Operate efficiently at scale | Remote management, monitoring, plugins, analytics | 50+ |
 
 ---
@@ -426,17 +434,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [B4] QR Code Generation
-**Effort**: S (1 week) | **Risk**: Low | **Dependencies**: B1
-
-- Generate QR codes per boat linking to RevSport booking page (not custom booking flow yet)
-- Admin downloads printable PDF (all boats on one page, laminate-ready)
-- QR code tokens regenerated daily for security
-- URL format: `https://{subdomain}.rowingboards.io/book/{boat_id}/{token}` → redirects to RevSport
-
----
-
-#### [B5] Tinnies Support
+#### [B4] Tinnies Support
 **Effort**: S (1 week) | **Risk**: Low | **Dependencies**: A5, A6
 
 - Add `boat_category` field to boats table (already in schema: `race`, `tinny`)
@@ -447,7 +445,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [B6] RevSport Email Booking Links
+#### [B5] RevSport Email Booking Links
 **Effort**: S (1 week) | **Risk**: Low | **Dependencies**: None
 
 - Document how clubs can add booking board URL to their RevSport email templates
@@ -459,20 +457,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ### Phase C: Advanced Features & Growth
 
-#### [C1] QR Code Booking (Write-Back to RevSport)
-**Effort**: L (4-6 weeks) | **Risk**: High | **Dependencies**: B4
-
-- Scan QR code → booking form (boat pre-selected, user selects time slot, crew size)
-- Submit → Puppeteer session logs into RevSport, creates booking via web automation
-- Return success/failure to user
-- Audit log records all booking submissions
-- Rate limiting: 10 bookings per boat per hour
-
-**Why deferred**: Puppeteer write-back is fragile (RevSport UI changes break it), slow (10-20s), and resource-intensive. Read-only board provides value without this risk. Ship when demand is validated.
-
----
-
-#### [C2] Digital Noticeboard Module
+#### [C1] Digital Noticeboard Module
 **Effort**: L (4-6 weeks) | **Risk**: Medium | **Dependencies**: Phase A
 
 - Port existing LMRC noticeboard (Node/React/Puppeteer) to multi-tenant cloud
@@ -483,7 +468,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [C3] Custom Domain Support
+#### [C2] Custom Domain Support
 **Effort**: M (2-3 weeks) | **Risk**: Medium | **Dependencies**: A2
 
 - Clubs on Enterprise tier can use `bookings.theirclub.com`
@@ -494,7 +479,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [C4] BullMQ + Redis Job Queue
+#### [C3] BullMQ + Redis Job Queue
 **Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: A4
 
 - Upgrade from `node-cron` to BullMQ for production job scheduling
@@ -505,7 +490,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [C5] Magic Link Member Auth
+#### [C4] Magic Link Member Auth
 **Effort**: M (2 weeks) | **Risk**: Low | **Dependencies**: B2
 
 - For clubs wanting gated member access to their board
@@ -515,7 +500,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [C6] Adaptive Refresh Schedules (Per-Club)
+#### [C5] Adaptive Refresh Schedules (Per-Club)
 **Effort**: S (1 week) | **Risk**: Low | **Dependencies**: A4
 
 - Admin dashboard visual schedule builder
@@ -640,17 +625,17 @@ A8 LMRC Migration ────────────┴── Phase A Complete
                               │         │
                               ├─────────┤
                               │         │
-                    B3 Stripe │    B4 QR Codes
+                    B3 Stripe │    B4 Tinnies
                               │         │
-                    B5 Tinnies│    B6 Email Links
+                              │    B5 Email Links
                               │
                               └── Phase B Complete
                                         │
                               ┌─────────┼──────────┐
                               │         │          │
-                    C1 QR Booking  C2 Noticeboard  C3 Custom Domains
+                    C1 Noticeboard  C2 Custom Domains  C3 BullMQ
                               │         │          │
-                    C4 BullMQ │    C5 Magic Link   C6 Adaptive Refresh
+                    C4 Magic Link   C5 Adaptive Refresh│
                               │
                               └── Phase C Complete
                                         │
@@ -665,7 +650,6 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 1. **A1** (Database) → blocks almost everything
 2. **A4** (Scraper refactor) → longest item in Phase A
 3. **B1** (Admin dashboard) → longest item in Phase B, blocks self-service onboarding
-4. **C1** (QR booking) → highest risk item overall
 
 ---
 
@@ -738,6 +722,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 1.0 | 2025-10-30 | Initial creation - Pi-centric architectural roadmap |
 | 1.1 | 2026-01-27 | Added #014: Cloud-hosted booking board (Render free tier) |
 | 2.0 | 2026-01-28 | Major revision: Cloud-first SaaS architecture pivot. Replaced Pi-centric phases with SaaS phases (A-D). Added database schema, Render deployment config, technology stack, security architecture. Superseded items #001-#008 with cloud equivalents. Incorporated Claude.ai SaaS analysis and committee feedback. |
+| 2.1 | 2026-01-28 | Enforced display-only principle: removed QR code booking (C1) and QR code generation (B4) from backlog. Booking entry is out of scope for the SaaS platform; clubs use their existing tools. Renumbered Phase B and C items. |
 
 ---
 

@@ -7,6 +7,18 @@ Transform the LMRC Booking Board from a single-club Raspberry Pi solution into a
 **Product Name (working)**: Rowing Boards
 **Domain (working)**: `rowingboards.io` (clubs get `clubname.rowingboards.io`)
 
+### Fundamental Principle: Display and Entry are Decoupled
+
+The SaaS product is the **booking board** — a read-only display of bookings. It does not create, edit, or delete bookings. Booking entry and management remain the responsibility of each club's existing tools (RevSport, the separate LMRC boat booking page, or whatever system the club uses).
+
+This separation is critical because:
+- **Reduced risk**: Display-only means no write-back to RevSport (fragile, slow, high liability)
+- **Faster to market**: No need to replicate or automate booking workflows
+- **Broader compatibility**: Works with any club that has a bookable calendar, regardless of how bookings are made
+- **Clear value proposition**: "See your board from anywhere" is simple to sell and understand
+
+The existing LMRC boat booking page (hosted separately on Netlify, integrates directly with RevSport) will evolve to align with the SaaS platform over time, but it is **out of scope** for the initial SaaS release.
+
 ## Strategic Pivot: Why Cloud-First
 
 The original roadmap (Oct 2025) assumed a Pi-centric approach: ship hardware, add a setup wizard, then eventually offer cloud. Based on architectural review (Jan 2026), the strategy is now **cloud-first** for the following reasons:
@@ -34,18 +46,22 @@ The Pi remains valuable as an **in-shed display device** (kiosk mode pointing at
 
 ## Product Offering
 
-### Core SaaS Platform
-- **Digital booking board** - real-time calendar display of boat fleet bookings
-- **Club admin dashboard** - self-service setup, boat management, branding, QR codes
+### Core SaaS Platform (Display Only)
+- **Digital booking board** - read-only, real-time calendar display of boat fleet bookings
+- **Club admin dashboard** - self-service setup: RevSport credentials/URL, boat configuration, branding, display settings
 - **Remote member viewing** - members check board from anywhere (desktop + mobile)
 - **Automated RevSport sync** - background scraping with adaptive refresh rates
 - **Multi-tenant** - each club isolated with own subdomain, branding, and config
 
+Booking entry and editing are **not** part of the SaaS platform. Clubs continue to use their existing tools (RevSport, club booking pages, etc.) for managing bookings. The platform reads and displays only.
+
 ### Optional Add-Ons (Post-MVP)
 - **Digital noticeboard** - rotating photos, events, sponsors (existing LMRC module)
-- **QR code booking** - scan-to-book from physical QR codes on boats
 - **Custom domain** - `bookings.yourclub.com` instead of `clubname.rowingboards.io`
 - **Hardware bundle** - pre-configured Raspberry Pi for in-shed TV display ($200-300)
+
+### Future Consideration (Not in Initial SaaS Scope)
+- **Booking entry integration** - if demand warrants, explore connecting the separate boat booking page with the SaaS platform. This would evolve the existing LMRC Netlify-hosted booking page into a multi-tenant booking submission tool. Deferred because it involves write-back to RevSport (fragile, slow, high liability).
 
 ### In-Shed Display (Hardware)
 The cloud platform serves web pages; any device with a browser can display the board:
@@ -87,27 +103,27 @@ In-Shed Display (Optional)
 - Git-based updates
 - Production-proven scraping, display, and config
 
-### Phase A: Cloud MVP
+### Phase A: Cloud MVP (Display + Admin)
 - Deploy existing Express app to Render, backed by PostgreSQL
 - Add multi-tenancy: subdomain routing, `club_id` data isolation
 - Migrate LMRC from Pi-only to cloud (Pi becomes a display pointing at cloud URL)
-- Add basic admin page for club setup (RevSport URL, credentials, branding)
+- Admin page for club setup: RevSport URL, credentials, branding, display settings
 - `node-cron` job scheduler for per-club scraping (no Redis yet)
 - Encrypted credential storage (AES-256 in database)
 - Responsive layouts: TV (existing widescreen), desktop (single-column), mobile
 - LMRC as first tenant; recruit 1-2 beta clubs
+- **Scope**: Read-only board display + club admin configuration. No booking entry.
 
-### Phase B: Self-Service & Admin Dashboard
+### Phase B: Self-Service & Growth
 - Full admin dashboard (React): club setup wizard, boat management, branding editor
-- QR code generation and printable PDF export
 - Club admin authentication (email + password)
 - Stripe subscription integration
 - Monitoring and alerting (Sentry + Render metrics)
 - Member-facing features: Tinnies section, RevSport email booking links
 - Onboard 5-10 clubs
+- **Scope**: Still display-only. Admin manages how the board looks and syncs, not bookings.
 
-### Phase C: Advanced Features & Growth
-- QR code booking (scan → submit booking to RevSport via Puppeteer)
+### Phase C: Advanced Features
 - Digital noticeboard as add-on module
 - Custom domain support per club
 - Hardware bundles (pre-configured Pi kits shipped to clubs)
@@ -119,10 +135,11 @@ In-Shed Display (Optional)
 - 50+ clubs operational
 - Remote management portal for support team
 - Automated software updates for Pi devices
-- Plugin/extension system
+- Plugin/extension system (including potential booking system integrations beyond RevSport)
 - Advanced analytics and reporting
 - White-label option (remove "Powered by Rowing Boards")
 - International expansion (UK, US rowing clubs)
+- Evaluate whether to integrate booking entry as a platform feature (based on customer demand)
 
 ## LMRC Near-Term Items (Committee Feedback, Jan 2026)
 
@@ -137,7 +154,7 @@ These items are for the current LMRC deployment and will carry forward into the 
 | Tier | Price/Month | Features |
 |------|------------|----------|
 | **Basic** | $50 | Booking board, 1 admin, RevSport sync, subdomain |
-| **Pro** | $100 | + Noticeboard, QR booking, multiple admins, analytics |
+| **Pro** | $100 | + Noticeboard, multiple admins, analytics |
 | **Enterprise** | $150 | + Custom domain, white-label, priority support |
 
 ### Optional Hardware
