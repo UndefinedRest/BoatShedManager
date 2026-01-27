@@ -1,319 +1,245 @@
-# Product Roadmap & Multi-Club Strategy
+# Product Roadmap: Rowing Boards SaaS Platform
 
 ## Vision
 
-Transform the LMRC Booking Viewer into a **commercial product** that can be deployed to multiple rowing clubs as a turnkey solution.
+Transform the LMRC Booking Board from a single-club Raspberry Pi solution into a **cloud-first SaaS product** that any rowing club can sign up for, configure, and start using within minutes. Hardware (Pi displays) becomes an optional add-on, not a prerequisite.
+
+**Product Name (working)**: Rowing Boards
+**Domain (working)**: `rowingboards.io` (clubs get `clubname.rowingboards.io`)
+
+## Strategic Pivot: Why Cloud-First
+
+The original roadmap (Oct 2025) assumed a Pi-centric approach: ship hardware, add a setup wizard, then eventually offer cloud. Based on architectural review (Jan 2026), the strategy is now **cloud-first** for the following reasons:
+
+| Factor | Pi-First (Original) | Cloud-First (Revised) |
+|--------|---------------------|----------------------|
+| Customer onboarding | Ship hardware, customer configures Pi | Sign up, enter RevSport URL, done |
+| Time to first board | Days (hardware shipping + setup) | Minutes (web signup) |
+| Ongoing support | SSH into remote Pi devices | Central dashboard, no device access needed |
+| Multi-tenancy | Phase 3 (later) | Phase A (foundation) |
+| Revenue model | Hardware sale + license | SaaS subscription (recurring) |
+| Capital requirement | Inventory of Pi devices | Hosting costs only |
+| Scaling bottleneck | Hardware logistics | Infrastructure (auto-scales) |
+
+The Pi remains valuable as an **in-shed display device** (kiosk mode pointing at the club's cloud URL), but the intelligence, configuration, and data all live in the cloud.
 
 ## Target Market
 
-- Rowing clubs using RevolutioniseSport for boat bookings
-- Clubs wanting professional digital displays for noticeboards and booking viewers
-- Non-technical club administrators who need simple setup
+- **Primary**: Rowing clubs using RevolutioniseSport (~500+ clubs globally)
+- **Secondary**: Rowing clubs using other management platforms (future integrations)
+- **Tertiary**: Other sports clubs with similar booking needs
+- Club size: 50-500 members
+- Technical capability: Low (non-technical club administrators)
+- Budget: $50-150/month subscription
 
-## Product Offering (Future)
+## Product Offering
 
-### Hardware
-- Pre-configured Raspberry Pi devices
-- Ready to connect to customer TVs
-- Multiple devices per club:
-  - Noticeboard display(s)
-  - Booking viewer display(s)
+### Core SaaS Platform
+- **Digital booking board** - real-time calendar display of boat fleet bookings
+- **Club admin dashboard** - self-service setup, boat management, branding, QR codes
+- **Remote member viewing** - members check board from anywhere (desktop + mobile)
+- **Automated RevSport sync** - background scraping with adaptive refresh rates
+- **Multi-tenant** - each club isolated with own subdomain, branding, and config
 
-### Software Components
-1. **Booking Viewer** (this repository)
-   - TV display mode for boat bookings
-   - Web interface for configuration
+### Optional Add-Ons (Post-MVP)
+- **Digital noticeboard** - rotating photos, events, sponsors (existing LMRC module)
+- **QR code booking** - scan-to-book from physical QR codes on boats
+- **Custom domain** - `bookings.yourclub.com` instead of `clubname.rowingboards.io`
+- **Hardware bundle** - pre-configured Raspberry Pi for in-shed TV display ($200-300)
 
-2. **Digital Noticeboard** (separate repository)
-   - Dynamic content display
-   - Image and event management
+### In-Shed Display (Hardware)
+The cloud platform serves web pages; any device with a browser can display the board:
+- **Recommended**: Raspberry Pi 4 in Chromium kiosk mode (turnkey, shipped pre-configured)
+- **Alternative**: Android TV box with Fully Kiosk Browser (customer-provided, DIY)
+- **Not recommended**: Smart TV native browser (unreliable auto-start, high support burden)
 
-3. **Boat Booking Page** (separate project)
-   - Customer-facing booking interface
-   - Integration with RevSport backend
+## Architecture Overview
 
-## Critical Requirements for Multi-Club Deployment
+```
+Cloud Platform (Render.com)
+├── Multi-Tenant Backend (Node.js/Express)
+│   ├── RevSport scraper service (per club, background worker)
+│   ├── REST API layer
+│   ├── Club admin authentication
+│   └── Subdomain routing
+├── Database (PostgreSQL)
+│   ├── Club configs & branding
+│   ├── Boat metadata (multi-tenant)
+│   ├── Booking cache
+│   ├── User accounts & roles
+│   └── Scrape job schedules & audit logs
+└── Frontend (React or existing Express templates)
+    ├── Public booking board (members, read-only)
+    ├── Admin dashboard (club configuration)
+    └── Responsive layouts: TV / Desktop / Mobile
 
-### 1. Startup Wizard (HIGH PRIORITY)
+In-Shed Display (Optional)
+├── Raspberry Pi 4 → Chromium kiosk → clubname.rowingboards.io
+└── Or any browser-capable device pointing at the club's URL
+```
 
-**Problem**: Non-technical club administrators need to configure Raspberry Pis without SSH or command-line access.
+## Evolution Path
 
-**Solution Requirements**:
-- **Initial Setup Flow**:
-  - Connect to Pi via web browser (e.g., http://raspberrypi.local:8080)
-  - Wizard-driven configuration (no technical knowledge required)
-  - Step-by-step guidance with validation
-
-- **Configuration Items**:
-  - Club information (name, logo URL)
-  - RevSport credentials (username, password)
-  - WiFi network setup
-  - Display preferences (which app on which Pi)
-  - Timezone and locale settings
-
-- **Architecture Considerations**:
-  - Captive portal on first boot (before network configuration)
-  - Persistent configuration storage (survives reboots)
-  - Configuration validation and testing
-  - Rollback capability if configuration fails
-
-### 2. Multi-Tenancy Architecture
-
-**Current State**:
-- Single club (LMRC) hardcoded in various places
-- Credentials in environment variables
-- Single deployment per Pi
-
-**Future State Needed**:
-- **Configuration Isolation**: Each club's config completely separate
-- **Credential Management**: Secure storage of per-club RevSport credentials
-- **Branding Customization**: Per-club logos, colors, club names
-- **Data Isolation**: Separate caches per club (if running multiple clubs on same infrastructure)
-
-**Key Design Principles**:
-- ✅ **Already Good**: Configuration in files (config.json, tv-display.json)
-- ✅ **Already Good**: Logo URL configurable (not hardcoded)
-- ⚠️ **Needs Work**: Credentials in .env file (need secure vault or wizard storage)
-- ⚠️ **Needs Work**: Club name in multiple places (should be centralized)
-
-### 3. Zero-Touch Deployment
-
-**Goal**: Ship pre-configured Pis that "just work" when plugged in
-
-**Requirements**:
-- SD card images with all software pre-installed
-- Boot to setup wizard on first start
-- Auto-update mechanism for software updates
-- Remote diagnostics capability (opt-in)
-- Factory reset option for re-deployment
-
-### 4. Configuration Management
-
-**Current**:
-- Manual file editing
+### Phase 1: Current (v1.0.0) - COMPLETE
+- Single-club deployment at LMRC
+- Raspberry Pi with local Express server
+- JSON file configuration
 - Git-based updates
-- Command-line deployment
+- Production-proven scraping, display, and config
 
-**Needed**:
-- Web-based configuration UI (already started with config.html)
-- Configuration backup/restore
-- Configuration templates for common setups
-- Import/export for migrating between devices
+### Phase A: Cloud MVP
+- Deploy existing Express app to Render, backed by PostgreSQL
+- Add multi-tenancy: subdomain routing, `club_id` data isolation
+- Migrate LMRC from Pi-only to cloud (Pi becomes a display pointing at cloud URL)
+- Add basic admin page for club setup (RevSport URL, credentials, branding)
+- `node-cron` job scheduler for per-club scraping (no Redis yet)
+- Encrypted credential storage (AES-256 in database)
+- Responsive layouts: TV (existing widescreen), desktop (single-column), mobile
+- LMRC as first tenant; recruit 1-2 beta clubs
 
-### 5. Support & Monitoring
+### Phase B: Self-Service & Admin Dashboard
+- Full admin dashboard (React): club setup wizard, boat management, branding editor
+- QR code generation and printable PDF export
+- Club admin authentication (email + password)
+- Stripe subscription integration
+- Monitoring and alerting (Sentry + Render metrics)
+- Member-facing features: Tinnies section, RevSport email booking links
+- Onboard 5-10 clubs
 
-**Future Considerations**:
-- Health check dashboard (accessible to support team)
-- Remote log access (with customer permission)
-- Automated error reporting
-- Software update notifications
-- License/subscription management
+### Phase C: Advanced Features & Growth
+- QR code booking (scan → submit booking to RevSport via Puppeteer)
+- Digital noticeboard as add-on module
+- Custom domain support per club
+- Hardware bundles (pre-configured Pi kits shipped to clubs)
+- Upgrade to BullMQ + Redis for job queue (when >10 clubs)
+- Magic link auth for member access (for clubs wanting gated viewing)
+- Adaptive refresh schedules (peak vs off-peak per club timezone)
 
-## Architecture Evolution Path
+### Phase D: Scale & Platform
+- 50+ clubs operational
+- Remote management portal for support team
+- Automated software updates for Pi devices
+- Plugin/extension system
+- Advanced analytics and reporting
+- White-label option (remove "Powered by Rowing Boards")
+- International expansion (UK, US rowing clubs)
 
-### Phase 1: Current (v1.0.0) ✅
-- Single club deployment
-- Manual configuration
-- Git-based updates
-- Working production system at LMRC
+## LMRC Near-Term Items (Committee Feedback, Jan 2026)
 
-### Phase 1.5: Remote Access (Under Consideration)
-- **Cloud-hosted booking board** for members to view bookings away from the boatshed
-- Deploy existing Express app to free-tier cloud hosting (e.g., Render)
-- Read-only mode: no config changes, no cache clearing from cloud instance
-- Custom subdomain: `bookings.lakemacrowing.au`
-- Coexists with local Pi deployment (both run independently)
-- Keep-alive monitoring to prevent free-tier spin-down
-- No additional cost (free hosting tier + free uptime monitoring)
-- Minimal code changes: read-only middleware guard, ephemeral filesystem handling, startup cache warming
-- **Single-column layout** optimised for desktop monitors (the TV layout is multi-column for widescreen; a single-column view suits standard monitors) *(committee feedback, Jan 2026)*
-- **Mobile-responsive view** for members checking bookings on phones *(committee feedback, Jan 2026)*
+These items are for the current LMRC deployment and will carry forward into the cloud platform:
 
-### Phase 2: Configuration Wizard (Next Major Version)
-- Web-based setup wizard
-- Simplified configuration UI
-- WiFi setup interface
-- Credential storage (encrypted)
-- No command-line required
+1. **Add Tinnies to booking board** - add a second section in the right-hand column below the race boats, allowing members to book tinnies the same way they book rowing shells
+2. **RevSport email booking link** - add a link to RevolutioniseSport email footers so members can easily manage bookings (e.g., cancel a booking via a link in the confirmation email)
 
-### Phase 3: Multi-Club Ready
-- Per-club configuration profiles
-- Centralized club information management
-- Template-based deployment
-- Configuration export/import
-- Factory reset capability
+## Pricing Model (Draft)
 
-### Phase 4: Commercial Product
-- SD card image generator (per-club)
-- Remote management portal (for support)
-- Automated updates with rollback
-- Customer portal for self-service configuration
-- Usage analytics (opt-in)
-- Subscription/licensing system
+### SaaS Subscription
+| Tier | Price/Month | Features |
+|------|------------|----------|
+| **Basic** | $50 | Booking board, 1 admin, RevSport sync, subdomain |
+| **Pro** | $100 | + Noticeboard, QR booking, multiple admins, analytics |
+| **Enterprise** | $150 | + Custom domain, white-label, priority support |
 
-## Technical Debt to Address
+### Optional Hardware
+| Item | One-Time Cost |
+|------|--------------|
+| Pi display bundle (Pi 4 + case + cables + SD card, pre-configured) | $200-300 |
+| Installation support (remote) | $100 |
 
-### Before Multi-Club Deployment
+### Cost Structure (Render Hosting)
+| Phase | Clubs | Estimated Cost/Month |
+|-------|-------|---------------------|
+| Alpha | 1-2 | $7 (starter DB + free web) |
+| Beta | 3-10 | $25 (standard DB + web) |
+| Launch | 10-30 | $50 (standard DB + pro web + worker) |
+| Growth | 30-100 | $150+ (pro DB + pro web + workers) |
 
-1. **Centralize Club Configuration**
-   - Create single source of truth for club info
-   - Current: Club name scattered across multiple files
-   - Future: Single config file with club profile
+## Competitive Advantages
 
-2. **Secure Credential Storage**
-   - Current: .env file with plaintext credentials
-   - Future: Encrypted credential vault
-   - Wizard should store credentials securely
-   - Consider using system keyring or encrypted files
+1. **Rowing-specific UX** - understands morning/evening sessions, boat types, crew sizes
+2. **RevSport integration** - native compatibility with the most common club management system
+3. **Zero hardware required** - cloud-first means any club can start immediately
+4. **Turnkey display option** - ship a Pi for clubs wanting in-shed TV displays
+5. **Self-service** - club admins set up and manage everything via web dashboard
+6. **Affordable** - $50-150/month vs custom development or enterprise digital signage
 
-3. **Environment Detection**
-   - Auto-detect if configuration exists
-   - Boot to wizard if not configured
-   - Normal operation if configured
+## Key Decision Points
 
-4. **Configuration Schema Versioning**
-   - Add version field to all config files
-   - Migration scripts for config upgrades
-   - Backward compatibility handling
+| Milestone | Decision | Criteria |
+|-----------|----------|----------|
+| After Phase A | Continue to Phase B? | LMRC + 1 beta club stable, positive feedback |
+| After Phase B | Scale go-to-market? | 5+ clubs onboarded, <0.5 support tickets per club |
+| After Phase C | Build Phase D? | 20+ clubs, profitable unit economics |
+| Ongoing | Add feature X? | Customer demand >50%, reasonable effort |
 
-5. **Error Recovery**
-   - Graceful handling of invalid credentials
-   - Clear error messages for end users
-   - Automatic retry with backoff
-   - Fallback to safe defaults
+## Open Questions
 
-## Dependencies Between Projects
+### Business
+- Final pricing tiers and free trial duration?
+- Product name: "Rowing Boards" or something else?
+- Domain: `rowingboards.io` or similar?
+- Recruit beta club: who in the network?
 
-### Integration Points
+### Technical
+- Support booking systems beyond RevSport? (Plugin architecture for Phase D)
+- Native mobile app vs mobile-responsive web? (Start with responsive web)
+- Offline mode for Pi when internet drops? (Cache last-known data locally)
 
-1. **Booking Viewer** (this repository)
-   - Needs RevSport credentials (per club)
-   - Needs club branding (logo, name, colors)
-   - Outputs TV display
+### Legal
+- RevSport ToS review: is automated scraping permitted?
+- Terms of Service and Privacy Policy needed before public launch
+- Australian Privacy Principles (APP) compliance for member data
+- GDPR if expanding to UK/EU clubs
 
-2. **Digital Noticeboard** (separate repository)
-   - Needs club branding
-   - Needs content management
-   - Outputs TV display
+## Success Metrics
 
-3. **Boat Booking Page** (separate project)
-   - Needs RevSport integration
-   - Needs club branding
-   - Web interface for members
+### Product
+| Metric | Target |
+|--------|--------|
+| Time to first board (signup → live) | <10 minutes |
+| Admin dashboard weekly usage | >80% of admins |
+| Member weekly board views | >50% of club members |
+| Onboarding completion rate | >90% within 7 days |
 
-### Shared Components Needed
+### Business
+| Metric | Target |
+|--------|--------|
+| Clubs by Month 3 | 10 |
+| Clubs by Month 6 | 30 |
+| Annual churn rate | <10% |
+| NPS score | >50 |
+| MRR | Per pricing model |
 
-- **Common Configuration Library**
-  - Shared club profile schema
-  - Shared credential management
-  - Shared branding configuration
+### Technical
+| Metric | Target |
+|--------|--------|
+| Platform uptime | 99.9% |
+| API response time (p95) | <200ms |
+| Scraping success rate | >99% |
+| Background job lag (peak) | <5 min |
 
-- **Setup Wizard Framework**
-  - Reusable across all applications
-  - Modular steps (add/remove as needed)
-  - Consistent UX across products
+## Risk Assessment
 
-- **Deployment Scripts**
-  - SD card image builder
-  - Configuration injector
-  - Update mechanism
-
-## Design Guidelines for Future Work
-
-### When Adding Features
-
-**Always Consider**:
-1. ✅ **Multi-club**: Will this work for multiple clubs?
-2. ✅ **Configuration**: Can this be configured without code changes?
-3. ✅ **Wizard-friendly**: Can a non-technical user configure this?
-4. ✅ **Documentation**: Is this documented for end users?
-5. ✅ **Defaults**: Does this have sensible defaults?
-
-**Avoid**:
-- ❌ Hardcoding club-specific values
-- ❌ Requiring command-line access
-- ❌ Technical configuration steps
-- ❌ Assumptions about deployment environment
-
-### Configuration Best Practices
-
-**DO**:
-- ✅ Store configuration in JSON files (easy to edit, validate)
-- ✅ Provide UI for all configuration options
-- ✅ Use sensible defaults
-- ✅ Validate configuration before applying
-- ✅ Show previews of configuration changes
-- ✅ Allow configuration testing
-
-**DON'T**:
-- ❌ Require editing code files
-- ❌ Store secrets in plain text
-- ❌ Assume network topology
-- ❌ Hard-code file paths
-- ❌ Require restart for config changes (when possible)
-
-## Market Research Notes
-
-### Potential Customers
-
-- Rowing clubs using RevSport (primary target)
-- Size range: 50-500 members
-- Technical capability: Low to medium
-- Budget: Variable (need tiered pricing)
-
-### Competitive Advantages
-
-1. **Turnkey Solution**: Ship configured hardware
-2. **No IT Required**: Web-based setup
-3. **RevSport Integration**: Native compatibility
-4. **Professional Display**: Purpose-built for rowing clubs
-5. **Support Included**: Managed updates and troubleshooting
-
-### Pricing Considerations (Future)
-
-- Hardware cost (Pi, case, cables, SD card)
-- Software licensing (one-time or subscription?)
-- Support tier options
-- Setup/configuration service
-- Custom development for special requirements
-
-## Next Steps (When Ready)
-
-### Immediate (Next 6 months)
-1. **Add Tinnies to booking board** - add a second section in the right-hand column below the race boats, allowing members to book tinnies the same way they book rowing shells *(committee feedback, Jan 2026)*
-2. **RevSport email booking link** - add a link to RevolutioniseSport email footers so members can easily manage bookings (e.g., cancel a booking via a link in the confirmation email) *(committee feedback, Jan 2026)*
-3. **Cloud-hosted booking board** - deploy read-only booking viewer to free cloud hosting for remote member access (see Phase 1.5)
-4. Design setup wizard UX flow
-5. Create wizard prototype
-6. Implement secure credential storage
-7. Centralize club configuration
-8. Test with second club (pilot customer)
-
-### Medium-term (6-12 months)
-1. Multi-club deployment testing
-2. SD card image builder
-3. Remote management portal (basic)
-4. Customer documentation
-5. Pricing and business model
-
-### Long-term (12+ months)
-1. Customer portal for self-service
-2. Usage analytics
-3. Licensing system
-4. Automated support tools
-5. Partner/reseller program
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| RevSport changes UI, scrapers break | High | Monitoring + alerts, version detection, graceful degradation |
+| RevSport prohibits scraping in ToS | Critical | Review ToS, seek API partnership, have fallback plan |
+| Puppeteer memory consumption in cloud | Medium | Worker instance sizing, job queue limits, pool management |
+| Low market adoption | High | Strong beta program, testimonials, free trial, ROI calculator |
+| Competitor (RevSport builds native feature) | Medium | Move fast, superior UX, lock in customers |
+| Solo developer support burden | Medium | Self-service tools, documentation, community forum |
 
 ## Notes
 
-- Keep all code club-agnostic
+- Keep all code club-agnostic from Day 1
 - Design for configuration over customization
 - Think "product" not "project"
-- Prioritize user experience for non-technical users
-- Build for scalability from the start
-- Document everything for future product team
+- Prioritise user experience for non-technical club administrators
+- Validate demand before heavy investment at each phase gate
+- The Pi deployment at LMRC continues to operate in parallel during transition
 
 ---
 
-**Last Updated**: 2026-01-27
-**Status**: Roadmap / Vision
-**Priority**: Future (post v1.0.0)
+**Last Updated**: 2026-01-28
+**Status**: Strategic pivot to cloud-first SaaS (under review)
+**Origin**: Based on LMRC production deployment + Claude.ai SaaS architecture analysis (Jan 2026)
