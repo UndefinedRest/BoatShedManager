@@ -54,6 +54,7 @@ Raspberry Pi (LMRC Boatshed)
 - Express/TypeScript server structure
 - Puppeteer scraping logic (proven, handles CSRF, sessions, retries)
 - Booking display frontend (HTML/CSS/JS, TV-optimised layout)
+- Tinnies support (boat categories with separate display sections — being built on Pi codebase pre-SaaS)
 - Zod schema validation patterns
 - Error handling and logging patterns
 
@@ -482,18 +483,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
 ---
 
-#### [B5] Tinnies Support
-**Effort**: S (1 week) | **Risk**: Low | **Dependencies**: A5, A6
-
-- Add `boat_category` field to boats table (already in schema: `race`, `tinny`)
-- Board display groups boats by category: "Race Boats" section, then "Tinnies" section
-- Same booking display logic, just visually separated
-- Admin dashboard allows categorising boats
-- *(committee feedback, Jan 2026)*
-
----
-
-#### [B6] RevSport Email Booking Links
+#### [B5] RevSport Email Booking Links
 **Effort**: S (1 week) | **Risk**: Low | **Dependencies**: None
 
 - Document how clubs can add booking board URL to their RevSport email templates
@@ -675,9 +665,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
                               │         │
                B1 Onboarding Wizard     │
                               │         │
-                    B4 Stripe │    B5 Tinnies
-                              │         │
-                              │    B6 Email Links
+                    B4 Stripe │    B5 Email Links
                               │
                               └── Phase B Complete
                                         │
@@ -774,6 +762,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.0 | 2026-01-28 | Major revision: Cloud-first SaaS architecture pivot. Replaced Pi-centric phases with SaaS phases (A-D). Added database schema, Render deployment config, technology stack, security architecture. Superseded items #001-#008 with cloud equivalents. Incorporated Claude.ai SaaS analysis and committee feedback. |
 | 2.1 | 2026-01-28 | Enforced display-only principle: removed QR code booking (C1) and QR code generation (B4) from backlog. Booking entry is out of scope for the SaaS platform; clubs use their existing tools. Renumbered Phase B and C items. |
 | 2.2 | 2026-01-28 | Added [B1] Club Onboarding Wizard for self-service club signup. Added environment separation strategy (dev/staging/production) to [A7]. Renumbered Phase B items (B1-B6). |
+| 2.3 | 2026-01-28 | Removed [B5] Tinnies Support from SaaS backlog — being built on Pi codebase pre-SaaS, will already exist when SaaS work begins. Renumbered to B1-B5. |
 
 ---
 

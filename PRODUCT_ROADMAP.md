@@ -185,9 +185,9 @@ In-Shed Display (Optional)
 
 ## LMRC Near-Term Items (Committee Feedback, Jan 2026)
 
-These items are for the current LMRC deployment and will carry forward into the cloud platform:
+These items are being implemented on the **current Raspberry Pi deployment** before any SaaS development begins. They will already be in the codebase when the SaaS work starts.
 
-1. **Add Tinnies to booking board** - add a second section in the right-hand column below the race boats, allowing members to book tinnies the same way they book rowing shells
+1. **Add Tinnies to booking board** - add a second section in the right-hand column below the race boats, allowing members to book tinnies the same way they book rowing shells. **Implementing now on Pi codebase.**
 2. **RevSport email booking link** - add a link to RevolutioniseSport email footers so members can easily manage bookings (e.g., cancel a booking via a link in the confirmation email)
 
 ## Pricing Model (Draft)
