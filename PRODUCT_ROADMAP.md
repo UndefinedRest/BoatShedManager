@@ -126,6 +126,8 @@ Transform the LMRC Booking Viewer into a **commercial product** that can be depl
 - Keep-alive monitoring to prevent free-tier spin-down
 - No additional cost (free hosting tier + free uptime monitoring)
 - Minimal code changes: read-only middleware guard, ephemeral filesystem handling, startup cache warming
+- **Single-column layout** optimised for desktop monitors (the TV layout is multi-column for widescreen; a single-column view suits standard monitors) *(committee feedback, Jan 2026)*
+- **Mobile-responsive view** for members checking bookings on phones *(committee feedback, Jan 2026)*
 
 ### Phase 2: Configuration Wizard (Next Major Version)
 - Web-based setup wizard
@@ -278,12 +280,14 @@ Transform the LMRC Booking Viewer into a **commercial product** that can be depl
 ## Next Steps (When Ready)
 
 ### Immediate (Next 6 months)
-1. **Cloud-hosted booking board** - deploy read-only booking viewer to free cloud hosting for remote member access (see Phase 1.5)
-2. Design setup wizard UX flow
-3. Create wizard prototype
-4. Implement secure credential storage
-5. Centralize club configuration
-6. Test with second club (pilot customer)
+1. **Add Tinnies to booking board** - add a second section in the right-hand column below the race boats, allowing members to book tinnies the same way they book rowing shells *(committee feedback, Jan 2026)*
+2. **RevSport email booking link** - add a link to RevolutioniseSport email footers so members can easily manage bookings (e.g., cancel a booking via a link in the confirmation email) *(committee feedback, Jan 2026)*
+3. **Cloud-hosted booking board** - deploy read-only booking viewer to free cloud hosting for remote member access (see Phase 1.5)
+4. Design setup wizard UX flow
+5. Create wizard prototype
+6. Implement secure credential storage
+7. Centralize club configuration
+8. Test with second club (pilot customer)
 
 ### Medium-term (6-12 months)
 1. Multi-club deployment testing
