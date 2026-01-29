@@ -1,6 +1,6 @@
 # LMRC Solution Roadmap
 
-**Last Updated**: 2025-12-21
+**Last Updated**: 2026-01-29
 **Status**: Active Development
 **Current Sprint**: Repository consolidation (Monorepo migration)
 
@@ -25,12 +25,48 @@ This is the **single source of truth** for all feature development across the LM
 
 ## 🟢 Now (Active Development)
 
-**No features currently in active development.**
+### Real-time Damaged Boat Detection
+**Project**: BoatBooking
+**Priority**: High
+**Effort**: ~2 hours
+**Status**: 📋 Ready for Implementation
 
-All previously planned features for the current sprint have been completed:
+**User Story:**
+> As a club member, I want to be warned if a boat has been marked as damaged since the boats.json was last updated, so I don't waste time trying to book an unavailable boat.
+
+**Problem:**
+The boats.json file is updated daily, but boats can be marked as damaged intraday in RevSport. Currently, a member scanning a QR code for a newly-damaged boat sees normal booking options, only to have the booking fail in RevSport.
+
+**Solution:**
+On booking page load, fetch live boat status from the booking board API (`bookings.lakemacrowing.au/api/v1/bookings`). If the boat's name contains "Damaged", show the damaged boat warning instead of booking options.
+
+**Technical Approach:**
+- Fetch `/api/v1/bookings` from booking board API on page load
+- Find the boat by `id` matching the `boat_id` URL parameter
+- Check if `fullName` or `displayName` contains "Damaged" (case-insensitive)
+- If damaged: show existing damaged boat warning UI, hide booking buttons
+- If API fails: fall back to boats.json check (graceful degradation)
+- Cache API response in sessionStorage to avoid repeated calls on date changes
+
+**Acceptance Criteria:**
+- [ ] Booking page fetches live boat status from booking board API
+- [ ] Damaged boats show warning, hide booking options
+- [ ] Non-damaged boats show normal booking flow
+- [ ] API failure falls back to boats.json (no breaking change)
+- [ ] Response cached to avoid excessive API calls
+
+**Dependencies:**
+- Cloud deployment of booking board to `bookings.lakemacrowing.au` (provides public API endpoint)
+- CORS configured to allow requests from `lakemacrowing.au`
+
+**Note:** Can be implemented immediately after cloud deployment is complete.
+
+---
+
+**Recently Completed:**
+- ✅ Responsive Booking Board (Desktop & Mobile Views) - Completed 2026-01-29
+- ✅ Tinnies Support (TV Display + Booking Page) - Completed 2026-01-29
 - ✅ Google Analytics Integration - Completed 2025-12-21
-
-See **"Recently Completed"** section below for details.
 
 **Next Priority:** See **"Next (Prioritized Backlog)"** section for upcoming features
 
@@ -798,22 +834,36 @@ Allow dynamic session configuration beyond the current 2 sessions.
 
 ### BoatBooking: Boat Availability Display
 **Project**: BoatBooking
-**Priority**: Low
+**Priority**: Medium (implement after cloud deployment)
 **Effort**: Medium (3-4 hours)
 
-Show real-time boat availability before booking attempt.
+Show real-time boat availability before booking attempt, greying out session times that are already booked.
+
+**User Story:**
+> As a club member, I want to see which session times are already booked for my selected date, so I don't click through to RevSport only to find the slot is unavailable.
 
 **Requirements:**
-- Query RevSport booking calendar
+- Query booking board API for boat's booking data
 - Display availability for selected date
-- Highlight available time slots
-- Prevent booking attempts for unavailable times
+- Grey out session buttons for times already booked
+- Show who has booked each session (optional)
+- Update when date picker changes
+
+**Technical Approach:**
+- Fetch `/api/v1/bookings` from booking board API (same call as damaged boat detection)
+- Filter bookings for the specific boat and selected date
+- Match booking times against session buttons (6:30-7:30, 7:30-8:30)
+- Grey out buttons with `disabled` state and "Booked" label
+- Re-check on date picker change (use cached data if same day)
 
 **Dependencies:**
-- RevSport API integration
-- CORS/backend proxy
+- **Cloud deployment of booking board** to `bookings.lakemacrowing.au` (provides public API endpoint)
+- CORS configured to allow requests from `lakemacrowing.au`
+- Real-time Damaged Boat Detection feature (shares same API call)
 
-**Technical Challenge:** RevSport API access and authentication
+**Staleness Note:** Booking API caches data for up to 10 minutes, so a booking made 9 minutes ago might still show as available. This is acceptable - the final booking through RevSport has the authoritative state.
+
+**Implementation Timing:** Implement immediately after cloud deployment, alongside or after Real-time Damaged Boat Detection (shares infrastructure)
 
 ---
 
