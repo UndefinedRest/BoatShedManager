@@ -4,7 +4,7 @@
 
 **Document Type**: Architectural Roadmap & Technical Backlog
 **Target Audience**: Product Management & Engineering
-**Last Updated**: 2026-01-28
+**Last Updated**: 2026-01-30
 **Status**: SaaS pivot - replaces Pi-centric roadmap (v1.0, Oct 2025)
 
 ---
@@ -25,12 +25,36 @@ This principle applies across all phases A-B. Booking entry integration is defer
 
 The platform still requires administration and configuration — clubs need to set their RevSport credentials/URL and configure the look and feel of their board. This admin functionality is in scope from Phase A.
 
+### RevolutioniseSport as Source of Truth
+
+**RevSport owns the fleet and bookings.** The SaaS platform is a **read-through cache** that scrapes and serves data — it does not manage boats or bookings.
+
+**What the SaaS platform does:**
+- Scrapes boat list from RevSport (including type, category, weight, damaged status)
+- Scrapes bookings from RevSport
+- Caches and serves this data via APIs
+- Provides configuration for display preferences and RevSport credentials
+
+**What the SaaS platform does NOT do:**
+- Add, edit, or delete boats (managed in RevSport)
+- Add, edit, or delete bookings (managed in RevSport or club's booking page)
+- Fleet categorisation UI (inferred from RevSport data)
+
+**API consumers:**
+1. **Booking Board** (TV display) — shows current bookings for all boats
+2. **Booking Page** (Netlify) — uses APIs for boat list, existing bookings, damaged status
+
+This design means:
+- Boats are **auto-discovered** when scraping RevSport, not manually entered
+- The admin dashboard is **configuration only**, not fleet management
+- Onboarding is simpler — connect RevSport credentials and the fleet appears automatically
+
 ### Phase Summary
 
 | Phase | Theme | Key Technical Work | Target Clubs |
 |-------|-------|-------------------|-------------|
-| **A** (Cloud MVP) | Display + admin in the cloud | PostgreSQL, multi-tenancy, subdomain routing, responsive layouts, basic admin | 1-3 |
-| **B** (Self-Service) | Let clubs onboard themselves | Full admin dashboard, Stripe, auth, boat management | 5-10 |
+| **A** (Cloud MVP) | Display + admin in the cloud | PostgreSQL, multi-tenancy, subdomain routing, responsive layouts, basic config | 1-3 |
+| **B** (Self-Service) | Let clubs onboard themselves | Admin dashboard (config only), Stripe, auth, onboarding wizard | 5-10 |
 | **C** (Advanced) | Grow features and customer base | Noticeboard, custom domains, BullMQ, hardware bundles | 10-30 |
 | **D** (Scale) | Operate efficiently at scale | Remote management, monitoring, plugins, analytics | 50+ |
 
@@ -144,27 +168,31 @@ CREATE TABLE clubs (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Boats (multi-tenant fleet)
-CREATE TABLE boats (
+-- Boat cache (auto-discovered from RevSport - NOT manually managed)
+-- This is a read-through cache. Boats are discovered by scraping RevSport.
+-- The SaaS platform does NOT add/edit/delete boats - RevSport is the source of truth.
+CREATE TABLE boat_cache (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     club_id UUID REFERENCES clubs(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    boat_type VARCHAR(100),                           -- single, double, quad, eight, tinny
-    boat_category VARCHAR(50) DEFAULT 'race',         -- race, tinny (for display grouping)
-    revsport_boat_id VARCHAR(100),
-    display_order INTEGER DEFAULT 0,
-    is_active BOOLEAN DEFAULT true,
-    metadata JSONB DEFAULT '{}',
+    boat_type VARCHAR(100),                           -- 1X, 2X, 4X, Tinnie, etc (from RevSport)
+    boat_category VARCHAR(50) DEFAULT 'race',         -- race, tinnie (inferred from RevSport data)
+    classification VARCHAR(10),                       -- R (Race), T (Training), RT
+    weight INTEGER,                                   -- weight class in kg (if available)
+    is_damaged BOOLEAN DEFAULT false,                 -- scraped from RevSport or boat name
+    damaged_reason TEXT,                              -- reason if damaged
+    revsport_boat_id VARCHAR(100),                    -- RevSport's internal ID
+    metadata JSONB DEFAULT '{}',                      -- additional scraped data
+    last_scraped_at TIMESTAMP DEFAULT NOW(),          -- when this boat data was last refreshed
     created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(club_id, revsport_boat_id)
 );
 
--- Booking cache (scraped data, per club per boat per date)
+-- Booking cache (scraped from RevSport - read-only)
 CREATE TABLE booking_cache (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     club_id UUID REFERENCES clubs(id) ON DELETE CASCADE,
-    boat_id UUID REFERENCES boats(id) ON DELETE CASCADE,
+    boat_id UUID REFERENCES boat_cache(id) ON DELETE CASCADE,
     booking_date DATE NOT NULL,
     session_name VARCHAR(50),                         -- "Morning 1", "Morning 2", "Evening"
     bookings JSONB NOT NULL,                          -- Full booking data from RevSport
@@ -214,7 +242,7 @@ CREATE TABLE audit_log (
 );
 
 -- Indexes
-CREATE INDEX idx_boats_club ON boats(club_id);
+CREATE INDEX idx_boat_cache_club ON boat_cache(club_id);
 CREATE INDEX idx_booking_cache_lookup ON booking_cache(club_id, boat_id, booking_date);
 CREATE INDEX idx_scrape_jobs_next ON scrape_jobs(club_id, status, next_run_at);
 CREATE INDEX idx_users_club_email ON users(club_id, email);
@@ -300,16 +328,31 @@ function decryptCredentials(encrypted: string): { username: string; password: st
 
 ---
 
-#### [A5] API Layer for Board Data
+#### [A5] API Layer (Public + Admin)
 **Effort**: M (2 weeks) | **Risk**: Low | **Dependencies**: A1, A2, A4
 
-Refactor existing Express routes to serve from PostgreSQL instead of in-memory cache:
+Refactor existing Express routes to serve from PostgreSQL instead of in-memory cache.
+
+**Public APIs (no authentication)** — serve both Booking Board and Booking Page:
 
 ```
-GET  /api/v1/bookings          → booking_cache for req.club
-GET  /api/v1/boats             → boats for req.club
+GET  /api/v1/boats             → boat_cache for req.club (list with type, category, weight, damaged status)
+GET  /api/v1/boats/:id         → single boat details
+GET  /api/v1/bookings          → booking_cache for req.club (all bookings)
+GET  /api/v1/bookings?boat=X&date=Y  → filtered bookings for Booking Page
 GET  /api/v1/config            → display_config from clubs table
 GET  /api/v1/health            → platform health + per-club scrape status
+```
+
+These APIs replace the static `boats.json` file that the Booking Page currently relies on.
+
+**Admin APIs (JWT authentication)** — configuration only, no fleet management:
+
+```
+PUT  /api/v1/admin/credentials → update RevSport URL + encrypted credentials
+PUT  /api/v1/admin/display     → update branding, layout preferences
+POST /api/v1/admin/sync        → trigger immediate scrape
+GET  /api/v1/admin/status      → last scrape time, errors, health
 ```
 
 All endpoints automatically scoped to the club identified by subdomain middleware (A2).
@@ -431,7 +474,7 @@ Self-service signup and setup flow so new clubs can onboard **without platform o
 
 1. **Signup**: Club admin creates account (email, password, club name, subdomain)
 2. **Connect RevSport**: Enter RevSport URL and credentials → platform validates by running a test scrape. Clear error feedback if credentials fail or URL is unreachable.
-3. **Auto-detect fleet**: Scrape RevSport to discover the club's boats automatically. Admin reviews, confirms, and categorises (race, tinny, etc.) rather than entering from scratch.
+3. **Auto-discover fleet**: Scrape RevSport to discover the club's boats automatically. Boat type, category, and damaged status are inferred from RevSport data — no manual categorisation needed.
 4. **Configure display**: Branding (logo, colours), display preferences, refresh intervals. Live preview with real scraped data before going live.
 5. **Go live**: First full scrape runs, board becomes accessible at `clubname.rowingboards.io`. Admin shares URL with members.
 
@@ -440,20 +483,22 @@ Self-service signup and setup flow so new clubs can onboard **without platform o
 - Validation at each step with clear, non-technical error messages
 - Target: <10 minutes from signup to live board with real data
 - Guided flow for non-technical club administrators (no documentation required)
-- Boat auto-detection eliminates manual data entry
+- Fleet is auto-discovered from RevSport — no manual boat entry
 
 ---
 
 #### [B2] Admin Dashboard (React)
-**Effort**: L (4-6 weeks) | **Risk**: Medium | **Dependencies**: Phase A
+**Effort**: M (3-4 weeks) | **Risk**: Medium | **Dependencies**: Phase A
 
-Web-based admin interface for club administrators (hosts the onboarding wizard and ongoing management):
+Web-based admin interface for club administrators (hosts the onboarding wizard and ongoing configuration).
 
-- **Boat management**: Add/edit/remove boats, map to RevSport IDs, set display order, categorise (race/tinny)
+**Note**: This is a **configuration dashboard**, not a fleet management system. Boats are auto-discovered from RevSport — there is no boat CRUD UI.
+
 - **Branding editor**: Logo upload, colour picker, preview board with changes
 - **Refresh schedule**: Visual time-block editor for scraping frequency
-- **Status page**: Scrape health, last successful sync, error log
+- **Status page**: Scrape health, last successful sync, error log, boat list (read-only view of discovered fleet)
 - **Club settings**: Update RevSport credentials, subdomain, timezone
+- **Trigger sync**: Manual button to refresh boat/booking data from RevSport
 
 Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 
@@ -763,6 +808,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.1 | 2026-01-28 | Enforced display-only principle: removed QR code booking (C1) and QR code generation (B4) from backlog. Booking entry is out of scope for the SaaS platform; clubs use their existing tools. Renumbered Phase B and C items. |
 | 2.2 | 2026-01-28 | Added [B1] Club Onboarding Wizard for self-service club signup. Added environment separation strategy (dev/staging/production) to [A7]. Renumbered Phase B items (B1-B6). |
 | 2.3 | 2026-01-28 | Removed [B5] Tinnies Support from SaaS backlog — being built on Pi codebase pre-SaaS, will already exist when SaaS work begins. Renumbered to B1-B5. |
+| 2.4 | 2026-01-30 | Clarified scope: RevSport is source of truth for fleet. Renamed `boats` table to `boat_cache` (read-only, auto-discovered). Removed boat CRUD from admin dashboard — configuration only. Updated APIs to serve both Booking Board and Booking Page. Added "RevolutioniseSport as Source of Truth" section. |
 
 ---
 
