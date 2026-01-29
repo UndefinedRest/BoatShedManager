@@ -49,6 +49,82 @@ This design means:
 - The admin dashboard is **configuration only**, not fleet management
 - Onboarding is simpler — connect RevSport credentials and the fleet appears automatically
 
+### Future: Data Source Adapter Architecture
+
+While RevSport is the initial and primary data source, the architecture must support **pluggable data source adapters** to serve clubs not using RevSport.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     SaaS Platform                                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐ │
+│  │ Public APIs │  │ Admin APIs  │  │ Background Worker       │ │
+│  └──────┬──────┘  └──────┬──────┘  └───────────┬─────────────┘ │
+│         │                │                      │               │
+│         └────────────────┼──────────────────────┘               │
+│                          │                                      │
+│              ┌───────────▼───────────┐                         │
+│              │  Data Source Adapter  │  ← Abstract interface   │
+│              │       Interface       │                         │
+│              └───────────┬───────────┘                         │
+└──────────────────────────┼──────────────────────────────────────┘
+                           │
+         ┌─────────────────┼─────────────────┐
+         │                 │                 │
+┌────────▼────────┐ ┌─────▼──────┐ ┌───────▼───────┐
+│ RevSport Adapter│ │  Built-in  │ │ Future: Other │
+│   (Scraper)     │ │   Adapter  │ │   Adapters    │
+│                 │ │            │ │               │
+│ • Scrapes boats │ │ • CRUD for │ │ • TeamSnap    │
+│ • Scrapes       │ │   boats    │ │ • Club Locker │
+│   bookings      │ │ • CRUD for │ │ • iCal import │
+│ • Read-only     │ │   bookings │ │ • etc.        │
+└─────────────────┘ └────────────┘ └───────────────┘
+     Phase A            Phase C+         Phase D+
+   (MVP, Basic)     (Premium tier)    (Enterprise)
+```
+
+**Data Source Adapter Interface:**
+```typescript
+interface DataSourceAdapter {
+    // Identity
+    readonly type: 'revsport' | 'builtin' | 'teamsnap' | string;
+    readonly supportsBookingEntry: boolean;  // false for RevSport, true for built-in
+
+    // Read operations (all adapters must implement)
+    getBoats(): Promise<Boat[]>;
+    getBoat(id: string): Promise<Boat | null>;
+    getBookings(dateRange: DateRange): Promise<Booking[]>;
+    getBookingsForBoat(boatId: string, dateRange: DateRange): Promise<Booking[]>;
+
+    // Write operations (optional - only for adapters that support it)
+    createBoat?(boat: NewBoat): Promise<Boat>;
+    updateBoat?(id: string, updates: BoatUpdate): Promise<Boat>;
+    deleteBoat?(id: string): Promise<void>;
+    createBooking?(booking: NewBooking): Promise<Booking>;
+    updateBooking?(id: string, updates: BookingUpdate): Promise<Booking>;
+    deleteBooking?(id: string): Promise<void>;
+
+    // Sync (for external sources like RevSport)
+    sync?(): Promise<SyncResult>;
+}
+```
+
+**Product tiers:**
+
+| Tier | Data Source | Fleet Management | Price Point |
+|------|------------|------------------|-------------|
+| **Basic** | RevSport (scraper) | None (RevSport is source of truth) | $50/month |
+| **Pro** | RevSport (scraper) | None + Noticeboard | $100/month |
+| **Premium** | Built-in adapter | Full CRUD for boats & bookings | $150+/month |
+| **Enterprise** | Custom adapter | Depends on integration | Custom |
+
+**Implementation approach:**
+- Phase A: Implement RevSport adapter only. Code structured to adapter interface from the start.
+- Phase C+: Add built-in adapter for clubs without RevSport (Premium tier).
+- Phase D+: Add adapters for other booking systems as demand warrants.
+
+This abstraction is designed into the architecture from Phase A, but only the RevSport adapter is implemented initially.
+
 ### Phase Summary
 
 | Phase | Theme | Key Technical Work | Target Clubs |
@@ -156,21 +232,26 @@ CREATE TABLE clubs (
     short_name VARCHAR(50),
     subdomain VARCHAR(100) UNIQUE NOT NULL,           -- e.g. "lmrc"
     custom_domain VARCHAR(255),                       -- e.g. "bookings.lmrc.org.au" (Phase C)
-    revsport_url VARCHAR(500) NOT NULL,               -- e.g. "https://lakemacquarierowingclub.org.au"
-    revsport_credentials_encrypted TEXT NOT NULL,      -- AES-256 encrypted JSON {username, password}
+
+    -- Data source configuration (adapter pattern)
+    data_source_type VARCHAR(50) DEFAULT 'revsport', -- revsport, builtin, teamsnap, etc.
+    data_source_config JSONB DEFAULT '{}',            -- adapter-specific config (credentials, URLs, etc.)
+    -- For RevSport adapter (Phase A): { url, credentials_encrypted }
+    -- For built-in adapter (Phase C+): { } (no external config needed)
+
     timezone VARCHAR(100) DEFAULT 'Australia/Sydney',
     branding JSONB DEFAULT '{}',                      -- {logoUrl, primaryColor, secondaryColor, customCSS}
     display_config JSONB DEFAULT '{}',                -- Migrated from tv-display.json schema
     status VARCHAR(50) DEFAULT 'trial',               -- trial, active, suspended, cancelled
-    subscription_tier VARCHAR(50) DEFAULT 'basic',    -- basic, pro, enterprise
+    subscription_tier VARCHAR(50) DEFAULT 'basic',    -- basic, pro, premium, enterprise
     subscription_expires_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Boat cache (auto-discovered from RevSport - NOT manually managed)
--- This is a read-through cache. Boats are discovered by scraping RevSport.
--- The SaaS platform does NOT add/edit/delete boats - RevSport is the source of truth.
+-- Boat cache (populated by data source adapter)
+-- For RevSport adapter: read-only cache, auto-discovered by scraping
+-- For built-in adapter: writable, managed via admin dashboard (Premium tier)
 CREATE TABLE boat_cache (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     club_id UUID REFERENCES clubs(id) ON DELETE CASCADE,
@@ -311,18 +392,23 @@ function decryptCredentials(encrypted: string): { username: string; password: st
 
 ---
 
-#### [A4] Evolve Scraper for Multi-Tenancy
+#### [A4] Evolve Scraper for Multi-Tenancy (RevSport Adapter)
 **Effort**: M (2-3 weeks) | **Risk**: Medium | **Dependencies**: A1, A3
 
+Implement the RevSport adapter against the `DataSourceAdapter` interface. This is the first (and initially only) adapter, but structuring it this way enables future adapters without refactoring.
+
+- Implement `RevSportAdapter` class conforming to `DataSourceAdapter` interface
 - Refactor existing Puppeteer scraping to accept `club` context (URL, credentials, timezone)
-- Store scraped booking data in `booking_cache` table instead of in-memory cache
-- `node-cron` scheduler iterates over active clubs and triggers scrapes
+- Store scraped boat and booking data in `boat_cache` and `booking_cache` tables
+- `node-cron` scheduler iterates over active clubs and triggers `adapter.sync()`
 - One Puppeteer instance at a time (serialised to manage memory)
 - Adaptive refresh: configurable per club, default schedule:
   - 05:00-09:00: every 2 min (peak morning rowing)
   - 09:00-17:00: every 5 min
   - 17:00-21:00: every 2 min (evening rowing)
   - 21:00-05:00: every 10 min
+
+**Adapter interface compliance**: The RevSport adapter implements read operations (`getBoats`, `getBookings`, `sync`) but not write operations (`supportsBookingEntry: false`). The API layer calls adapter methods, not scraper functions directly.
 
 **Memory management**: Puppeteer is the biggest resource concern. With serialised scraping (one club at a time), memory stays bounded at ~300-500MB for the worker process. Parallelise only when infrastructure supports it (Phase C with dedicated workers).
 
@@ -809,6 +895,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.2 | 2026-01-28 | Added [B1] Club Onboarding Wizard for self-service club signup. Added environment separation strategy (dev/staging/production) to [A7]. Renumbered Phase B items (B1-B6). |
 | 2.3 | 2026-01-28 | Removed [B5] Tinnies Support from SaaS backlog — being built on Pi codebase pre-SaaS, will already exist when SaaS work begins. Renumbered to B1-B5. |
 | 2.4 | 2026-01-30 | Clarified scope: RevSport is source of truth for fleet. Renamed `boats` table to `boat_cache` (read-only, auto-discovered). Removed boat CRUD from admin dashboard — configuration only. Updated APIs to serve both Booking Board and Booking Page. Added "RevolutioniseSport as Source of Truth" section. |
+| 2.5 | 2026-01-30 | Added Data Source Adapter architecture for future extensibility. RevSport is first adapter; built-in fleet management (Premium tier) and other adapters planned for future phases. Updated clubs table with `data_source_type` and `data_source_config`. Updated A4 to reference adapter interface. |
 
 ---
 
