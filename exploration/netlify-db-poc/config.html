@@ -385,7 +385,7 @@
         }
 
         async function loadSessions() {
-            const response = await fetch('/.netlify/functions/sessions');
+            const response = await fetch('/sessions');
 
             if (!response.ok) {
                 throw new Error('Failed to load sessions from database');
@@ -515,7 +515,7 @@
 
         async function saveChanges() {
             try {
-                const response = await fetch('/.netlify/functions/sessions', {
+                const response = await fetch('/sessions', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
