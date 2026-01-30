@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a boat - LMRC</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="https://cdn.revolutionise.com.au/logos/hpg7hjrir3jsrjwa.png">
+    <link rel="icon" type="image/x-icon" sizes="48x48" href="https://cdn.revolutionise.com.au/logos/hpg7hjrir3jsrjwa.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://cdn.revolutionise.com.au/logos/hpg7hjrir3jsrjwa.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://cdn.revolutionise.com.au/logos/hpg7hjrir3jsrjwa.png">
+
+    <!-- Google Analytics 4 -->
+    <!-- TODO: Replace 'G-XXXXXXXXXX' with your actual GA4 Measurement ID -->
+    <!-- Get your GA4 ID from: https://analytics.google.com/analytics/web/ > Admin > Data Streams > Web > Measurement ID -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-X5KVZ5WXH3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        // Initialize GA4 with basic config
+        gtag('config', 'G-X5KVZ5WXH3', {
+            'send_page_view': false // We'll send page view manually with boat_id
+        });
+
+        // Send page view with boat_id parameter when available
+        // This will be called after BOAT_ID is determined from URL params
+        function sendPageView(boatId, boatName) {
+            gtag('event', 'page_view', {
+                'boat_id': boatId,
+                'boat_name': boatName || 'Unknown',
+                'page_title': document.title,
+                'page_location': window.location.href
+            });
+        }
+
+        // Track booking button clicks
+        function trackBookingClick(session, startTime, endTime) {
+            gtag('event', 'booking_click', {
+                'event_category': 'Booking',
+                'event_label': session,
+                'session_start': startTime,
+                'session_end': endTime,
+                'boat_id': window.BOAT_ID || 'unknown'
+            });
+        }
+
+        // Track "View boat availability" link clicks
+        function trackAvailabilityClick(boatId) {
+            gtag('event', 'view_availability', {
+                'event_category': 'Navigation',
+                'event_label': 'View Boat Availability',
+                'boat_id': boatId
+            });
+        }
+
+        // Track "Manage my bookings" link clicks
+        function trackManageBookingsClick() {
+            gtag('event', 'manage_bookings_click', {
+                'event_category': 'Navigation',
+                'event_label': 'Manage My Bookings'
+            });
+        }
+
+        // Track damaged boat warning shown
+        function trackDamagedBoatWarning(boatId, boatName) {
+            gtag('event', 'damaged_boat_warning', {
+                'event_category': 'Error',
+                'event_label': 'Damaged Boat Shown',
+                'boat_id': boatId,
+                'boat_name': boatName
+            });
+        }
+
+        // Track date selection changes
+        function trackDateChange(selectedDate) {
+            gtag('event', 'date_selection', {
+                'event_category': 'Interaction',
+                'event_label': selectedDate
+            });
+        }
+    </script>
+
+    <style>
+        /* LMRC Design System - matching booking viewer */
+        :root {
+            --primary-color: #1e40af;
+            --secondary-color: #0ea5e9;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+
+            /* Damaged Boat Colors */
+            --damaged-bg: #fee2e2;
+            --damaged-border: #fecaca;
+            --damaged-text: #991b1b;
+            --damaged-icon: #dc2626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: var(--surface);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            max-width: 500px;
+            width: 100%;
+            padding: 30px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .boat-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            color: var(--text-primary);
+            font-size: 24px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .boat-type-badge {
+            background: var(--secondary-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .boat-name-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .boat-weight {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .damaged-icon {
+            font-size: 28px;
+            color: var(--damaged-icon);
+        }
+
+        .damaged-warning {
+            background: var(--damaged-bg);
+            border: 2px solid var(--damaged-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .damaged-warning h3 {
+            color: var(--damaged-text);
+            font-size: 20px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .damaged-warning p {
+            color: var(--damaged-text);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .damaged-warning .contact-info {
+            margin-top: 15px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .date-display {
+            background: #eff6ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .date-display h2 {
+            color: var(--primary-color);
+            font-size: 18px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .date-display p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .time-slots {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .time-slot-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 24px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
+            min-height: 80px;
+        }
+
+        .time-slot-btn:hover {
+            background: #0284c7;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .time-slot-btn:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .time-slot-btn small {
+            display: block;
+            margin-top: 6px;
+            font-size: 15px;
+            opacity: 0.95;
+        }
+        
+        .secondary-action {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border);
+        }
+
+        .calendar-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: #eff6ff;
+            color: var(--primary-color);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s;
+            width: 100%;
+            text-decoration: none;
+        }
+
+        .calendar-btn:hover {
+            background: #dbeafe;
+            border-color: var(--secondary-color);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .calendar-btn:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .info {
+            background: #f8fafc;
+            border-left: 3px solid #cbd5e1;
+            padding: 12px;
+            margin-top: 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #64748b;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: var(--primary-color);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--secondary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        input[type="date"] {
+            font-size: 16px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+            background: var(--surface);
+            color: var(--text-primary);
+            outline: none;
+            transition: border 0.2s, box-shadow 0.2s, background 0.2s;
+            box-shadow: var(--shadow-sm);
+            margin-top: 8px;
+            margin-bottom: 2px;
+            width: 80%;
+            max-width: 240px;
+            text-align: center;
+        }
+
+        input[type="date"]:focus {
+            border: 2px solid var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+            background: var(--surface);
+        }
+
+        /* Remove calendar icon background in Chrome */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: opacity(0.6);
+            cursor: pointer;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            filter: opacity(1);
+        }
+
+        /* Mobile portrait optimization - PRIMARY USE CASE */
+        @media (max-width: 768px) and (orientation: portrait) {
+            body {
+                align-items: flex-start;
+                padding: 0;
+            }
+
+            .container {
+                border-radius: 0;
+                min-height: 100vh;
+                box-shadow: none;
+                padding: 24px 20px;
+            }
+
+            .header {
+                margin-bottom: 24px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .boat-type-badge {
+                font-size: 15px;
+            }
+
+            .boat-name-text {
+                font-size: 22px;
+            }
+
+            .boat-weight {
+                font-size: 15px;
+            }
+
+            .time-slot-btn {
+                padding: 28px 24px;
+                font-size: 19px;
+                min-height: 90px;
+            }
+
+            .time-slot-btn small {
+                font-size: 16px;
+                margin-top: 8px;
+            }
+
+            .time-slots {
+                gap: 16px;
+            }
+
+            .date-display {
+                padding: 18px;
+                margin-bottom: 20px;
+            }
+
+            input[type="date"] {
+                font-size: 17px;
+                padding: 12px 12px;
+                width: 92%;
+                max-width: 100%;
+                box-sizing: border-box;
+                display: block;
+                margin: 8px auto 2px auto;
+            }
+
+            .secondary-action {
+                margin-top: 25px;
+                padding-top: 20px;
+            }
+
+            .info {
+                font-size: 12px;
+                padding: 10px;
+            }
+        }
+
+        /* Tablet and desktop - SECONDARY USE CASE */
+        @media (min-width: 769px) {
+            .container {
+                padding: 40px;
+            }
+
+            .time-slot-btn:hover {
+                cursor: pointer;
+            }
+
+            .calendar-btn:hover {
+                cursor: pointer;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="https://www.lakemacquarierowingclub.org.au" target="_blank" style="display: inline-block;">
+                <img 
+                src="https://cdn.revolutionise.com.au/cups/lmrc2019/files/xhvxfyonk8gzzlr4.png" 
+                alt="LMRC Boat Logo" 
+                style="width: 80px; height: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;"
+                class="boat-icon">
+            </a>
+            <h1 id="boatNameHeader">Book this boat</h1>
+        </div>
+        
+        <!-- Damaged Boat Warning -->
+        <div class="damaged-warning" id="damagedWarning" style="display: none;">
+            <h3>
+                <span>⚠️</span>
+                Boat Currently Unavailable
+                <span>⚠️</span>
+            </h3>
+            <p>This boat has been marked as damaged and is not available for booking.</p>
+            <p>Please select a different boat or contact the club for more information.</p>
+            <p class="contact-info">Contact: <span id="contactEmail"></span></p>
+        </div>
+
+        <div class="date-display" id="dateDisplay">
+            <h2>Select date</h2>
+            <input type="date" id="todayDate">
+        </div>
+
+        <div class="time-slots" id="timeSlots">
+            <button class="time-slot-btn" onclick="bookSlot('06:00', '08:00')">
+                Morning Session 1<br>
+                <small>6:30 AM - 7:30 AM</small>
+            </button>
+            <button class="time-slot-btn" onclick="bookSlot('08:00', '10:00')">
+                Morning Session 2<br>
+                <small>7:30 AM - 8:30 AM</small>
+            </button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Redirecting to booking system...</p>
+        </div>
+
+        <div class="secondary-action">
+            <a id="calendarLink" target="_blank" class="calendar-btn">
+                <span style="font-size: 20px;">📅</span>
+                View boat availability
+            </a>
+            <a href="https://www.lakemacquarierowingclub.org.au/my-bookings" target="_blank" class="calendar-btn" style="margin-top: 10px;">
+                <span style="font-size: 20px;">📋</span>
+                Manage my bookings
+            </a>
+        </div>
+        
+        <div class="info">
+            <strong>Note:</strong> You'll be redirected to the club's booking system
+        </div>
+    </div>
+    
+<script>
+    // Global variable to store boat data
+    let boatData = null;
+
+    // Load boat data from JSON file
+    async function loadBoatData() {
+        try {
+            const response = await fetch('boats.json');
+            if (!response.ok) {
+                throw new Error('Failed to load boat data');
+            }
+            boatData = await response.json();
+            return boatData;
+        } catch (error) {
+            console.error('Error loading boat data:', error);
+            return null;
+        }
+    }
+
+    // Check if boat is damaged based on name
+    function isDamagedBoat(boat) {
+        if (!boat || !boat.name) return false;
+        return boat.name.toLowerCase().includes('damaged');
+    }
+
+    // Get boat name HTML with badges
+    function getBoatNameHTML(boatId) {
+        if (!boatData || !boatData.boats || !boatData.boats[boatId]) {
+            return '<span class="boat-name-text">Book this boat</span>';
+        }
+
+        const boat = boatData.boats[boatId];
+        const damaged = isDamagedBoat(boat);
+
+        // Parse the name to extract type, name, and weight
+        // Format is like: "2X - Watagan (90kg)"
+        const nameMatch = boat.name.match(/^(?:(\w+)\s*-\s*)?([^(]+?)(?:\s*\(([^)]+)\))?$/);
+
+        if (!nameMatch) {
+            // Fallback if parsing fails
+            let html = `<span class="boat-name-text">${escapeHtml(boat.name)}</span>`;
+            if (damaged) {
+                html = `<span class="damaged-icon">⚠️</span>${html}`;
+            }
+            return html;
+        }
+
+        const type = nameMatch[1] || '';
+        const name = nameMatch[2] ? nameMatch[2].trim() : boat.name;
+        const weight = nameMatch[3] || '';
+
+        let html = '';
+
+        // Add type badge if available
+        if (type) {
+            html += `<span class="boat-type-badge">${escapeHtml(type)}</span>`;
+        }
+
+        // Add damaged icon if boat is damaged
+        if (damaged) {
+            html += `<span class="damaged-icon">⚠️</span>`;
+        }
+
+        // Add boat name
+        html += `<span class="boat-name-text">${escapeHtml(name)}</span>`;
+
+        // Add weight badge if available
+        if (weight) {
+            html += `<span class="boat-weight">${escapeHtml(weight)}</span>`;
+        }
+
+        return html;
+    }
+
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Initialize boat data on page load
+    (async function() {
+        await loadBoatData();
+
+        // Update boat name header after data is loaded
+        const boatNameHTML = getBoatNameHTML(BOAT_ID);
+        document.getElementById('boatNameHeader').innerHTML = boatNameHTML;
+
+        // Set contact email
+        document.getElementById('contactEmail').textContent = CONTACT_EMAIL;
+
+        // Get boat name for analytics
+        let boatName = 'Unknown';
+        if (boatData && boatData.boats && boatData.boats[BOAT_ID]) {
+            boatName = boatData.boats[BOAT_ID].name;
+        }
+
+        // Send page view with boat information
+        if (typeof sendPageView === 'function') {
+            sendPageView(BOAT_ID, boatName);
+        }
+
+        // Check if boat is damaged and handle UI accordingly
+        if (boatData && boatData.boats && boatData.boats[BOAT_ID]) {
+            const boat = boatData.boats[BOAT_ID];
+            if (isDamagedBoat(boat)) {
+                // Show damaged warning
+                document.getElementById('damagedWarning').style.display = 'block';
+
+                // Track damaged boat warning shown
+                if (typeof trackDamagedBoatWarning === 'function') {
+                    trackDamagedBoatWarning(BOAT_ID, boat.name);
+                }
+
+                // Hide booking elements
+                document.getElementById('dateDisplay').style.display = 'none';
+                document.getElementById('timeSlots').style.display = 'none';
+
+                // Hide secondary action and info if they exist
+                const secondaryAction = document.querySelector('.secondary-action');
+                const infoDiv = document.querySelector('.info');
+                if (secondaryAction) secondaryAction.style.display = 'none';
+                if (infoDiv) infoDiv.style.display = 'none';
+            }
+        }
+    })();
+</script>
+
+    <script>
+        // Configuration
+        const BASE_URL = 'https://www.lakemacquarierowingclub.org.au/bookings/confirm/';
+        const CONTACT_EMAIL = 'enquiries@lakemacquarierowingclub.org.au';
+        const urlParams = new URLSearchParams(window.location.search);
+        const BOAT_ID = urlParams.get('boat_id') || '6283'; // Default to '6283' if not provided
+        console.log('Boat ID:', BOAT_ID);
+
+        // --- Session configuration ---
+        const SESSIONS = [
+            {
+                label: "Morning Session 1",
+                startTime: "06:30",
+                endTime: "07:30",
+                display: "6:30 AM - 7:30 AM"
+            },
+            {
+                label: "Morning Session 2",
+                startTime: "07:30",
+                endTime: "08:30",
+                display: "7:30 AM - 8:30 AM"
+            }
+        ];
+
+        // Format date as DD/MM/YYYY for RevSport
+        function formatDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+        
+        // Book a time slot
+        function bookSlot(startTime, endTime) {
+            const selectedDate = getSelectedDate();
+            const formattedDate = formatDate(selectedDate);
+
+            console.log('Booking for:', selectedDate);
+
+            // Determine which session is being booked
+            let sessionName = 'Unknown Session';
+            const matchingSession = SESSIONS.find(s => s.startTime === startTime && s.endTime === endTime);
+            if (matchingSession) {
+                sessionName = matchingSession.label;
+            }
+
+            // Track booking button click
+            if (typeof trackBookingClick === 'function') {
+                trackBookingClick(sessionName, startTime, endTime);
+            }
+
+            // URL encode the date and times
+            const encodedDate = encodeURIComponent(formattedDate);
+            const encodedStartTime = encodeURIComponent(startTime);
+            const encodedEndTime = encodeURIComponent(endTime);
+
+            // Build the booking URL
+            const bookingUrl = `${BASE_URL}${BOAT_ID}?freq=1&dateStart=&dateEnd=&date=${encodedDate}&timeStart=${encodedStartTime}&timeEnd=${encodedEndTime}&booking_type=oneoff`;
+
+            // Show loading state
+            document.getElementById('timeSlots').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+
+            // Redirect to booking system
+            setTimeout(() => {
+                window.location.href = bookingUrl;
+            }, 500);
+        }
+        
+
+        // Set date picker to today or tomorrow based on current time
+        function setTodayDatePicker() {
+            const now = new Date();
+            let defaultDate = new Date(now);
+
+            // Get end time of last session (Session 2 ends at 08:30)
+            const lastSessionEndTime = SESSIONS[SESSIONS.length - 1].endTime;
+            const [endHour, endMinute] = lastSessionEndTime.split(':').map(Number);
+
+            // If current time is after the last session ends, default to tomorrow
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+
+            if (currentHour > endHour || (currentHour === endHour && currentMinute >= endMinute)) {
+                // After last session ends (8:30 AM), set to tomorrow
+                defaultDate.setDate(defaultDate.getDate() + 1);
+            }
+
+            const yyyy = defaultDate.getFullYear();
+            const mm = String(defaultDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(defaultDate.getDate()).padStart(2, '0');
+            const defaultDateStr = `${yyyy}-${mm}-${dd}`;
+            document.getElementById('todayDate').value = defaultDateStr;
+        }
+
+
+        // Get selected date from date picker
+        function getSelectedDate() {
+            const dateStr = document.getElementById('todayDate').value;
+            const [yyyy, mm, dd] = dateStr.split('-');
+            return new Date(`${yyyy}-${mm}-${dd}`);
+        }
+
+
+        // Initialize on page load
+        setTodayDatePicker();
+
+        document.getElementById('todayDate').addEventListener('change', () => {
+            const selectedDate = getSelectedDate();
+            const formattedDate = formatDate(selectedDate);
+            console.log('Selected Date:', formattedDate);
+
+            // Track date selection change
+            if (typeof trackDateChange === 'function') {
+                trackDateChange(formattedDate);
+            }
+        });
+
+
+
+        // Dynamically render session buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const timeSlotsDiv = document.getElementById('timeSlots');
+            timeSlotsDiv.innerHTML = '';
+            SESSIONS.forEach(session => {
+                const btn = document.createElement('button');
+                btn.className = 'time-slot-btn';
+                btn.innerHTML = `${session.label}<br><small>${session.display}</small>`;
+                btn.onclick = function() {
+                    bookSlot(session.startTime, session.endTime);
+                };
+                timeSlotsDiv.appendChild(btn);
+            });
+        });
+
+        // Set calendar link and add tracking
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarLink = document.getElementById('calendarLink');
+            calendarLink.href = `https://www.lakemacquarierowingclub.org.au/bookings/calendar/${BOAT_ID}`;
+
+            // Track "View boat availability" clicks
+            calendarLink.addEventListener('click', function() {
+                if (typeof trackAvailabilityClick === 'function') {
+                    trackAvailabilityClick(BOAT_ID);
+                }
+            });
+
+            // Track "Manage my bookings" link clicks
+            const manageBookingsLinks = document.querySelectorAll('a[href*="my-bookings"]');
+            manageBookingsLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (typeof trackManageBookingsClick === 'function') {
+                        trackManageBookingsClick();
+                    }
+                });
+            });
+        });
+        
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="refresh" content="0; url=book-a-boat.html">
+    <script>
+        // Redirect with all query parameters preserved
+        window.onload = function() {
+            var query = window.location.search || "";
+            window.location.replace("book-a-boat.html" + query);
+        };
+    </script>
+    <title>Redirecting...</title>
+</head>
+<body>
+    <p>Redirecting to booking page...</p>
+</body>
+</html>
