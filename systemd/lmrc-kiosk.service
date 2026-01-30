@@ -1,0 +1,27 @@
+[Unit]
+Description=LMRC Chromium Kiosk
+After=graphical.target lmrc-launcher.service
+Wants=graphical.target
+
+[Service]
+Type=simple
+# User should match the desktop user - typically 'pi' on default Raspberry Pi OS
+# Change to 'greg' or other username if using a different user
+User=pi
+Environment=DISPLAY=:0
+Environment=WAYLAND_DISPLAY=wayland-0
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/bin/chromium-browser \
+  --kiosk \
+  --noerrdialogs \
+  --disable-infobars \
+  --disable-session-crashed-bubble \
+  --disable-features=TranslateUI \
+  --no-first-run \
+  --check-for-update-interval=31536000 \
+  http://localhost:3000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target
