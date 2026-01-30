@@ -1,7 +1,7 @@
 {
-  "name": "lmrc-boat-booking",
+  "name": "@lmrc/booking-page",
   "version": "1.0.0",
-  "description": "LMRC Boat Booking QR Code System",
+  "description": "LMRC Boat Booking Page - Public booking website",
   "scripts": {
     "fetch-boats": "node scripts/fetch-boats.js",
     "test-parse": "node scripts/test-parse.js",

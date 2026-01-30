@@ -1,8 +1,9 @@
-# Child project directories (each has its own git repo)
-lmrc-booking-system/
-BoatBooking/
-Noticeboard/
-lmrc-pi-deployment/
+# Old nested repos (kept for production deployments during migration)
+# These are separate git repos that will be removed after migration completes
+/lmrc-booking-system/
+/BoatBooking/
+/Noticeboard/
+/lmrc-pi-deployment/
 
 # Node modules (if any shared dependencies)
 node_modules/

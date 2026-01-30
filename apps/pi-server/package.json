@@ -1,5 +1,5 @@
 {
-  "name": "lmrc-booking-viewer",
+  "name": "@lmrc/pi-server",
   "version": "3.0.0",
   "description": "LMRC Booking Viewer - fetches and displays 7-day booking view from RevSport",
   "main": "dist/server/index.js",

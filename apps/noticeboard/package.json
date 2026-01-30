@@ -1,5 +1,5 @@
 {
-  "name": "lmrc-noticeboard",
+  "name": "@lmrc/noticeboard",
   "version": "1.0.0",
   "description": "Lake Macquarie Rowing Club Digital Noticeboard",
   "type": "module",
