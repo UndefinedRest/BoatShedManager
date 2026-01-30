@@ -1,0 +1,278 @@
+{
+  "boats": {
+    "6274": {
+      "name": "4X - Hunter (90kg)",
+      "weight": "90kg",
+      "type": "4X",
+      "category": "Club Boat"
+    },
+    "6275": {
+      "name": "2X - Ausrowtec double scull (Ausrowtec) Damaged (75kg)",
+      "weight": "75kg",
+      "type": "2X",
+      "category": "Club Boat"
+    },
+    "6277": {
+      "name": "2X - Better Transport (85kg)",
+      "weight": "85kg",
+      "type": "2X",
+      "category": "Club Boat"
+    },
+    "6278": {
+      "name": "2X - Jacob Kleinman (70kg)",
+      "weight": "70kg",
+      "type": "2X",
+      "category": "Club Boat"
+    },
+    "6279": {
+      "name": "2X - Warren Bellamy (90kg)",
+      "weight": "90kg",
+      "type": "2X",
+      "category": "Club Boat"
+    },
+    "6280": {
+      "name": "1X - Go For Gold (60kg)",
+      "weight": "60kg",
+      "type": "1X",
+      "category": "Club Boat"
+    },
+    "6281": {
+      "name": "Grey Tinnie",
+      "weight": "",
+      "type": "",
+      "category": "Club Boat"
+    },
+    "6282": {
+      "name": "White Tinnie",
+      "weight": "",
+      "type": "",
+      "category": "Club Boat"
+    },
+    "6284": {
+      "name": "Euro Tub Training Scull",
+      "weight": "",
+      "type": "",
+      "category": "Club Boat"
+    },
+    "6285": {
+      "name": "4X - Friends",
+      "weight": "",
+      "type": "4X",
+      "category": "Club Boat"
+    },
+    "6286": {
+      "name": "4X - Lake Mac (80kg)",
+      "weight": "80kg",
+      "type": "4X",
+      "category": "RACER"
+    },
+    "6287": {
+      "name": "4X - David Moore (75kg)",
+      "weight": "75kg",
+      "type": "4X",
+      "category": "Club Boat"
+    },
+    "6288": {
+      "name": "4X - Marden (75kg)",
+      "weight": "75kg",
+      "type": "4X",
+      "category": "Club Boat"
+    },
+    "6290": {
+      "name": "1X - Awaba",
+      "weight": "",
+      "type": "1X",
+      "category": "Club Boat"
+    },
+    "6291": {
+      "name": "1X - Nikkin-Bah (65kg)",
+      "weight": "65kg",
+      "type": "1X",
+      "category": "Club"
+    },
+    "6293": {
+      "name": "2X - Endurance (85kg)",
+      "weight": "85kg",
+      "type": "2X",
+      "category": "RACER"
+    },
+    "6294": {
+      "name": "4X - Bolton (90kg)",
+      "weight": "90kg",
+      "type": "4X",
+      "category": "RACER"
+    },
+    "6295": {
+      "name": "1X - Gallerie (70kg)",
+      "weight": "70kg",
+      "type": "1X",
+      "category": "Club Boat"
+    },
+    "6297": {
+      "name": "4X - Banana (90kg)",
+      "weight": "90kg",
+      "type": "4X",
+      "category": "Club Boat"
+    },
+    "6299": {
+      "name": "1X - Catch 22 (65kg)",
+      "weight": "65kg",
+      "type": "1X",
+      "category": "Club Boat"
+    },
+    "6303": {
+      "name": "4X - Dave Murray (80kg)",
+      "weight": "80kg",
+      "type": "4X",
+      "category": "Club Boat"
+    },
+    "6304": {
+      "name": "4X - Mirrabooka (85kg)",
+      "weight": "85kg",
+      "type": "4X",
+      "category": "Club Boat"
+    },
+    "6305": {
+      "name": "2X - Watagan (90kg)",
+      "weight": "90kg",
+      "type": "2X",
+      "category": "Club Boat"
+    },
+    "6306": {
+      "name": "2X - Hunter Heron (70kg)",
+      "weight": "70kg",
+      "type": "2X",
+      "category": "Club Boat"
+    },
+    "6307": {
+      "name": "2X - Jenny Luff (90kg)",
+      "weight": "90kg",
+      "type": "2X",
+      "category": "Club Boat"
+    },
+    "7540": {
+      "name": "2X - Yvonne (65kg)",
+      "weight": "65kg",
+      "type": "2X",
+      "category": "Club Boat"
+    },
+    "7542": {
+      "name": "1X - Cockle Creek (65kg)",
+      "weight": "65kg",
+      "type": "1X",
+      "category": "RACER"
+    },
+    "7543": {
+      "name": "1X - Marmong (75kg)",
+      "weight": "75kg",
+      "type": "1X",
+      "category": "RACER"
+    },
+    "7544": {
+      "name": "2X - Ian Krix (70kg)",
+      "weight": "70kg",
+      "type": "2X",
+      "category": "RACER"
+    },
+    "7545": {
+      "name": "2X - Robert Wallace (80kg)",
+      "weight": "80kg",
+      "type": "2X",
+      "category": "RACER"
+    },
+    "7546": {
+      "name": "4X - Ray Beeton (75kg)",
+      "weight": "75kg",
+      "type": "4X",
+      "category": "RACER"
+    },
+    "7547": {
+      "name": "4X - Jeanette Beeton (85kg)",
+      "weight": "85kg",
+      "type": "4X",
+      "category": "RACER"
+    },
+    "8584": {
+      "name": "2X - The Rose (75kg)",
+      "weight": "75kg",
+      "type": "2X",
+      "category": "Club Boat"
+    },
+    "8585": {
+      "name": "2X - Rusty (70kg)",
+      "weight": "70kg",
+      "type": "2X",
+      "category": "RACER"
+    },
+    "8586": {
+      "name": "2X - Partridge (95kg)",
+      "weight": "95kg",
+      "type": "2X",
+      "category": "Club Boat"
+    },
+    "8587": {
+      "name": "2X - Silver Speer (95kg)",
+      "weight": "95kg",
+      "type": "2X",
+      "category": "RACER"
+    },
+    "10146": {
+      "name": "1X - Kilaben (105kg)",
+      "weight": "105kg",
+      "type": "1X",
+      "category": "Club Boat"
+    },
+    "11797": {
+      "name": "Brown Sugar Restuarant, Warners Bay",
+      "weight": "",
+      "type": "",
+      "category": "Club Boat"
+    },
+    "12181": {
+      "name": "4X - Hera (75kg)",
+      "weight": "75kg",
+      "type": "4X",
+      "category": "Club Boat"
+    },
+    "12182": {
+      "name": "4X - Valentine (80kg)",
+      "weight": "80kg",
+      "type": "4X",
+      "category": "Club Boat"
+    },
+    "12183": {
+      "name": "1X - Just One (80kg)",
+      "weight": "80kg",
+      "type": "1X",
+      "category": "Club Boat"
+    },
+    "12184": {
+      "name": "1X - Uno (90kg)",
+      "weight": "90kg",
+      "type": "1X",
+      "category": "Club Boat"
+    },
+    "12185": {
+      "name": "1X - Another One (70kg)",
+      "weight": "70kg",
+      "type": "1X",
+      "category": "Club Boat"
+    },
+    "12467": {
+      "name": "1X - Excelsior (85kg)",
+      "weight": "85kg",
+      "type": "1X",
+      "category": "RACER"
+    },
+    "12468": {
+      "name": "4X - Kelleher (80kg)",
+      "weight": "80kg",
+      "type": "4X",
+      "category": "RACER"
+    }
+  },
+  "lastUpdated": "2026-01-30T16:36:45.095Z",
+  "source": "RevSport (automated)",
+  "totalBoats": 45,
+  "updateFrequency": "Daily via GitHub Actions"
+}

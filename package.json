@@ -1,0 +1,44 @@
+{
+  "name": "lmrc-boat-booking",
+  "version": "1.0.0",
+  "description": "LMRC Boat Booking QR Code System",
+  "scripts": {
+    "fetch-boats": "node scripts/fetch-boats.js",
+    "test-parse": "node scripts/test-parse.js",
+    "generate-qr": "node scripts/generate-qr-codes.js",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/lmrc-boat-booking.git"
+  },
+  "keywords": [
+    "rowing",
+    "booking",
+    "lmrc"
+  ],
+  "author": "Lake Macquarie Rowing Club",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "axios-cookiejar-support": "^5.0.0",
+    "cheerio": "^1.0.0-rc.12",
+    "tough-cookie": "^4.1.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/ui": "^4.0.16",
+    "canvas": "^3.2.0",
+    "pdfkit": "^0.17.2",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.34.4",
+    "vitest": "^4.0.16"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

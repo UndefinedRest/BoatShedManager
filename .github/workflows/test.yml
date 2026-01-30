@@ -1,0 +1,130 @@
+name: Test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: Run Tests & Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Check coverage thresholds
+        run: |
+          node -e "
+          const fs = require('fs');
+          const coveragePath = './coverage/coverage-summary.json';
+
+          if (!fs.existsSync(coveragePath)) {
+            console.error('Coverage summary not found');
+            process.exit(1);
+          }
+
+          const coverage = JSON.parse(fs.readFileSync(coveragePath, 'utf-8'));
+          const total = coverage.total;
+
+          console.log('Coverage Results:');
+          console.log('  Lines:', total.lines.pct.toFixed(2) + '%');
+          console.log('  Functions:', total.functions.pct.toFixed(2) + '%');
+          console.log('  Branches:', total.branches.pct.toFixed(2) + '%');
+          console.log('  Statements:', total.statements.pct.toFixed(2) + '%');
+          console.log('');
+          console.log('Note: Threshold reflects coverage of critical parseBoatName function (42 tests)');
+          console.log('Phase 2 will add integration tests with mocked axios/fs for 50% target');
+          console.log('');
+
+          const thresholds = {
+            lines: 20,
+            functions: 9,
+            branches: 27,
+            statements: 19
+          };
+
+          const failures = [];
+
+          if (total.lines.pct < thresholds.lines) {
+            failures.push('Lines: ' + total.lines.pct.toFixed(2) + '% < ' + thresholds.lines + '%');
+          }
+          if (total.functions.pct < thresholds.functions) {
+            failures.push('Functions: ' + total.functions.pct.toFixed(2) + '% < ' + thresholds.functions + '%');
+          }
+          if (total.branches.pct < thresholds.branches) {
+            failures.push('Branches: ' + total.branches.pct.toFixed(2) + '% < ' + thresholds.branches + '%');
+          }
+          if (total.statements.pct < thresholds.statements) {
+            failures.push('Statements: ' + total.statements.pct.toFixed(2) + '% < ' + thresholds.statements + '%');
+          }
+
+          if (failures.length > 0) {
+            console.error('❌ Coverage below threshold:');
+            failures.forEach(f => console.error('  -', f));
+            process.exit(1);
+          }
+
+          console.log('✅ All coverage thresholds met!');
+          "
+
+      - name: Upload coverage to Codecov (optional)
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          file: ./coverage/lcov.info
+          fail_ci_if_error: false
+          flags: unittests
+          name: boat-booking
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        continue-on-error: true
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('./coverage/coverage-summary.json', 'utf-8'));
+            const total = coverage.total;
+
+            const thresholds = { lines: 20, functions: 9, branches: 27, statements: 19 };
+
+            const comment = `## Test Coverage Report
+
+            | Metric | Coverage | Threshold | Status |
+            |--------|----------|-----------|--------|
+            | Lines | ${total.lines.pct.toFixed(2)}% | ${thresholds.lines}% | ${total.lines.pct >= thresholds.lines ? '✅' : '❌'} |
+            | Functions | ${total.functions.pct.toFixed(2)}% | ${thresholds.functions}% | ${total.functions.pct >= thresholds.functions ? '✅' : '❌'} |
+            | Branches | ${total.branches.pct.toFixed(2)}% | ${thresholds.branches}% | ${total.branches.pct >= thresholds.branches ? '✅' : '❌'} |
+            | Statements | ${total.statements.pct.toFixed(2)}% | ${thresholds.statements}% | ${total.statements.pct >= thresholds.statements ? '✅' : '❌'} |
+
+            **Test Count**: 72 tests (42 for critical parseBoatName parsing logic)
+
+            **Phase 1 Focus**: Critical boat name parsing logic fully tested
+            **Phase 2 Goal**: Add integration tests with mocked axios/fs for 50% coverage
+
+            ${total.lines.pct >= thresholds.lines && total.functions.pct >= thresholds.functions && total.branches.pct >= thresholds.branches && total.statements.pct >= thresholds.statements ? '✅ All thresholds met!' : '❌ Coverage below threshold'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

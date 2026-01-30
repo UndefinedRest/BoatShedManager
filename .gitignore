@@ -1,0 +1,30 @@
+# IDE settings
+.vscode/
+.idea/
+.claude/settings.local.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node modules and dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# Firebase (if implementing Firebase migration)
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Temporary files
+*.tmp
+*.log
+
+# Generated QR codes (regenerate with npm run generate-qr)
+qr-codes/
+
+# Test coverage reports
+coverage/
