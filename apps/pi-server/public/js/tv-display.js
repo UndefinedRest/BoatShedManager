@@ -1,0 +1,863 @@
+/**
+ * TV Display Controller - Two Column Layout
+ * Shows ALL boats split into Club (left) and Race (right) columns
+ */
+
+// Detect and apply display mode from query parameter
+function applyDisplayMode() {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode');
+
+  if (mode === 'tv' || mode === 'desktop' || mode === 'mobile') {
+    document.body.classList.add(`mode-${mode}`);
+    console.log(`[TV Display] Display mode forced to: ${mode}`);
+  }
+}
+
+// Apply mode immediately on script load
+applyDisplayMode();
+
+class TVDisplayController {
+  constructor() {
+    this.clockInterval = 1000; // 1 second
+    this.retryDelay = 30000; // 30 seconds on error
+
+    this.elements = {
+      loadingScreen: document.getElementById('loadingScreen'),
+      errorScreen: document.getElementById('errorScreen'),
+      errorMessage: document.getElementById('errorMessage'),
+      mainView: document.getElementById('mainView'),
+      clubBoatsList: document.getElementById('clubBoatsList'),
+      raceBoatsList: document.getElementById('raceBoatsList'),
+      tinniesList: document.getElementById('tinniesList'),
+      tinniesSection: document.getElementById('tinniesSection'),
+      clubDayHeaders: document.getElementById('clubDayHeaders'),
+      raceDayHeaders: document.getElementById('raceDayHeaders'),
+      tinniesDayHeaders: document.getElementById('tinniesDayHeaders'),
+      todayDateFooter: document.getElementById('todayDateFooter'),
+      lastUpdated: document.getElementById('lastUpdated'),
+      clubColumnTitle: document.querySelector('.boat-column:first-child .column-title'),
+      raceColumnTitle: document.querySelector('.boat-column:last-child .column-title:not(.tinnies-title)'),
+      tinniesColumnTitle: document.querySelector('.tinnies-title'),
+      footerLogo: document.querySelector('.footer-logo'),
+    };
+
+    this.bookingData = null;
+    this.config = null;
+    this.tvDisplayConfig = null;
+    this.daysToDisplay = 7; // Will be overridden by tvDisplayConfig
+    this.refreshInterval = 300000; // Will be overridden by tvDisplayConfig
+    this.refreshTimer = null; // Store timer reference for proper cleanup
+    this.configCheckTimer = null; // Timer for checking config changes
+    this.lastConfigVersion = null; // Track config version for change detection
+    this.isInitialLoad = true; // Track if this is the first load
+    this.countdownTimer = null; // Timer for countdown display
+    this.countdownSeconds = 0; // Seconds remaining until next refresh
+  }
+
+  /**
+   * Initialize and start the display
+   */
+  async init() {
+    console.log('[TV Display] Initializing...');
+
+    // Load TV display configuration first
+    await this.loadTVDisplayConfig();
+
+    // Apply configuration to UI
+    this.applyConfig();
+
+    console.log(`[TV Display] Refresh interval: ${this.refreshInterval / 1000}s`);
+    console.log(`[TV Display] Days to display: ${this.daysToDisplay}`);
+
+    // Start clock immediately
+    this.updateClock();
+    setInterval(() => this.updateClock(), this.clockInterval);
+
+    // Load initial data
+    await this.loadData();
+
+    // Schedule periodic refresh - store reference
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+    this.refreshTimer = setInterval(() => {
+      console.log('[TV Display] Auto-refresh triggered');
+      this.loadData();
+    }, this.refreshInterval);
+
+    // Check for config changes every 30 seconds
+    this.configCheckTimer = setInterval(() => {
+      this.checkConfigChanges();
+    }, 30000);
+  }
+
+  /**
+   * Load TV display configuration
+   */
+  async loadTVDisplayConfig() {
+    try {
+      console.log('[TV Display] Loading TV display configuration...');
+
+      const response = await fetch('/api/v1/config/tv-display');
+      if (!response.ok) {
+        throw new Error('Failed to fetch TV display config');
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error('API returned error for TV display config');
+      }
+
+      this.tvDisplayConfig = result.data;
+      this.lastConfigVersion = result.data.version;
+
+      // Update local settings from config
+      this.daysToDisplay = this.tvDisplayConfig.layout.daysToDisplay;
+      this.refreshInterval = this.tvDisplayConfig.timing.refreshInterval;
+
+      console.log('[TV Display] TV display config loaded:', this.tvDisplayConfig);
+
+    } catch (error) {
+      console.error('[TV Display] Error loading TV display config, using defaults:', error);
+      // Use default values if config fails to load
+      this.daysToDisplay = 5;
+      this.refreshInterval = 300000;
+    }
+  }
+
+  /**
+   * Apply configuration to the UI
+   */
+  applyConfig() {
+    if (!this.tvDisplayConfig) {
+      console.log('[TV Display] No TV display config to apply');
+      return;
+    }
+
+    const root = document.documentElement;
+    const config = this.tvDisplayConfig;
+
+    console.log('[TV Display] Applying configuration...');
+
+    // Apply layout settings
+    root.style.setProperty('--days-to-display', config.layout.daysToDisplay);
+    root.style.setProperty('--boat-row-height', `${config.layout.boatRowHeight}px`);
+    root.style.setProperty('--session-row-height', `${config.layout.sessionRowHeight}px`);
+    root.style.setProperty('--boat-name-width', `${config.layout.boatNameWidth}px`);
+
+    // Apply typography settings
+    root.style.setProperty('--font-boat-name', `${config.typography.boatNameSize}px`);
+    root.style.setProperty('--font-booking', `${config.typography.bookingDetailsSize}px`);
+    root.style.setProperty('--font-column-title', `${config.typography.columnTitleSize}px`);
+
+    // Apply boat type colors
+    root.style.setProperty('--boat-type-1x-bg', config.colors.boatTypes.singles);
+    root.style.setProperty('--boat-type-2x-bg', config.colors.boatTypes.doubles);
+    root.style.setProperty('--boat-type-4x-bg', config.colors.boatTypes.quads);
+    root.style.setProperty('--boat-type-tinnies-bg', config.colors.boatTypes.tinnies);
+    root.style.setProperty('--boat-type-other-bg', config.colors.boatTypes.other);
+
+    // Apply row colors
+    root.style.setProperty('--row-color-even', config.colors.rows.even);
+    root.style.setProperty('--row-color-odd', config.colors.rows.odd);
+
+    // Apply UI colors
+    root.style.setProperty('--boat-type-badge-bg', config.colors.ui.boatTypeBadge);
+    root.style.setProperty('--column-header-bg', config.colors.ui.columnHeader);
+    root.style.setProperty('--booking-time-color', config.colors.ui.bookingTime);
+    root.style.setProperty('--type-separator-color', config.colors.ui.typeSeparator);
+
+    // Apply damaged boat colors
+    if (config.colors.damaged) {
+      root.style.setProperty('--damaged-row-bg', config.colors.damaged.rowBackground);
+      root.style.setProperty('--damaged-icon-color', config.colors.damaged.iconColor);
+      root.style.setProperty('--damaged-text-color', config.colors.damaged.textColor);
+    }
+
+    // Apply column titles
+    if (this.elements.clubColumnTitle) {
+      this.elements.clubColumnTitle.textContent = config.columns.leftTitle;
+    }
+    if (this.elements.raceColumnTitle) {
+      this.elements.raceColumnTitle.textContent = config.columns.rightTitle;
+    }
+    if (this.elements.tinniesColumnTitle && config.columns.tinniesTitle) {
+      this.elements.tinniesColumnTitle.textContent = config.columns.tinniesTitle;
+    }
+
+    // Apply logo URL
+    if (this.elements.footerLogo && config.display && config.display.logoUrl) {
+      this.elements.footerLogo.src = config.display.logoUrl;
+      this.elements.footerLogo.style.display = ''; // Ensure it's visible
+    }
+
+    // Start/restart countdown timer with new refresh interval
+    this.startCountdown();
+
+    console.log('[TV Display] Configuration applied successfully');
+  }
+
+  /**
+   * Check for configuration changes
+   */
+  async checkConfigChanges() {
+    try {
+      const response = await fetch('/api/v1/config/tv-display');
+      if (!response.ok) return;
+
+      const result = await response.json();
+      if (!result.success) return;
+
+      const newVersion = result.data.version;
+
+      // If version changed, reload config and apply
+      if (newVersion !== this.lastConfigVersion) {
+        console.log('[TV Display] Configuration changed, reloading...');
+        this.tvDisplayConfig = result.data;
+        this.lastConfigVersion = newVersion;
+
+        // Check if refresh interval changed
+        const oldRefreshInterval = this.refreshInterval;
+        this.daysToDisplay = this.tvDisplayConfig.layout.daysToDisplay;
+        this.refreshInterval = this.tvDisplayConfig.timing.refreshInterval;
+
+        // Apply new config
+        this.applyConfig();
+
+        // Re-render to apply layout changes (like days to display)
+        this.render();
+
+        // If refresh interval changed, restart the timer
+        if (oldRefreshInterval !== this.refreshInterval) {
+          console.log('[TV Display] Refresh interval changed, restarting timer');
+          if (this.refreshTimer) {
+            clearInterval(this.refreshTimer);
+          }
+          this.refreshTimer = setInterval(() => {
+            console.log('[TV Display] Auto-refresh triggered');
+            this.loadData();
+          }, this.refreshInterval);
+        }
+      }
+    } catch (error) {
+      // Silently fail - don't disrupt the display
+      console.error('[TV Display] Error checking config changes:', error);
+    }
+  }
+
+  /**
+   * Load booking data and configuration from API
+   * On initial load: Show loading screen
+   * On refresh: Update silently in background
+   */
+  async loadData() {
+    try {
+      // Only show loading screen on initial load
+      if (this.isInitialLoad) {
+        console.log('[TV Display] Initial load - showing loading screen');
+      } else {
+        console.log('[TV Display] Background refresh - fetching new data silently...');
+      }
+
+      // Fetch both bookings and config in parallel
+      const [bookingsResponse, configResponse] = await Promise.all([
+        fetch('/api/v1/bookings'),
+        fetch('/api/v1/config')
+      ]);
+
+      if (!bookingsResponse.ok || !configResponse.ok) {
+        throw new Error('Failed to fetch data from server');
+      }
+
+      const bookingsResult = await bookingsResponse.json();
+      const configResult = await configResponse.json();
+
+      if (!bookingsResult.success || !configResult.success) {
+        throw new Error('API returned error status');
+      }
+
+      this.bookingData = bookingsResult.data;
+      this.config = configResult.data;
+
+      console.log('[TV Display] Data loaded successfully', {
+        totalBoats: this.bookingData.metadata.totalBoats,
+        totalBookings: this.bookingData.metadata.totalBookings,
+        backgroundUpdate: !this.isInitialLoad
+      });
+
+      // Render the display (seamlessly updates existing view)
+      this.render();
+
+      // Only show view transition on initial load
+      if (this.isInitialLoad) {
+        this.showView('main');
+        this.isInitialLoad = false;
+        console.log('[TV Display] Initial load complete - display is now visible');
+      } else {
+        console.log('[TV Display] Background update complete - display updated silently');
+      }
+
+      // Update last updated timestamp and reset countdown
+      this.updateLastUpdated();
+      this.startCountdown();
+
+    } catch (error) {
+      console.error('[TV Display] Error loading data:', error);
+
+      // On initial load: Show error screen
+      // On refresh: Log error but keep showing existing data
+      if (this.isInitialLoad) {
+        this.showError(error.message);
+      } else {
+        console.error('[TV Display] Background refresh failed - keeping existing data visible');
+        // Don't show error screen, just log it
+      }
+
+      // Retry after delay
+      setTimeout(() => this.loadData(), this.retryDelay);
+    }
+  }
+
+  /**
+   * Render the two-column boat display
+   */
+  render() {
+    if (!this.bookingData) return;
+
+    // Generate day headers for all columns
+    this.renderDayHeaders();
+
+    // Split boats into Club, Race, and Tinnies
+    const { clubBoats, raceBoats, tinnies } = this.splitBoatsByClassification();
+
+    console.log('[TV Display] Rendering boats:', {
+      club: clubBoats.length,
+      race: raceBoats.length,
+      tinnies: tinnies.length,
+      daysToDisplay: this.daysToDisplay
+    });
+
+    // Render club boats (left column)
+    this.elements.clubBoatsList.innerHTML = '';
+    let prevClubType = null;
+    clubBoats.forEach(boat => {
+      const entry = this.createBoatEntry(boat, prevClubType);
+      this.elements.clubBoatsList.appendChild(entry);
+      prevClubType = boat.type;
+    });
+
+    // Render race boats (right column, top section)
+    this.elements.raceBoatsList.innerHTML = '';
+    let prevRaceType = null;
+    raceBoats.forEach(boat => {
+      const entry = this.createBoatEntry(boat, prevRaceType);
+      this.elements.raceBoatsList.appendChild(entry);
+      prevRaceType = boat.type;
+    });
+
+    // Render tinnies (right column, bottom section)
+    if (this.elements.tinniesList) {
+      this.elements.tinniesList.innerHTML = '';
+      tinnies.forEach(boat => {
+        const entry = this.createBoatEntry(boat, null, true);
+        this.elements.tinniesList.appendChild(entry);
+      });
+
+      // Show/hide tinnies section based on whether there are any
+      if (this.elements.tinniesSection) {
+        this.elements.tinniesSection.style.display = tinnies.length > 0 ? '' : 'none';
+      }
+    }
+  }
+
+  /**
+   * Render day headers for multi-day view
+   */
+  renderDayHeaders() {
+    const headers = this.generateDayHeaders();
+
+    // Render for club column
+    this.elements.clubDayHeaders.innerHTML = '';
+    headers.forEach(header => {
+      this.elements.clubDayHeaders.appendChild(header.cloneNode(true));
+    });
+
+    // Render for race column
+    this.elements.raceDayHeaders.innerHTML = '';
+    headers.forEach(header => {
+      this.elements.raceDayHeaders.appendChild(header.cloneNode(true));
+    });
+
+    // Render for tinnies section
+    if (this.elements.tinniesDayHeaders) {
+      this.elements.tinniesDayHeaders.innerHTML = '';
+      headers.forEach(header => {
+        this.elements.tinniesDayHeaders.appendChild(header.cloneNode(true));
+      });
+    }
+  }
+
+  /**
+   * Generate day header elements
+   */
+  generateDayHeaders() {
+    const headers = [];
+
+    // Add spacer for boat name column
+    const boatSpacer = document.createElement('div');
+    boatSpacer.className = 'day-header-spacer';
+    headers.push(boatSpacer);
+
+    // Add headers for each day
+    const today = new Date();
+    for (let i = 0; i < this.daysToDisplay; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+
+      const header = document.createElement('div');
+      header.className = 'day-header';
+
+      if (i === 0) {
+        header.textContent = 'TODAY';
+      } else {
+        // Format: "WED 28"
+        const dayName = date.toLocaleDateString('en-AU', { weekday: 'short' }).toUpperCase();
+        const dayNum = date.getDate();
+        header.textContent = `${dayName} ${dayNum}`;
+      }
+
+      headers.push(header);
+    }
+
+    return headers;
+  }
+
+  /**
+   * Split boats by classification (Club vs Race) and category (Rowing vs Tinnie)
+   */
+  splitBoatsByClassification() {
+    const clubBoats = [];
+    const raceBoats = [];
+    const tinnies = [];
+
+    this.bookingData.boats.forEach(boat => {
+      // Filter out boats with Unknown type (unless they're tinnies)
+      if (boat.type === 'Unknown' && boat.category !== 'tinnie') {
+        return;
+      }
+
+      // Tinnies go to their own section
+      if (boat.category === 'tinnie') {
+        tinnies.push(boat);
+        return;
+      }
+
+      // Race boats: classification = 'R' (Racer)
+      // Club boats: classification = 'T' (Training) or 'RT'
+      if (boat.classification === 'R') {
+        raceBoats.push(boat);
+      } else {
+        clubBoats.push(boat);
+      }
+    });
+
+    // Sort by type (4X, 2X, 1X), then by nickname within type
+    const typeOrder = { '4X': 1, '2X': 2, '1X': 3 };
+    const getBoatName = (boat) => boat.nickname || boat.displayName;
+
+    const sortBoats = (a, b) => {
+      // Sort by type first
+      const typeA = typeOrder[a.type] || 999;
+      const typeB = typeOrder[b.type] || 999;
+      if (typeA !== typeB) {
+        return typeA - typeB;
+      }
+      // Then by name within same type
+      return getBoatName(a).localeCompare(getBoatName(b));
+    };
+
+    clubBoats.sort(sortBoats);
+    raceBoats.sort(sortBoats);
+
+    // Sort tinnies by display name
+    tinnies.sort((a, b) => getBoatName(a).localeCompare(getBoatName(b)));
+
+    return { clubBoats, raceBoats, tinnies };
+  }
+
+  /**
+   * Create a boat entry element (boat info on left, multi-day grid on right)
+   */
+  createBoatEntry(boat, previousType = null, isTinnie = false) {
+    const entry = document.createElement('div');
+    entry.className = 'boat-entry';
+
+    // Add boat type background color class
+    const typeClass = isTinnie ? 'type-tinnie' : this.getBoatTypeClass(boat.type);
+    entry.classList.add(typeClass);
+
+    // Add separator class if boat type changed from previous
+    if (previousType !== null && boat.type !== previousType) {
+      entry.classList.add('type-separator');
+    }
+
+    // Use nickname if available, otherwise display name
+    const boatName = boat.nickname || boat.displayName;
+
+    // Check if boat is damaged (check all name fields)
+    const isDamaged = this.isDamagedBoat(boat);
+    if (isDamaged) {
+      entry.classList.add('damaged-boat');
+    }
+
+    // Build boat info HTML (no type badge for tinnies)
+    let boatInfoHTML = `
+      ${isTinnie ? '' : `<span class="boat-type-badge">${boat.type}</span>`}
+      ${isDamaged ? '<span class="damaged-icon" title="Boat is damaged">⚠️</span>' : ''}
+      <span class="boat-name-text" title="${this.escapeHtml(boatName)}">${this.escapeHtml(boatName)}</span>
+    `;
+
+    // Add badges (weight and sweep) in vertical container if either exists
+    if ((boat.weight && boat.weight !== 'null') || boat.sweepCapable) {
+      boatInfoHTML += `<div class="boat-badges-vertical">`;
+
+      // Add weight badge if weight is available
+      if (boat.weight && boat.weight !== 'null') {
+        boatInfoHTML += `<span class="boat-weight">${boat.weight}kg</span>`;
+      }
+
+      // Add sweep badge if boat is sweep capable (below weight)
+      if (boat.sweepCapable) {
+        boatInfoHTML += `<span class="boat-sweep-badge">SWEEP</span>`;
+      }
+
+      boatInfoHTML += `</div>`;
+    }
+
+    // Boat info (type badge + name + weight + sweep) on left - fixed width
+    const boatInfo = document.createElement('div');
+    boatInfo.className = 'boat-info';
+    boatInfo.innerHTML = boatInfoHTML;
+    entry.appendChild(boatInfo);
+
+    // Multi-day grid on right
+    const daysGrid = document.createElement('div');
+    daysGrid.className = 'boat-days-grid';
+
+    // Create columns for each day
+    const today = new Date();
+    for (let i = 0; i < this.daysToDisplay; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const dateStr = this.formatDate(date);
+
+      const dayColumn = document.createElement('div');
+      dayColumn.className = 'day-column';
+
+      // Get bookings for this day, checking for spanning bookings
+      const bookings = this.getBookingsForDate(boat, dateStr);
+
+      // AM1 session for this day
+      const am1 = this.createSessionItem(bookings.morning1);
+      dayColumn.appendChild(am1);
+
+      // AM2 session for this day
+      const am2 = this.createSessionItem(bookings.morning2);
+      dayColumn.appendChild(am2);
+
+      daysGrid.appendChild(dayColumn);
+    }
+
+    entry.appendChild(daysGrid);
+
+    // Add damaged overlay if boat is damaged
+    if (isDamaged) {
+      const damagedOverlay = document.createElement('div');
+      damagedOverlay.className = 'damaged-overlay';
+      damagedOverlay.textContent = 'DAMAGED';
+      entry.appendChild(damagedOverlay);
+    }
+
+    return entry;
+  }
+
+  /**
+   * Create a session item - without label
+   */
+  createSessionItem(booking) {
+    const item = document.createElement('div');
+    item.className = 'session-item';
+
+    if (booking) {
+      // Format member name based on configuration
+      const formattedName = this.formatMemberName(booking.memberName);
+
+      // Show booking: start time + member name (no label)
+      item.innerHTML = `
+        <span class="booking-time">${booking.startTime}</span>
+        <span class="booking-member">${this.escapeHtml(formattedName)}</span>
+      `;
+    } else {
+      // Leave blank when available
+      item.innerHTML = '';
+    }
+
+    return item;
+  }
+
+  /**
+   * Format member name based on configuration
+   */
+  formatMemberName(fullName) {
+    if (!this.tvDisplayConfig || !this.tvDisplayConfig.display) {
+      return fullName; // Fallback to full name
+    }
+
+    const format = this.tvDisplayConfig.display.memberNameFormat;
+
+    switch (format) {
+      case 'first-only': {
+        // Return only first name (before first space)
+        const parts = fullName.trim().split(/\s+/);
+        return parts[0];
+      }
+
+      case 'first-last-initial': {
+        // Return first name + last initial (e.g., "John D")
+        const parts = fullName.trim().split(/\s+/);
+        if (parts.length === 1) {
+          return parts[0]; // Only one name part
+        }
+        const firstName = parts[0];
+        const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+        return `${firstName} ${lastInitial}`;
+      }
+
+      case 'full':
+      default:
+        return fullName;
+    }
+  }
+
+  /**
+   * Get bookings for a specific date, handling spanning bookings
+   * Returns: { morning1: booking|null, morning2: booking|null }
+   */
+  getBookingsForDate(boat, dateStr) {
+    if (!this.config || !this.config.club || !this.config.club.sessions) {
+      return { morning1: null, morning2: null };
+    }
+
+    const result = { morning1: null, morning2: null };
+    const sessions = this.config.club.sessions;
+
+    // Check all bookings for this date
+    boat.bookings.forEach(booking => {
+      if (booking.date !== dateStr) return;
+
+      // Parse booking times
+      const [bookingStartHour, bookingStartMin] = booking.startTime.split(':').map(Number);
+      const [bookingEndHour, bookingEndMin] = booking.endTime.split(':').map(Number);
+
+      // Parse session times
+      const [session1StartHour, session1StartMin] = sessions.morning1.start.split(':').map(Number);
+      const [session1EndHour, session1EndMin] = sessions.morning1.end.split(':').map(Number);
+      const [session2StartHour, session2StartMin] = sessions.morning2.start.split(':').map(Number);
+      const [session2EndHour, session2EndMin] = sessions.morning2.end.split(':').map(Number);
+
+      // Convert to minutes for easier comparison
+      const bookingStart = bookingStartHour * 60 + bookingStartMin;
+      const bookingEnd = bookingEndHour * 60 + bookingEndMin;
+      const session1Start = session1StartHour * 60 + session1StartMin;
+      const session1End = session1EndHour * 60 + session1EndMin;
+      const session2Start = session2StartHour * 60 + session2StartMin;
+      const session2End = session2EndHour * 60 + session2EndMin;
+
+      // Check if booking overlaps with session 1
+      if (bookingStart < session1End && bookingEnd > session1Start) {
+        result.morning1 = booking;
+      }
+
+      // Check if booking overlaps with session 2
+      if (bookingStart < session2End && bookingEnd > session2Start) {
+        result.morning2 = booking;
+      }
+    });
+
+    return result;
+  }
+
+  /**
+   * Update the footer date display
+   */
+  updateClock() {
+    const now = new Date();
+
+    // Update footer date
+    const footerStr = 'TODAY - ' + now.toLocaleDateString('en-AU', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    });
+    this.elements.todayDateFooter.textContent = footerStr;
+  }
+
+  /**
+   * Update last updated timestamp
+   */
+  updateLastUpdated() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-AU', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    this.elements.lastUpdated.textContent = `Last updated: ${timeStr}`;
+  }
+
+  /**
+   * Start or restart the countdown timer to next refresh
+   */
+  startCountdown() {
+    // Clear any existing countdown timer
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+    }
+
+    // Reset countdown to full refresh interval (in seconds)
+    this.countdownSeconds = Math.round(this.refreshInterval / 1000);
+
+    const autoRefreshDisplay = document.getElementById('autoRefreshDisplay');
+    if (!autoRefreshDisplay) return;
+
+    // Update display immediately
+    this.updateCountdownDisplay(autoRefreshDisplay);
+
+    // Start countdown interval (every second)
+    this.countdownTimer = setInterval(() => {
+      this.countdownSeconds--;
+
+      if (this.countdownSeconds <= 0) {
+        // Countdown complete - will be reset when data loads
+        this.countdownSeconds = 0;
+      }
+
+      this.updateCountdownDisplay(autoRefreshDisplay);
+    }, 1000);
+  }
+
+  /**
+   * Update the countdown display element
+   */
+  updateCountdownDisplay(element) {
+    const minutes = Math.floor(this.countdownSeconds / 60);
+    const seconds = this.countdownSeconds % 60;
+    const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    element.textContent = `• Next update: ${timeStr}`;
+  }
+
+  /**
+   * Show a specific view (main, loading, error)
+   */
+  showView(view) {
+    this.elements.loadingScreen.classList.add('hidden');
+    this.elements.errorScreen.classList.add('hidden');
+    this.elements.mainView.classList.add('hidden');
+
+    switch (view) {
+      case 'main':
+        this.elements.mainView.classList.remove('hidden');
+        break;
+      case 'loading':
+        this.elements.loadingScreen.classList.remove('hidden');
+        break;
+      case 'error':
+        this.elements.errorScreen.classList.remove('hidden');
+        break;
+    }
+  }
+
+  /**
+   * Show error message
+   */
+  showError(message) {
+    this.elements.errorMessage.textContent = message;
+    this.showView('error');
+  }
+
+  /**
+   * Get boat icon emoji based on type
+   */
+  getBoatIcon(type) {
+    switch (type) {
+      case '1X': return '🚣';
+      case '2X':
+      case '2-': return '🚣🚣';
+      case '4X':
+      case '4-':
+      case '4+': return '🚣🚣🚣🚣';
+      case '8X':
+      case '8+': return '🚣🚣🚣🚣🚣🚣🚣🚣';
+      default: return '🚣';
+    }
+  }
+
+  /**
+   * Get CSS class for boat type background color
+   */
+  getBoatTypeClass(type) {
+    switch (type) {
+      case '1X': return 'type-1x';
+      case '2X': return 'type-2x';
+      case '4X': return 'type-4x';
+      case '8X': return 'type-other';
+      default: return 'type-other';
+    }
+  }
+
+  /**
+   * Format date as YYYY-MM-DD
+   */
+  formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Escape HTML to prevent XSS
+   */
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  /**
+   * Check if boat is damaged based on name or full boat data
+   */
+  isDamagedBoat(boat) {
+    // Check if boat is a string (legacy) or object
+    if (typeof boat === 'string') {
+      return boat.toLowerCase().includes('damaged');
+    }
+
+    // Check nickname, displayName, and fullName for "damaged"
+    const nickname = (boat.nickname || '').toLowerCase();
+    const displayName = (boat.displayName || '').toLowerCase();
+    const fullName = (boat.fullName || '').toLowerCase();
+
+    return nickname.includes('damaged') ||
+           displayName.includes('damaged') ||
+           fullName.includes('damaged');
+  }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[TV Display] DOM loaded, initializing controller...');
+  const controller = new TVDisplayController();
+  controller.init();
+});
