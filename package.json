@@ -1,0 +1,38 @@
+{
+  "name": "lmrc",
+  "version": "1.0.0",
+  "description": "Lake Macquarie Rowing Club - Monorepo (Pi + SaaS Platform)",
+  "private": true,
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "// PI APPS": "",
+    "pi-server:dev": "pnpm --filter @lmrc/pi-server dev",
+    "pi-server:build": "pnpm --filter @lmrc/pi-server build",
+    "noticeboard:dev": "pnpm --filter @lmrc/noticeboard dev",
+    "noticeboard:build": "pnpm --filter @lmrc/noticeboard build",
+
+    "// SAAS APPS (future)": "",
+    "saas-api:dev": "pnpm --filter @lmrc/saas-api dev",
+    "saas-api:build": "pnpm --filter @lmrc/saas-api build",
+    "saas-admin:dev": "pnpm --filter @lmrc/saas-admin dev",
+    "saas-admin:build": "pnpm --filter @lmrc/saas-admin build",
+
+    "// PUBLIC SITES": "",
+    "booking-page:dev": "pnpm --filter @lmrc/booking-page dev",
+    "booking-page:build": "pnpm --filter @lmrc/booking-page build",
+
+    "// DATABASE": "",
+    "db:migrate": "pnpm --filter @lmrc/db migrate",
+    "db:push": "pnpm --filter @lmrc/db push",
+    "db:studio": "pnpm --filter @lmrc/db studio",
+
+    "// SOLUTION-WIDE": "",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "keywords": ["rowing", "club", "booking", "monorepo", "saas"],
+  "author": "LMRC",
+  "license": "UNLICENSED"
+}

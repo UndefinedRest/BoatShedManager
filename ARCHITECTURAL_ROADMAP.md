@@ -445,8 +445,9 @@ All endpoints automatically scoped to the club identified by subdomain middlewar
 
 ---
 
-#### [A6] Responsive Layouts (TV / Desktop / Mobile)
+#### [A6] Responsive Layouts (TV / Desktop / Mobile) ✅ COMPLETE
 **Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: None (can parallel with A1-A5)
+**Status**: Deployed to Pi (2026-01-31)
 
 Three layout modes for the booking board, served from the same URL:
 
@@ -896,6 +897,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.3 | 2026-01-28 | Removed [B5] Tinnies Support from SaaS backlog — being built on Pi codebase pre-SaaS, will already exist when SaaS work begins. Renumbered to B1-B5. |
 | 2.4 | 2026-01-30 | Clarified scope: RevSport is source of truth for fleet. Renamed `boats` table to `boat_cache` (read-only, auto-discovered). Removed boat CRUD from admin dashboard — configuration only. Updated APIs to serve both Booking Board and Booking Page. Added "RevolutioniseSport as Source of Truth" section. |
 | 2.5 | 2026-01-30 | Added Data Source Adapter architecture for future extensibility. RevSport is first adapter; built-in fleet management (Premium tier) and other adapters planned for future phases. Updated clubs table with `data_source_type` and `data_source_config`. Updated A4 to reference adapter interface. |
+| 2.6 | 2026-01-31 | Marked [A6] Responsive Layouts as complete — CSS media queries for TV/desktop/mobile modes deployed to Pi with `?mode=tv` parameter. |
 
 ---
 
