@@ -1,0 +1,48 @@
+{
+  "version": "1.0.0",
+  "device": {
+    "id": "rpi-boatshed-XX",
+    "name": "Boatshed Display XX",
+    "location": "To Be Configured"
+  },
+  "activeApp": null,
+  "apps": {
+    "booking-viewer": {
+      "enabled": true,
+      "name": "Boat Booking Viewer",
+      "description": "7-day booking calendar for club boats",
+      "serviceName": "lmrc-booking-viewer",
+      "port": 3000,
+      "path": "/opt/lmrc/booking-viewer",
+      "startCommand": "npm start",
+      "healthCheck": "http://localhost:3000/api/v1/health"
+    },
+    "noticeboard": {
+      "enabled": true,
+      "name": "Digital Noticeboard",
+      "description": "Club news, events, photos, and weather",
+      "serviceName": "lmrc-noticeboard",
+      "port": 3000,
+      "path": "/opt/lmrc/noticeboard",
+      "startCommand": "npm start",
+      "healthCheck": "http://localhost:3000/api/health",
+      "backgroundJobs": [
+        {
+          "name": "scraper",
+          "cronSchedule": "5 * * * *",
+          "command": "node scraper/noticeboard-scraper.js"
+        }
+      ]
+    }
+  },
+  "display": {
+    "kioskUrl": "http://localhost:3000",
+    "hideMouseCursor": true,
+    "disableScreensaver": true,
+    "rotation": 0
+  },
+  "metadata": {
+    "lastModified": null,
+    "lastSwitched": null
+  }
+}
