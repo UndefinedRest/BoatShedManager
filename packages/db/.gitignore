@@ -1,0 +1,9 @@
+# Build output (rebuilt on install/deploy)
+dist/
+
+# Environment files
+.env
+.env.local
+
+# Drizzle migrations (generated, should be committed)
+# drizzle/
