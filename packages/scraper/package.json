@@ -1,0 +1,38 @@
+{
+  "name": "@lmrc/scraper",
+  "version": "1.0.0",
+  "description": "Multi-tenant data source adapters and scraping",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@lmrc/db": "workspace:*",
+    "@lmrc/crypto": "workspace:*",
+    "axios": "^1.7.0",
+    "axios-cookiejar-support": "^5.0.0",
+    "cheerio": "^1.0.0",
+    "drizzle-orm": "^0.38.3",
+    "node-cron": "^3.0.3",
+    "tough-cookie": "^4.1.4",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/tough-cookie": "^4.0.5",
+    "typescript": "^5.3.3",
+    "vitest": "^2.1.0"
+  }
+}

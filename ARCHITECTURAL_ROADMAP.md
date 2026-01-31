@@ -4,7 +4,7 @@
 
 **Document Type**: Architectural Roadmap & Technical Backlog
 **Target Audience**: Product Management & Engineering
-**Last Updated**: 2026-01-30
+**Last Updated**: 2026-01-31
 **Status**: SaaS pivot - replaces Pi-centric roadmap (v1.0, Oct 2025)
 
 ---
@@ -400,25 +400,28 @@ const creds = decryptCredentials(encrypted, process.env.ENCRYPTION_KEY);
 
 ---
 
-#### [A4] Evolve Scraper for Multi-Tenancy (RevSport Adapter)
+#### [A4] Evolve Scraper for Multi-Tenancy (RevSport Adapter) ✅ COMPLETE
 **Effort**: M (2-3 weeks) | **Risk**: Medium | **Dependencies**: A1, A3
+**Status**: Implemented (2026-01-31)
 
-Implement the RevSport adapter against the `DataSourceAdapter` interface. This is the first (and initially only) adapter, but structuring it this way enables future adapters without refactoring.
-
-- Implement `RevSportAdapter` class conforming to `DataSourceAdapter` interface
-- Refactor existing Puppeteer scraping to accept `club` context (URL, credentials, timezone)
-- Store scraped boat and booking data in `boat_cache` and `booking_cache` tables
-- `node-cron` scheduler iterates over active clubs and triggers `adapter.sync()`
-- One Puppeteer instance at a time (serialised to manage memory)
-- Adaptive refresh: configurable per club, default schedule:
+- ✅ Implemented `DataSourceAdapter` interface (`packages/scraper/src/adapter.ts`)
+- ✅ `RevSportAdapter` class conforming to interface with full read operations
+- ✅ `RevSportClient` using axios + cheerio (lightweight HTTP scraping with cookie-based auth)
+- ✅ `ScraperStorage` for persisting boats and bookings to database
+- ✅ `ScrapeScheduler` with `node-cron` for per-club adaptive refresh:
   - 05:00-09:00: every 2 min (peak morning rowing)
   - 09:00-17:00: every 5 min
   - 17:00-21:00: every 2 min (evening rowing)
   - 21:00-05:00: every 10 min
+- ✅ 18 unit tests for HTML/JSON parsing
+
+**Implementation notes**:
+- Used axios + cheerio instead of Puppeteer (much lighter weight, <50MB vs ~300-500MB)
+- RevSport returns JSON for bookings API, only HTML parsing needed for boat list
+- Cookie-based session management via `axios-cookiejar-support`
+- Serialised scraping (one club at a time) for memory efficiency
 
 **Adapter interface compliance**: The RevSport adapter implements read operations (`getBoats`, `getBookings`, `sync`) but not write operations (`supportsBookingEntry: false`). The API layer calls adapter methods, not scraper functions directly.
-
-**Memory management**: Puppeteer is the biggest resource concern. With serialised scraping (one club at a time), memory stays bounded at ~300-500MB for the worker process. Parallelise only when infrastructure supports it (Phase C with dedicated workers).
 
 ---
 
@@ -911,6 +914,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.7 | 2026-01-31 | Switched database provider from Render PostgreSQL to Supabase (Free tier, Sydney region). Updated architecture diagram, A1/A7 sections, and technology stack. Rationale: Sydney region for Australian data residency, free tier for early development, standard PostgreSQL remains portable. |
 | 2.8 | 2026-01-31 | Marked [A1] PostgreSQL Database Setup as complete — Supabase provisioned, schema pushed, LMRC seeded. Marked [A2] Multi-Tenant Subdomain Routing as complete — `@lmrc/tenant` package with middleware, tests, localhost dev support. |
 | 2.9 | 2026-01-31 | Marked [A3] Encrypted Credential Storage as complete — `@lmrc/crypto` package with AES-256-GCM encryption, key rotation, 20 unit tests. |
+| 2.10 | 2026-01-31 | Marked [A4] Multi-Tenant Scraper as complete — `@lmrc/scraper` package with DataSourceAdapter interface, RevSportAdapter (axios + cheerio), ScraperStorage, ScrapeScheduler with adaptive refresh, 18 unit tests. |
 
 ---
 
