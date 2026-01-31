@@ -325,14 +325,15 @@ CREATE INDEX idx_audit_club ON audit_log(club_id, created_at);
 
 ### Phase A: Cloud MVP
 
-#### [A1] PostgreSQL Database Setup
+#### [A1] PostgreSQL Database Setup ✅ COMPLETE
 **Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: None
+**Status**: Deployed to Supabase (2026-01-31)
 
-- Provision Supabase PostgreSQL (Free tier, Sydney region) — $0/month initially
-- Set up Drizzle ORM with TypeScript schema definitions ✅ **DONE** (`packages/db`)
-- Create migration scripts for all tables above
-- Seed LMRC as first club tenant
-- Migrate LMRC boat metadata and display config from JSON to DB
+- ✅ Provision Supabase PostgreSQL (Free tier, Sydney region) — $0/month initially
+- ✅ Set up Drizzle ORM with TypeScript schema definitions (`packages/db`)
+- ✅ Schema pushed to Supabase (clubs, boat_cache, booking_cache, users, scrape_jobs, audit_log)
+- ✅ Seed LMRC as first club tenant (ID: 5e7d3e92-7a69-41d0-81b9-2dfc2ddca616)
+- Migrate LMRC boat metadata and display config from JSON to DB (deferred to A8)
 
 **Key decisions**:
 - **Supabase over Render PostgreSQL** — Sydney region available now (Render Sydney TBD), data residency in Australia, free tier for early development, standard PostgreSQL (portable to Render/Neon/AWS later)
@@ -342,26 +343,32 @@ CREATE INDEX idx_audit_club ON audit_log(club_id, created_at);
 
 ---
 
-#### [A2] Multi-Tenant Subdomain Routing
+#### [A2] Multi-Tenant Subdomain Routing ✅ COMPLETE
 **Effort**: S (1 week) | **Risk**: Low | **Dependencies**: A1
+**Status**: Implemented (2026-01-31)
 
-- Express middleware to extract subdomain from `Host` header
-- Look up `club_id` from `clubs.subdomain` column
-- Attach `req.club` context to every request
-- All API routes become tenant-scoped automatically
-- Wildcard DNS: `*.rowingboards.io` → Render web service
-- Fallback: unknown subdomain → marketing/signup page
+- ✅ Express middleware to extract subdomain from `Host` header (`packages/tenant`)
+- ✅ Look up `club_id` from `clubs.subdomain` column
+- ✅ Attach `req.club` context to every request
+- ✅ Support for localhost development (lmrc.localhost:3000)
+- ✅ Support for custom domains (Phase C ready)
+- ✅ Fallback: unknown subdomain → marketing/signup page (configurable)
+- Wildcard DNS: `*.rowingboards.io` → Render web service (configure on deployment)
 
 ```typescript
-// Middleware concept
-async function tenantMiddleware(req, res, next) {
-    const subdomain = extractSubdomain(req.hostname); // "lmrc" from "lmrc.rowingboards.io"
-    if (!subdomain) return res.redirect('https://rowingboards.io'); // marketing site
-    const club = await db.query.clubs.findFirst({ where: eq(clubs.subdomain, subdomain) });
-    if (!club) return res.status(404).render('club-not-found');
-    req.club = club;
-    next();
-}
+// Usage
+import { createTenantMiddleware, requireClub } from '@lmrc/tenant';
+import { createDb } from '@lmrc/db';
+
+const db = createDb(process.env.DATABASE_URL);
+app.use(createTenantMiddleware(db, {
+  baseDomain: 'rowingboards.io',
+  marketingUrl: 'https://rowingboards.io',
+}));
+
+app.get('/api/v1/boats', requireClub, (req, res) => {
+  // req.club is available here
+});
 ```
 
 ---
@@ -892,6 +899,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.5 | 2026-01-30 | Added Data Source Adapter architecture for future extensibility. RevSport is first adapter; built-in fleet management (Premium tier) and other adapters planned for future phases. Updated clubs table with `data_source_type` and `data_source_config`. Updated A4 to reference adapter interface. |
 | 2.6 | 2026-01-31 | Marked [A6] Responsive Layouts as complete — CSS media queries for TV/desktop/mobile modes deployed to Pi with `?mode=tv` parameter. |
 | 2.7 | 2026-01-31 | Switched database provider from Render PostgreSQL to Supabase (Free tier, Sydney region). Updated architecture diagram, A1/A7 sections, and technology stack. Rationale: Sydney region for Australian data residency, free tier for early development, standard PostgreSQL remains portable. |
+| 2.8 | 2026-01-31 | Marked [A1] PostgreSQL Database Setup as complete — Supabase provisioned, schema pushed, LMRC seeded. Marked [A2] Multi-Tenant Subdomain Routing as complete — `@lmrc/tenant` package with middleware, tests, localhost dev support. |
 
 ---
 
