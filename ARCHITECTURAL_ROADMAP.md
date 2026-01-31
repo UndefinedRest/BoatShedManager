@@ -425,34 +425,26 @@ const creds = decryptCredentials(encrypted, process.env.ENCRYPTION_KEY);
 
 ---
 
-#### [A5] API Layer (Public + Admin)
+#### [A5] API Layer (Public + Admin) ✅ COMPLETE
 **Effort**: M (2 weeks) | **Risk**: Low | **Dependencies**: A1, A2, A4
+**Status**: Implemented (2026-01-31)
 
-Refactor existing Express routes to serve from PostgreSQL instead of in-memory cache.
+- ✅ `@lmrc/api` package with Express router factory
+- ✅ Public routes: GET /boats, /boats/:id, /bookings, /config, /health
+- ✅ Admin routes: POST /login, GET /status, PUT /credentials, PUT /display, POST /sync
+- ✅ JWT authentication with tenant isolation (cross-tenant access blocked)
+- ✅ Pino structured logging with request correlation IDs
+- ✅ Tenant-scoped rate limiting (express-rate-limit)
+- ✅ Zod request validation schemas
+- ✅ Consistent error responses with standardised error codes
+- ✅ 52 unit tests passing
 
-**Public APIs (no authentication)** — serve both Booking Board and Booking Page:
-
-```
-GET  /api/v1/boats             → boat_cache for req.club (list with type, category, weight, damaged status)
-GET  /api/v1/boats/:id         → single boat details
-GET  /api/v1/bookings          → booking_cache for req.club (all bookings)
-GET  /api/v1/bookings?boat=X&date=Y  → filtered bookings for Booking Page
-GET  /api/v1/config            → display_config from clubs table
-GET  /api/v1/health            → platform health + per-club scrape status
-```
-
-These APIs replace the static `boats.json` file that the Booking Page currently relies on.
-
-**Admin APIs (JWT authentication)** — configuration only, no fleet management:
-
-```
-PUT  /api/v1/admin/credentials → update RevSport URL + encrypted credentials
-PUT  /api/v1/admin/display     → update branding, layout preferences
-POST /api/v1/admin/sync        → trigger immediate scrape
-GET  /api/v1/admin/status      → last scrape time, errors, health
-```
-
-All endpoints automatically scoped to the club identified by subdomain middleware (A2).
+**Implementation notes**:
+- Router factory pattern: `createApiRouter(db, config)` mounts all routes
+- Auth middleware verifies JWT and enforces `clubId` matches request tenant
+- Rate limits configurable per-tenant (public vs admin endpoints)
+- Health endpoint accessible without rate limiting for uptime monitoring
+- Sync endpoint designed for BullMQ integration (returns job ID, queue-ready)
 
 ---
 
@@ -915,6 +907,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.8 | 2026-01-31 | Marked [A1] PostgreSQL Database Setup as complete — Supabase provisioned, schema pushed, LMRC seeded. Marked [A2] Multi-Tenant Subdomain Routing as complete — `@lmrc/tenant` package with middleware, tests, localhost dev support. |
 | 2.9 | 2026-01-31 | Marked [A3] Encrypted Credential Storage as complete — `@lmrc/crypto` package with AES-256-GCM encryption, key rotation, 20 unit tests. |
 | 2.10 | 2026-01-31 | Marked [A4] Multi-Tenant Scraper as complete — `@lmrc/scraper` package with DataSourceAdapter interface, RevSportAdapter (axios + cheerio), ScraperStorage, ScrapeScheduler with adaptive refresh, 18 unit tests. |
+| 2.11 | 2026-02-01 | Marked [A5] API Layer as complete — `@lmrc/api` package with public/admin routes, JWT auth, Pino logging, rate limiting, Zod validation, 52 unit tests. |
 
 ---
 
