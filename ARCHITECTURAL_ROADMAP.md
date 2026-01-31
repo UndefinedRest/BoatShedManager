@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-This document outlines the technical work required to evolve the LMRC Booking Board from a single-club Raspberry Pi deployment into a multi-tenant cloud SaaS product. The architecture is **cloud-first**: the platform runs on Render.com with PostgreSQL, and in-shed displays are thin clients (Pi or any browser device) pointing at the cloud.
+This document outlines the technical work required to evolve the LMRC Booking Board from a single-club Raspberry Pi deployment into a multi-tenant cloud SaaS product. The architecture is **cloud-first**: the platform runs on Supabase (PostgreSQL in Sydney) with Render.com for compute, and in-shed displays are thin clients (Pi or any browser device) pointing at the cloud.
 
 **Current State**: Production single-club deployment at LMRC (Raspberry Pi, Express/TypeScript, JSON files, Puppeteer scraping)
 **Target State**: Multi-tenant SaaS platform serving 100+ rowing clubs via `clubname.rowingboards.io`
@@ -174,46 +174,35 @@ Raspberry Pi (LMRC Boatshed)
 ## Target Architecture (SaaS)
 
 ```
-                    ┌──────────────────────────────────────────────┐
-                    │          Render.com Platform                  │
-                    │                                              │
-                    │  ┌──────────────────────────────────────┐   │
-                    │  │  Web Service (Express/TypeScript)     │   │
-                    │  │  ──────────────────────────────────   │   │
-                    │  │  • Subdomain routing middleware       │   │
-                    │  │  • Public board API (per club)        │   │
-                    │  │  • Admin dashboard API                │   │
-                    │  │  • Auth (JWT for admin sessions)      │   │
-                    │  │  • Static frontend serving            │   │
-                    │  └──────────────┬───────────────────────┘   │
-                    │                 │                             │
-                    │  ┌──────────────▼───────────────────────┐   │
-                    │  │  Background Worker (separate process) │   │
-                    │  │  ──────────────────────────────────   │   │
-                    │  │  • Per-club Puppeteer scraping        │   │
-                    │  │  • Adaptive refresh scheduler         │   │
-                    │  │  • node-cron (Phase A-B)              │   │
-                    │  │  • BullMQ + Redis (Phase C+)          │   │
-                    │  └──────────────┬───────────────────────┘   │
-                    │                 │                             │
-                    │  ┌──────────────▼───────────────────────┐   │
-                    │  │  PostgreSQL Database                   │   │
-                    │  │  ──────────────────────────────────   │   │
-                    │  │  • clubs (config, branding, creds)    │   │
-                    │  │  • boats (fleet per club)             │   │
-                    │  │  • booking_cache (scraped data)       │   │
-                    │  │  • users (admin accounts)             │   │
-                    │  │  • scrape_jobs (scheduler state)      │   │
-                    │  │  • audit_log                          │   │
-                    │  └──────────────────────────────────────┘   │
-                    └──────────────────────────────────────────────┘
-                                      │
-                         ┌────────────┼────────────┐
-                         │            │            │
-                    ┌────▼───┐  ┌────▼───┐  ┌────▼───┐
-                    │ Club A │  │ Club B │  │ Club C │
-                    │ TV/Pi  │  │ Laptop │  │ Phone  │
-                    └────────┘  └────────┘  └────────┘
+┌─────────────────────────────────────────┐    ┌─────────────────────────────┐
+│        Render.com (Compute)             │    │   Supabase (Sydney)         │
+│                                         │    │                             │
+│  ┌───────────────────────────────────┐  │    │  ┌───────────────────────┐  │
+│  │  Web Service (Express/TypeScript) │  │    │  │  PostgreSQL Database  │  │
+│  │  ─────────────────────────────────│  │    │  │  ─────────────────────│  │
+│  │  • Subdomain routing middleware   │  │    │  │  • clubs (config)     │  │
+│  │  • Public board API (per club)    │──┼────┼──│  • boat_cache         │  │
+│  │  • Admin dashboard API            │  │    │  │  • booking_cache      │  │
+│  │  • Auth (JWT for admin sessions)  │  │    │  │  • users              │  │
+│  │  • Static frontend serving        │  │    │  │  • scrape_jobs        │  │
+│  └───────────────┬───────────────────┘  │    │  │  • audit_log          │  │
+│                  │                      │    │  └───────────────────────┘  │
+│  ┌───────────────▼───────────────────┐  │    │                             │
+│  │  Background Worker                │  │    │  Free tier → Pro when needed│
+│  │  ─────────────────────────────────│  │    │  (portable to Render/AWS)   │
+│  │  • Per-club Puppeteer scraping    │──┼────┘                             │
+│  │  • Adaptive refresh scheduler     │  │    └─────────────────────────────┘
+│  │  • node-cron (Phase A-B)          │  │
+│  │  • BullMQ + Redis (Phase C+)      │  │
+│  └───────────────────────────────────┘  │
+└─────────────────────────────────────────┘
+                    │
+       ┌────────────┼────────────┐
+       │            │            │
+  ┌────▼───┐  ┌────▼───┐  ┌────▼───┐
+  │ Club A │  │ Club B │  │ Club C │
+  │ TV/Pi  │  │ Laptop │  │ Phone  │
+  └────────┘  └────────┘  └────────┘
 ```
 
 ---
@@ -339,15 +328,17 @@ CREATE INDEX idx_audit_club ON audit_log(club_id, created_at);
 #### [A1] PostgreSQL Database Setup
 **Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: None
 
-- Provision Render PostgreSQL (starter plan, $7/month)
-- Set up Drizzle ORM with TypeScript schema definitions
+- Provision Supabase PostgreSQL (Free tier, Sydney region) — $0/month initially
+- Set up Drizzle ORM with TypeScript schema definitions ✅ **DONE** (`packages/db`)
 - Create migration scripts for all tables above
 - Seed LMRC as first club tenant
 - Migrate LMRC boat metadata and display config from JSON to DB
 
 **Key decisions**:
+- **Supabase over Render PostgreSQL** — Sydney region available now (Render Sydney TBD), data residency in Australia, free tier for early development, standard PostgreSQL (portable to Render/Neon/AWS later)
 - Drizzle over Prisma (lighter-weight, SQL-first, aligns with existing POC)
 - JSONB columns for flexible config (branding, display_config, metadata) to avoid schema rigidity
+- **No Supabase-specific features** — using only PostgreSQL connection, not Auth/Realtime/Storage (maintains portability)
 
 ---
 
@@ -482,7 +473,7 @@ Three environments, appropriate for the scale of this project:
 - Rollback: Render supports instant rollback to previous deploy
 - Environment variables are **separate per environment** (different `ENCRYPTION_KEY`, `JWT_SECRET`, `DATABASE_URL`)
 
-**Render configuration** (per environment):
+**Render configuration** (compute only - database is Supabase):
 
 ```yaml
 # render.yaml (production - similar structure for staging with different names/plans)
@@ -492,13 +483,11 @@ services:
     env: node
     plan: free  # upgrade to starter ($7/mo) when needed
     branch: main  # staging uses 'staging' branch
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: pnpm install && pnpm build
+    startCommand: pnpm start
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: rowing-boards-db
-          property: connectionString
+        sync: false  # Set manually from Supabase connection string
       - key: NODE_ENV
         value: production
       - key: ENCRYPTION_KEY
@@ -511,24 +500,28 @@ services:
     env: node
     plan: starter  # needs memory for Puppeteer
     branch: main
-    buildCommand: npm install
-    startCommand: npm run worker
+    buildCommand: pnpm install
+    startCommand: pnpm run worker
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: rowing-boards-db
-          property: connectionString
+        sync: false  # Set manually from Supabase connection string
       - key: ENCRYPTION_KEY
         fromService:
           name: rowing-boards-web
           envVarKey: ENCRYPTION_KEY
 
-databases:
-  - name: rowing-boards-db
-    plan: starter  # $7/month, 1GB storage
+# Database hosted on Supabase (Sydney region) - not Render
+# Free tier: 500MB, auto-pause after 1 week inactive (but scraper keeps it active)
+# Upgrade to Pro ($25/mo) when: >500MB, need staging env, or SLA required
 ```
 
-**Staging cost**: ~$7/month (starter DB). Web service and worker can run on free plans for staging since performance isn't critical.
+**Phase A cost**: $0/month (Supabase Free + Render Free web). Upgrade scraper to Render Starter ($7/mo) when needed for Puppeteer memory.
+
+**Why Supabase for database**:
+- Sydney region available now (Render Sydney TBD)
+- Australian data residency for club data
+- Free tier sufficient for early development
+- Standard PostgreSQL - portable to Render/AWS/Neon later with just a connection string change
 
 - Auto-deploy from GitHub (staging branch → staging, main branch → production)
 - Web service serves frontend + API
@@ -831,14 +824,14 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | Language | TypeScript | Existing codebase, type safety |
 | Web framework | Express.js | Existing codebase, proven |
 | ORM | Drizzle | SQL-first, lightweight, TS-native, aligns with POC work |
-| Database | PostgreSQL 15+ | Multi-tenancy, ACID, JSONB, free tier on Render |
+| Database | Supabase PostgreSQL (Sydney) | Free tier, Australian data residency, portable to Render/AWS later |
 | Scraping | Puppeteer | Existing proven logic, handles CSRF/sessions |
 | Job scheduling | node-cron (A-B) → BullMQ (C+) | Start simple, upgrade when needed |
 | Frontend (board) | HTML/CSS/JS | Existing, works well, lightweight |
 | Frontend (admin) | React + TypeScript + Tailwind | Modern, component-based dashboard |
-| Auth | JWT (jsonwebtoken) + bcrypt | Standard, stateless |
+| Auth | JWT (jsonwebtoken) + bcrypt | Standard, stateless (not Supabase Auth - maintains portability) |
 | Encryption | Node.js crypto (AES-256-GCM) | Built-in, no external dependency |
-| Hosting | Render.com | Integrated DB, auto-deploy, reasonable cost |
+| Compute hosting | Render.com | Auto-deploy, reasonable cost, Singapore region until Sydney available |
 | Error tracking | Sentry | Free tier sufficient for early phases |
 | Uptime monitoring | UptimeRobot | Free, prevents Render spin-down |
 | Payments | Stripe | Industry standard, good developer experience |
@@ -898,6 +891,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.4 | 2026-01-30 | Clarified scope: RevSport is source of truth for fleet. Renamed `boats` table to `boat_cache` (read-only, auto-discovered). Removed boat CRUD from admin dashboard — configuration only. Updated APIs to serve both Booking Board and Booking Page. Added "RevolutioniseSport as Source of Truth" section. |
 | 2.5 | 2026-01-30 | Added Data Source Adapter architecture for future extensibility. RevSport is first adapter; built-in fleet management (Premium tier) and other adapters planned for future phases. Updated clubs table with `data_source_type` and `data_source_config`. Updated A4 to reference adapter interface. |
 | 2.6 | 2026-01-31 | Marked [A6] Responsive Layouts as complete — CSS media queries for TV/desktop/mobile modes deployed to Pi with `?mode=tv` parameter. |
+| 2.7 | 2026-01-31 | Switched database provider from Render PostgreSQL to Supabase (Free tier, Sydney region). Updated architecture diagram, A1/A7 sections, and technology stack. Rationale: Sydney region for Australian data residency, free tier for early development, standard PostgreSQL remains portable. |
 
 ---
 
