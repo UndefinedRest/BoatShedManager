@@ -20,14 +20,16 @@ services:
     runtime: node
     region: singapore  # Closest to Sydney until Render supports Sydney
     plan: free  # Upgrade to starter ($7/mo) when needed
-    buildCommand: pnpm install && pnpm --filter @lmrc/saas-server build
+    buildCommand: corepack enable && pnpm install && pnpm run build:saas
     startCommand: node apps/saas-server/dist/index.js
     healthCheckPath: /health
     envVars:
+      - key: NODE_VERSION
+        value: "20"
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 3000
+        value: "3000"
       - key: BASE_DOMAIN
         value: rowingboards.io
       - key: MARKETING_URL
@@ -45,7 +47,7 @@ services:
       - key: ADMIN_RATE_LIMIT
         value: "30"  # requests per minute
       - key: ENABLE_SWAGGER
-        value: "false"  # Enable in staging, disable in production
+        value: "true"  # Enable for testing
 
   # Background Worker - Scraper scheduler
   - type: worker
@@ -53,9 +55,11 @@ services:
     runtime: node
     region: singapore
     plan: starter  # $7/mo - needs memory for scraping
-    buildCommand: pnpm install && pnpm --filter @lmrc/saas-server build
+    buildCommand: corepack enable && pnpm install && pnpm run build:saas
     startCommand: node apps/saas-server/dist/worker.js
     envVars:
+      - key: NODE_VERSION
+        value: "20"
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL

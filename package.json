@@ -29,6 +29,7 @@
     "// SOLUTION-WIDE": "",
     "test": "pnpm -r test",
     "build": "pnpm -r build",
+    "build:saas": "pnpm --filter @lmrc/db build && pnpm --filter @lmrc/config build && pnpm --filter @lmrc/crypto build && pnpm --filter @lmrc/tenant build && pnpm --filter @lmrc/scraper build && pnpm --filter @lmrc/api build && pnpm --filter @lmrc/saas-server build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   },
