@@ -373,19 +373,29 @@ app.get('/api/v1/boats', requireClub, (req, res) => {
 
 ---
 
-#### [A3] Encrypted Credential Storage
+#### [A3] Encrypted Credential Storage ✅ COMPLETE
 **Effort**: S (1 week) | **Risk**: Medium | **Dependencies**: A1
+**Status**: Implemented (2026-01-31)
 
-- AES-256-GCM encryption for RevSport credentials stored in `clubs.revsport_credentials_encrypted`
-- Encryption key from `ENCRYPTION_KEY` env var (Render-generated, 32 bytes)
-- Encrypt on save (admin dashboard), decrypt on use (scraper)
-- Never log decrypted credentials
-- Key rotation plan documented (re-encrypt all rows with new key)
+- ✅ AES-256-GCM encryption for RevSport credentials (`packages/crypto`)
+- ✅ Encryption key from `ENCRYPTION_KEY` env var (32 bytes / 64 hex chars)
+- ✅ `encryptCredentials()` / `decryptCredentials()` functions
+- ✅ `rotateCredentials()` for key rotation
+- ✅ Versioned payload format (v1) for future upgrades
+- ✅ 20 unit tests covering encryption, tampering, rotation
 
 ```typescript
-// Encryption service
-function encryptCredentials(creds: { username: string; password: string }): string;
-function decryptCredentials(encrypted: string): { username: string; password: string };
+// Usage
+import { encryptCredentials, decryptCredentials, generateKey } from '@lmrc/crypto';
+
+// Generate key once, store in ENCRYPTION_KEY env var
+const key = generateKey(); // 64 hex chars
+
+// Encrypt before storing in DB
+const encrypted = encryptCredentials({ username: 'admin', password: 'secret' }, key);
+
+// Decrypt when needed (scraper)
+const creds = decryptCredentials(encrypted, process.env.ENCRYPTION_KEY);
 ```
 
 ---
@@ -900,6 +910,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.6 | 2026-01-31 | Marked [A6] Responsive Layouts as complete — CSS media queries for TV/desktop/mobile modes deployed to Pi with `?mode=tv` parameter. |
 | 2.7 | 2026-01-31 | Switched database provider from Render PostgreSQL to Supabase (Free tier, Sydney region). Updated architecture diagram, A1/A7 sections, and technology stack. Rationale: Sydney region for Australian data residency, free tier for early development, standard PostgreSQL remains portable. |
 | 2.8 | 2026-01-31 | Marked [A1] PostgreSQL Database Setup as complete — Supabase provisioned, schema pushed, LMRC seeded. Marked [A2] Multi-Tenant Subdomain Routing as complete — `@lmrc/tenant` package with middleware, tests, localhost dev support. |
+| 2.9 | 2026-01-31 | Marked [A3] Encrypted Credential Storage as complete — `@lmrc/crypto` package with AES-256-GCM encryption, key rotation, 20 unit tests. |
 
 ---
 
