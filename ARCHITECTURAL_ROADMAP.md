@@ -462,8 +462,16 @@ Implementation: CSS media queries + optional `?mode=` override. No separate code
 
 ---
 
-#### [A7] Render Deployment & Environment Separation
+#### [A7] Render Deployment & Environment Separation ✅ COMPLETE
 **Effort**: M (2 weeks) | **Risk**: Low | **Dependencies**: A1-A5
+**Status**: Implemented (2026-02-01)
+
+- ✅ `apps/saas-server` Express application wiring all @lmrc/* packages
+- ✅ Web service entry point with helmet, cors, compression, subdomain routing
+- ✅ Background worker entry point with ScrapeScheduler
+- ✅ `render.yaml` infrastructure-as-code for Render deployment
+- ✅ OpenAPI/Swagger documentation at /api-docs
+- ✅ Environment variable configuration (.env.example)
 
 Three environments, appropriate for the scale of this project:
 
@@ -908,6 +916,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.9 | 2026-01-31 | Marked [A3] Encrypted Credential Storage as complete — `@lmrc/crypto` package with AES-256-GCM encryption, key rotation, 20 unit tests. |
 | 2.10 | 2026-01-31 | Marked [A4] Multi-Tenant Scraper as complete — `@lmrc/scraper` package with DataSourceAdapter interface, RevSportAdapter (axios + cheerio), ScraperStorage, ScrapeScheduler with adaptive refresh, 18 unit tests. |
 | 2.11 | 2026-02-01 | Marked [A5] API Layer as complete — `@lmrc/api` package with public/admin routes, JWT auth, Pino logging, rate limiting, Zod validation, 52 unit tests. |
+| 2.12 | 2026-02-01 | Marked [A7] Render Deployment as complete — `apps/saas-server` wiring all packages, `render.yaml` infrastructure config, Swagger docs. |
 
 ---
 
