@@ -1,0 +1,64 @@
+# Render Blueprint - Rowing Boards SaaS Platform
+#
+# Infrastructure as code for Render deployment.
+# See: https://docs.render.com/blueprint-spec
+#
+# Deployment:
+# 1. Connect this repo to Render
+# 2. Render auto-detects render.yaml and creates services
+# 3. Set environment variables manually in Render dashboard:
+#    - DATABASE_URL (from Supabase connection string)
+#    - ENCRYPTION_KEY (generate with: openssl rand -hex 32)
+#    - JWT_SECRET (generate with: openssl rand -hex 32)
+#
+# Database is hosted on Supabase (Sydney region), not Render.
+
+services:
+  # Web Service - Express API + static frontend
+  - type: web
+    name: rowing-boards-web
+    runtime: node
+    region: singapore  # Closest to Sydney until Render supports Sydney
+    plan: free  # Upgrade to starter ($7/mo) when needed
+    buildCommand: pnpm install && pnpm --filter @lmrc/saas-server build
+    startCommand: node apps/saas-server/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: BASE_DOMAIN
+        value: rowingboards.io
+      - key: MARKETING_URL
+        value: https://rowingboards.io
+      - key: DATABASE_URL
+        sync: false  # Set manually from Supabase
+      - key: ENCRYPTION_KEY
+        sync: false  # Set manually (openssl rand -hex 32)
+      - key: JWT_SECRET
+        sync: false  # Set manually (openssl rand -hex 32)
+      - key: JWT_EXPIRES_IN
+        value: "3600"  # 1 hour
+      - key: PUBLIC_RATE_LIMIT
+        value: "100"  # requests per minute
+      - key: ADMIN_RATE_LIMIT
+        value: "30"  # requests per minute
+      - key: ENABLE_SWAGGER
+        value: "false"  # Enable in staging, disable in production
+
+  # Background Worker - Scraper scheduler
+  - type: worker
+    name: rowing-boards-worker
+    runtime: node
+    region: singapore
+    plan: starter  # $7/mo - needs memory for scraping
+    buildCommand: pnpm install && pnpm --filter @lmrc/saas-server build
+    startCommand: node apps/saas-server/dist/worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false  # Set manually from Supabase
+      - key: ENCRYPTION_KEY
+        sync: false  # Set manually (must match web service)
