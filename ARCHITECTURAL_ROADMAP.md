@@ -917,6 +917,47 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.10 | 2026-01-31 | Marked [A4] Multi-Tenant Scraper as complete — `@lmrc/scraper` package with DataSourceAdapter interface, RevSportAdapter (axios + cheerio), ScraperStorage, ScrapeScheduler with adaptive refresh, 18 unit tests. |
 | 2.11 | 2026-02-01 | Marked [A5] API Layer as complete — `@lmrc/api` package with public/admin routes, JWT auth, Pino logging, rate limiting, Zod validation, 52 unit tests. |
 | 2.12 | 2026-02-01 | Marked [A7] Render Deployment as complete — `apps/saas-server` wiring all packages, `render.yaml` infrastructure config, Swagger docs. |
+| 2.13 | 2026-02-01 | Added UAT findings: bcryptjs ESM fix, optional tenant resolution for health endpoint, sourceId field for external system linking, admin scripts (create-admin-user.ts, set-custom-domain.ts), custom domain setup (board.lakemacrowing.au). |
+
+---
+
+## Implementation Notes (UAT Findings)
+
+The following issues were discovered and resolved during UAT testing of the SaaS API:
+
+### bcryptjs ESM Compatibility
+**Issue**: Dynamic imports of bcryptjs (`await import('bcryptjs')`) failed in ESM context.
+**Fix**: Changed to static import (`import bcrypt from 'bcryptjs'`) in `packages/api/src/middleware/auth.ts`.
+
+### Health Endpoint Tenant Resolution
+**Issue**: Health endpoint returned 500 "Club context not available" because tenant middleware was required.
+**Fix**: Added `optionalPaths` to tenant middleware config. Health endpoint attempts tenant resolution but continues without club context if unavailable. This allows platform-wide health checks while still showing club-specific data when accessed via subdomain.
+
+### External System ID Linking (sourceId)
+**Issue**: API used internal UUIDs for boats, but external consumers (e.g., Netlify booking page) use RevSport integer IDs.
+**Solution**: Added `sourceId` field to boat and booking responses. `GET /boats/:id` accepts either UUID or sourceId for lookup.
+
+### Login Route Path
+**Issue**: Login endpoint was returning 401 "Missing authorization header" because route was mounted at `/admin/login/login` (double path).
+**Fix**: Changed internal route path from `/login` to `/` in `packages/api/src/routes/admin/auth.ts`.
+
+### Admin Management Scripts
+Created utility scripts for admin operations:
+- `scripts/create-admin-user.ts` — Interactive script to create admin users for clubs
+- `scripts/set-custom-domain.ts` — Script to configure custom domains for clubs
+
+### Custom Domain Setup
+Configured LMRC custom domain `board.lakemacrowing.au`:
+1. Updated `clubs.customDomain` in database via script
+2. DNS CNAME configured at domain registrar (Crazy Domains)
+3. Render custom domain added with automatic SSL provisioning
+
+The tenant middleware already supported custom domain lookup (checks `customDomain` column when hostname doesn't match subdomain pattern).
+
+### URL Structure for Custom Domains
+Agreed URL structure for booking board:
+- `board.lakemacrowing.au/` — Booking board display (TV view)
+- `board.lakemacrowing.au/book/:id` — Deep link to book specific boat (uses sourceId)
 
 ---
 
