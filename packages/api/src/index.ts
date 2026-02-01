@@ -29,7 +29,7 @@
  * ```
  */
 
-import { Router, type RequestHandler } from 'express';
+import { Router, type RequestHandler, type Request, type Response, type NextFunction } from 'express';
 import type { Database } from '@lmrc/db';
 
 // Middleware
@@ -57,7 +57,26 @@ import { createDisplayRouter } from './routes/admin/display.js';
 import { createSyncRouter, type SyncTriggerFn } from './routes/admin/sync.js';
 
 // Types
-import type { ApiConfig } from './types.js';
+import type { ApiConfig, ApiRequest } from './types.js';
+
+/**
+ * Middleware to require club context.
+ * Returns 500 if no club is attached to the request.
+ */
+function requireClub(req: Request, res: Response, next: NextFunction): void {
+  const apiReq = req as ApiRequest;
+  if (!apiReq.club) {
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Club context not available. Ensure tenant middleware is applied.',
+      },
+    });
+    return;
+  }
+  next();
+}
 
 /**
  * Extended API configuration
@@ -87,8 +106,9 @@ export function createApiRouter(
   // Health check (before rate limiting, always accessible)
   router.use('/health', createHealthRouter(db));
 
-  // Public routes with rate limiting
+  // Public routes with rate limiting (require club context)
   const publicRouter = Router();
+  publicRouter.use(requireClub);
   publicRouter.use(createPublicRateLimiter({
     publicLimit: config.publicRateLimit,
   }));
@@ -98,8 +118,9 @@ export function createApiRouter(
 
   router.use(publicRouter);
 
-  // Admin routes
+  // Admin routes (require club context)
   const adminRouter = Router();
+  adminRouter.use(requireClub);
 
   // Login route with stricter rate limiting
   adminRouter.use(

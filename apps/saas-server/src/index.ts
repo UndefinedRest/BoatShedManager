@@ -17,7 +17,7 @@ import cors from 'cors';
 import compression from 'compression';
 
 import { createDb } from '@lmrc/db';
-import { createTenantMiddleware, requireClub } from '@lmrc/tenant';
+import { createTenantMiddleware } from '@lmrc/tenant';
 import { createApiRouter, logger } from '@lmrc/api';
 
 import { setupSwagger } from './swagger.js';
@@ -107,7 +107,9 @@ app.use(createTenantMiddleware(db, {
 }));
 
 // API routes (scoped to tenant)
-app.use('/api/v1', requireClub, createApiRouter(db, {
+// Note: requireClub is applied inside the API router to specific routes,
+// allowing /api/v1/health to work without tenant context for monitoring
+app.use('/api/v1', createApiRouter(db, {
   jwtSecret: process.env.JWT_SECRET!,
   encryptionKey: process.env.ENCRYPTION_KEY!,
   jwtExpiresIn: parseInt(process.env.JWT_EXPIRES_IN || '3600', 10),
