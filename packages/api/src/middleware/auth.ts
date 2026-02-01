@@ -5,6 +5,7 @@
  */
 
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import type { Response, NextFunction } from 'express';
 import type { ApiRequest, JWTPayload } from '../types.js';
 import { ApiError } from './errorHandler.js';
@@ -155,7 +156,6 @@ export function generateToken(
  * Hash a password using bcrypt (utility for admin routes)
  */
 export async function hashPassword(password: string): Promise<string> {
-  const bcrypt = await import('bcryptjs');
   return bcrypt.hash(password, 12);
 }
 
@@ -166,6 +166,5 @@ export async function verifyPassword(
   password: string,
   hash: string
 ): Promise<boolean> {
-  const bcrypt = await import('bcryptjs');
   return bcrypt.compare(password, hash);
 }
