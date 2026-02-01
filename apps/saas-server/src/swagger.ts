@@ -45,10 +45,6 @@ All requests are scoped to a club based on the subdomain:
     },
     servers: [
       {
-        url: 'http://localhost:3000',
-        description: 'Local development',
-      },
-      {
         url: 'https://{subdomain}.rowandlift.au',
         description: 'Production (subdomain per club)',
         variables: {
@@ -57,6 +53,10 @@ All requests are scoped to a club based on the subdomain:
             description: 'Club subdomain',
           },
         },
+      },
+      {
+        url: 'http://localhost:3000',
+        description: 'Local development',
       },
     ],
     components: {
