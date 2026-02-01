@@ -26,10 +26,11 @@ export function createAuthRouter(db: Database, jwtConfig: JWTConfig): Router {
   const router = Router();
 
   /**
-   * POST /login - Authenticate and get JWT token
+   * POST / - Authenticate and get JWT token
+   * (mounted at /admin/login by the router)
    */
   router.post(
-    '/login',
+    '/',
     asyncHandler(async (req: ApiRequest, res: Response) => {
       if (!req.club) {
         throw ApiError.unauthorized('Club context required');

@@ -16,6 +16,7 @@ import { config } from 'dotenv';
 import * as readline from 'readline';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcryptjs';
 
 // Load .env from packages/db
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -23,7 +24,6 @@ config({ path: path.join(__dirname, '../packages/db/.env') });
 
 // Direct imports from built packages
 import { createDb, users } from '../packages/db/dist/index.js';
-import { hashPassword } from '../packages/api/dist/index.js';
 
 // Validate environment
 if (!process.env.DATABASE_URL) {
@@ -41,6 +41,10 @@ function question(prompt: string): Promise<string> {
   return new Promise((resolve) => {
     rl.question(prompt, resolve);
   });
+}
+
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 12);
 }
 
 async function main() {
