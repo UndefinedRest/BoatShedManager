@@ -100,6 +100,7 @@ All requests are scoped to a club based on the subdomain:
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
+            sourceId: { type: 'string', example: '8584', description: 'External system ID (e.g., RevSport boat ID)', nullable: true },
             name: { type: 'string', example: 'Simone Kain' },
             boatType: { type: 'string', example: '1X' },
             boatCategory: { type: 'string', enum: ['race', 'tinnie'] },

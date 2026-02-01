@@ -19,6 +19,7 @@ import { paginationSchema, uuidParamSchema } from '../../schemas/index.js';
  */
 interface BoatResponse {
   id: string;
+  sourceId: string | null; // External system ID (e.g., RevSport boat ID)
   name: string;
   boatType: string | null;
   boatCategory: string | null;
@@ -65,6 +66,7 @@ export function createBoatsRouter(db: Database): Router {
 
       const data: BoatResponse[] = boats.map((boat) => ({
         id: boat.id,
+        sourceId: boat.revsportBoatId,
         name: boat.name,
         boatType: boat.boatType,
         boatCategory: boat.boatCategory,
@@ -117,6 +119,7 @@ export function createBoatsRouter(db: Database): Router {
 
       const data: BoatResponse = {
         id: boat.id,
+        sourceId: boat.revsportBoatId,
         name: boat.name,
         boatType: boat.boatType,
         boatCategory: boat.boatCategory,
