@@ -82,16 +82,22 @@ export function createTenantMiddleware(
   const {
     baseDomain,
     marketingUrl,
-    publicPaths = ['/health', '/api/v1/health'],
+    publicPaths = [],
+    optionalPaths = ['/health', '/api/v1/health'],
     allowLocalhost = process.env.NODE_ENV !== 'production',
   } = config;
 
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // Skip tenant resolution for public paths
+    // Skip tenant resolution entirely for public paths
     if (publicPaths.some(path => req.path === path || req.path.startsWith(path + '/'))) {
       next();
       return;
     }
+
+    // Check if this is an optional path (club resolution attempted but not required)
+    const isOptionalPath = optionalPaths.some(
+      path => req.path === path || req.path.startsWith(path + '/')
+    );
 
     const hostname = req.hostname || req.headers.host || '';
 
@@ -122,6 +128,11 @@ export function createTenantMiddleware(
 
     // No subdomain and no custom domain match
     if (!subdomain && !club) {
+      // For optional paths (like health), continue without club context
+      if (isOptionalPath) {
+        next();
+        return;
+      }
       if (marketingUrl) {
         res.redirect(marketingUrl);
         return;
@@ -136,6 +147,11 @@ export function createTenantMiddleware(
 
     // Subdomain provided but club not found
     if (!club) {
+      // For optional paths (like health), continue without club context
+      if (isOptionalPath) {
+        next();
+        return;
+      }
       res.status(404).json({
         error: 'Club not found',
         message: `No club found with subdomain: ${subdomain}`,

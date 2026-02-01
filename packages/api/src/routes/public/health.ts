@@ -6,6 +6,7 @@
 
 import { Router } from 'express';
 import type { Response } from 'express';
+import { sql } from 'drizzle-orm';
 import type { Database } from '@lmrc/db';
 import type { ApiRequest, ApiSuccessResponse, HealthCheckResponse } from '../../types.js';
 import { asyncHandler } from '../../middleware/errorHandler.js';
@@ -37,7 +38,7 @@ export function createHealthRouter(db: Database): Router {
       // Check database connectivity
       try {
         const dbStart = Date.now();
-        await db.execute({ sql: 'SELECT 1', params: [] } as any);
+        await db.execute(sql`SELECT 1`);
         checks.database = {
           status: 'up',
           latencyMs: Date.now() - dbStart,

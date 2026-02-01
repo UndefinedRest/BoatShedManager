@@ -37,10 +37,17 @@ export interface TenantMiddlewareConfig {
   marketingUrl?: string;
 
   /**
-   * Paths that should bypass tenant resolution (e.g., health checks)
-   * Default: ['/health', '/api/v1/health']
+   * Paths that should bypass tenant resolution entirely
+   * Default: []
    */
   publicPaths?: string[];
+
+  /**
+   * Paths where tenant resolution is attempted but not required
+   * (e.g., health checks that show club info if available)
+   * Default: ['/health', '/api/v1/health']
+   */
+  optionalPaths?: string[];
 
   /**
    * Whether to allow localhost subdomains for development
