@@ -241,8 +241,8 @@ LMRC (single monorepo)
 | **booking-page** | Netlify | lakemacrowing.au | Push to main |
 | **pi-server** | Raspberry Pi | localhost:3000 | Manual deploy script |
 | **noticeboard** | Raspberry Pi | localhost:3001 | Manual deploy script |
-| **saas-api** | Render Web Service | api.rowingboards.io | Push to main |
-| **saas-admin** | Render Static | admin.rowingboards.io | Push to main |
+| **saas-api** | Render Web Service | api.rowandlift.au | Push to main |
+| **saas-admin** | Render Static | admin.rowandlift.au | Push to main |
 
 ### Package Dependencies
 
@@ -1463,7 +1463,7 @@ git push -u origin main
 | **Render Web Service** | Free | $7/mo | $25/mo |
 | **Render Background Worker** | $7/mo | $7/mo | $14/mo |
 | **Render PostgreSQL** | $7/mo | $7/mo | $20/mo |
-| **Domain (rowingboards.io)** | ~$15/yr | ~$15/yr | ~$15/yr |
+| **Domain (rowandlift.au)** | ~$15/yr | ~$15/yr | ~$15/yr |
 | **Netlify (booking-page)** | Free | Free | Free |
 | | | | |
 | **Monthly Total** | **~$15/mo** | **~$22/mo** | **~$60/mo** |

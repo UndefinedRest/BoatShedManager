@@ -15,8 +15,8 @@
  *
  * // Apply tenant middleware globally
  * app.use(createTenantMiddleware(db, {
- *   baseDomain: 'rowingboards.io',
- *   marketingUrl: 'https://rowingboards.io',
+ *   baseDomain: 'rowandlift.au',
+ *   marketingUrl: 'https://rowandlift.au',
  * }));
  *
  * // Access club context in routes

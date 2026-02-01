@@ -19,7 +19,7 @@
  * const db = createDb(process.env.DATABASE_URL);
  *
  * // Apply tenant middleware first
- * app.use(createTenantMiddleware(db, { baseDomain: 'rowingboards.io' }));
+ * app.use(createTenantMiddleware(db, { baseDomain: 'rowandlift.au' }));
  *
  * // Mount API routes
  * app.use('/api/v1', createApiRouter(db, {

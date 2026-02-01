@@ -6,10 +6,10 @@ import type { TenantMiddlewareConfig, Club } from './types.js';
  * Extract subdomain from hostname.
  *
  * Examples:
- * - "lmrc.rowingboards.io" with baseDomain "rowingboards.io" → "lmrc"
+ * - "lmrc.rowandlift.au" with baseDomain "rowandlift.au" → "lmrc"
  * - "lmrc.localhost" with localhost allowed → "lmrc"
- * - "rowingboards.io" → null (no subdomain)
- * - "www.rowingboards.io" → null (www is not a valid club subdomain)
+ * - "rowandlift.au" → null (no subdomain)
+ * - "www.rowandlift.au" → null (www is not a valid club subdomain)
  */
 export function extractSubdomain(
   hostname: string,
@@ -39,7 +39,7 @@ export function extractSubdomain(
 
   // Extract subdomain
   if (hostWithoutPort === baseDomain) {
-    // No subdomain (e.g., "rowingboards.io")
+    // No subdomain (e.g., "rowandlift.au")
     return null;
   }
 
@@ -68,8 +68,8 @@ export function extractSubdomain(
  *
  * const db = createDb(process.env.DATABASE_URL);
  * const tenantMiddleware = createTenantMiddleware(db, {
- *   baseDomain: 'rowingboards.io',
- *   marketingUrl: 'https://rowingboards.io',
+ *   baseDomain: 'rowandlift.au',
+ *   marketingUrl: 'https://rowandlift.au',
  * });
  *
  * app.use(tenantMiddleware);

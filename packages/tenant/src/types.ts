@@ -25,8 +25,8 @@ export interface Club {
  */
 export interface TenantMiddlewareConfig {
   /**
-   * The base domain (e.g., "rowingboards.io")
-   * Subdomains will be extracted from hostnames like "lmrc.rowingboards.io"
+   * The base domain (e.g., "rowandlift.au")
+   * Subdomains will be extracted from hostnames like "lmrc.rowandlift.au"
    */
   baseDomain: string;
 

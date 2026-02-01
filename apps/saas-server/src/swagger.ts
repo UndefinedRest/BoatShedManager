@@ -29,8 +29,8 @@ Authorization: Bearer <token>
 ## Multi-Tenancy
 
 All requests are scoped to a club based on the subdomain:
-- \`lmrc.rowingboards.io\` → LMRC club data
-- \`sydney-rowing.rowingboards.io\` → Sydney Rowing club data
+- \`lmrc.rowandlift.au\` → LMRC club data
+- \`sydney-rowing.rowandlift.au\` → Sydney Rowing club data
 
 ## Rate Limiting
 
@@ -39,8 +39,8 @@ All requests are scoped to a club based on the subdomain:
 - Login endpoint: 5 requests/minute per IP (brute-force protection)
       `,
       contact: {
-        name: 'Rowing Boards Support',
-        url: 'https://rowingboards.io',
+        name: 'Row and Lift Support',
+        url: 'https://rowandlift.au',
       },
     },
     servers: [
@@ -49,7 +49,7 @@ All requests are scoped to a club based on the subdomain:
         description: 'Local development',
       },
       {
-        url: 'https://{subdomain}.rowingboards.io',
+        url: 'https://{subdomain}.rowandlift.au',
         description: 'Production (subdomain per club)',
         variables: {
           subdomain: {

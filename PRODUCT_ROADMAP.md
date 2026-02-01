@@ -5,7 +5,7 @@
 Transform the LMRC Booking Board from a single-club Raspberry Pi solution into a **cloud-first SaaS product** that any rowing club can sign up for, configure, and start using within minutes. Hardware (Pi displays) becomes an optional add-on, not a prerequisite.
 
 **Product Name (working)**: Rowing Boards
-**Domain (working)**: `rowingboards.io` (clubs get `clubname.rowingboards.io`)
+**Domain (working)**: `rowandlift.au` (clubs get `clubname.rowandlift.au`)
 
 ### Fundamental Principle: Display and Entry are Decoupled
 
@@ -57,7 +57,7 @@ Booking entry and editing are **not** part of the SaaS platform. Clubs continue 
 
 ### Optional Add-Ons (Post-MVP)
 - **Digital noticeboard** - rotating photos, events, sponsors (existing LMRC module)
-- **Custom domain** - `bookings.yourclub.com` instead of `clubname.rowingboards.io`
+- **Custom domain** - `bookings.yourclub.com` instead of `clubname.rowandlift.au`
 - **Hardware bundle** - pre-configured Raspberry Pi for in-shed TV display ($200-300)
 
 ### Future Consideration (Not in Initial SaaS Scope)
@@ -76,7 +76,7 @@ New clubs must be able to sign up and get a working booking board **without manu
 ### Onboarding Flow
 
 ```
-1. SIGN UP          Club admin visits rowingboards.io → creates account
+1. SIGN UP          Club admin visits rowandlift.au → creates account
                     (email, password, club name, chosen subdomain)
                            │
 2. CONNECT REVSPORT Enter RevSport URL and credentials
@@ -89,7 +89,7 @@ New clubs must be able to sign up and get a working booking board **without manu
                     - Refresh interval preferences
                            │
 4. FIRST SCRAPE     Platform runs initial scrape → populates board
-                    Club admin sees their board live at clubname.rowingboards.io
+                    Club admin sees their board live at clubname.rowandlift.au
                            │
 5. SHARE WITH       Club shares URL with members for remote viewing
    MEMBERS          Optionally: set up Pi in boatshed pointing at the URL
@@ -132,7 +132,7 @@ Cloud Platform (Render.com)
     └── Responsive layouts: TV / Desktop / Mobile
 
 In-Shed Display (Optional)
-├── Raspberry Pi 4 → Chromium kiosk → clubname.rowingboards.io
+├── Raspberry Pi 4 → Chromium kiosk → clubname.rowandlift.au
 └── Or any browser-capable device pointing at the club's URL
 ```
 
@@ -236,7 +236,7 @@ These items are being implemented on the **current Raspberry Pi deployment** bef
 ### Business
 - Final pricing tiers and free trial duration?
 - Product name: "Rowing Boards" or something else?
-- Domain: `rowingboards.io` or similar?
+- Domain: `rowandlift.au` or similar?
 - Recruit beta club: who in the network?
 
 ### Technical

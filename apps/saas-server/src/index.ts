@@ -33,8 +33,8 @@ for (const envVar of requiredEnvVars) {
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const BASE_DOMAIN = process.env.BASE_DOMAIN || 'rowingboards.io';
-const MARKETING_URL = process.env.MARKETING_URL || 'https://rowingboards.io';
+const BASE_DOMAIN = process.env.BASE_DOMAIN || 'rowandlift.au';
+const MARKETING_URL = process.env.MARKETING_URL || 'https://rowandlift.au';
 
 // Initialize database
 const db = createDb(process.env.DATABASE_URL!);

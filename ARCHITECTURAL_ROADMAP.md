@@ -14,7 +14,7 @@
 This document outlines the technical work required to evolve the LMRC Booking Board from a single-club Raspberry Pi deployment into a multi-tenant cloud SaaS product. The architecture is **cloud-first**: the platform runs on Supabase (PostgreSQL in Sydney) with Render.com for compute, and in-shed displays are thin clients (Pi or any browser device) pointing at the cloud.
 
 **Current State**: Production single-club deployment at LMRC (Raspberry Pi, Express/TypeScript, JSON files, Puppeteer scraping)
-**Target State**: Multi-tenant SaaS platform serving 100+ rowing clubs via `clubname.rowingboards.io`
+**Target State**: Multi-tenant SaaS platform serving 100+ rowing clubs via `clubname.rowandlift.au`
 **Approach**: Evolve the existing codebase incrementally (not a rewrite)
 
 ### Fundamental Principle: Display Only
@@ -353,7 +353,7 @@ CREATE INDEX idx_audit_club ON audit_log(club_id, created_at);
 - ✅ Support for localhost development (lmrc.localhost:3000)
 - ✅ Support for custom domains (Phase C ready)
 - ✅ Fallback: unknown subdomain → marketing/signup page (configurable)
-- Wildcard DNS: `*.rowingboards.io` → Render web service (configure on deployment)
+- Wildcard DNS: `*.rowandlift.au` → Render web service (configure on deployment)
 
 ```typescript
 // Usage
@@ -362,8 +362,8 @@ import { createDb } from '@lmrc/db';
 
 const db = createDb(process.env.DATABASE_URL);
 app.use(createTenantMiddleware(db, {
-  baseDomain: 'rowingboards.io',
-  marketingUrl: 'https://rowingboards.io',
+  baseDomain: 'rowandlift.au',
+  marketingUrl: 'https://rowandlift.au',
 }));
 
 app.get('/api/v1/boats', requireClub, (req, res) => {
@@ -558,7 +558,7 @@ services:
 - Migrate display config from `tv-display.json` to `clubs.display_config`
 - Encrypt and store RevSport credentials
 - Run cloud and Pi deployments in parallel during validation
-- Cutover: Point Pi's Chromium kiosk at `lmrc.rowingboards.io` instead of `localhost:3000`
+- Cutover: Point Pi's Chromium kiosk at `lmrc.rowandlift.au` instead of `localhost:3000`
 - Keep Pi's local server as fallback (if cloud goes down, revert kiosk URL)
 
 **Phase A onboarding**: Manual. Platform operator adds clubs directly in the database and assists with initial configuration. Acceptable for 1-3 clubs during alpha.
@@ -576,7 +576,7 @@ Self-service signup and setup flow so new clubs can onboard **without platform o
 2. **Connect RevSport**: Enter RevSport URL and credentials → platform validates by running a test scrape. Clear error feedback if credentials fail or URL is unreachable.
 3. **Auto-discover fleet**: Scrape RevSport to discover the club's boats automatically. Boat type, category, and damaged status are inferred from RevSport data — no manual categorisation needed.
 4. **Configure display**: Branding (logo, colours), display preferences, refresh intervals. Live preview with real scraped data before going live.
-5. **Go live**: First full scrape runs, board becomes accessible at `clubname.rowingboards.io`. Admin shares URL with members.
+5. **Go live**: First full scrape runs, board becomes accessible at `clubname.rowandlift.au`. Admin shares URL with members.
 
 **Key requirements**:
 - Zero manual steps from platform operator (no DB edits, no config files)
@@ -647,7 +647,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 - Noticeboard as optional add-on feature (Pro tier and above)
 - Content management: photo galleries, events, sponsors
 - Scrapes club's RevSport events/news page
-- Separate display URL: `clubname.rowingboards.io/noticeboard`
+- Separate display URL: `clubname.rowandlift.au/noticeboard`
 
 ---
 

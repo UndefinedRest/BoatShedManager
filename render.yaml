@@ -31,9 +31,9 @@ services:
       - key: PORT
         value: "3000"
       - key: BASE_DOMAIN
-        value: rowingboards.io
+        value: rowandlift.au
       - key: MARKETING_URL
-        value: https://rowingboards.io
+        value: https://rowandlift.au
       - key: DATABASE_URL
         sync: false  # Set manually from Supabase
       - key: ENCRYPTION_KEY
