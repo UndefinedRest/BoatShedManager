@@ -115,7 +115,9 @@ All requests are scoped to a club based on the subdomain:
           properties: {
             id: { type: 'string', format: 'uuid' },
             boatId: { type: 'string', format: 'uuid' },
-            bookingDate: { type: 'string', format: 'date' },
+            boatSourceId: { type: 'string', example: '8584', description: 'External system boat ID', nullable: true },
+            boatName: { type: 'string', example: 'The Rose' },
+            date: { type: 'string', format: 'date' },
             sessionName: { type: 'string', example: 'Morning 1' },
             bookings: {
               type: 'array',
@@ -226,8 +228,9 @@ All requests are scoped to a club based on the subdomain:
         get: {
           tags: ['Public'],
           summary: 'Get a single boat',
+          description: 'Lookup by internal UUID or external sourceId (e.g., RevSport boat ID)',
           parameters: [
-            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' }, description: 'Boat UUID or sourceId' },
           ],
           responses: {
             200: { description: 'Boat details' },

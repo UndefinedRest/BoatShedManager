@@ -98,6 +98,7 @@ export function createBoatsRouter(db: Database): Router {
 
   /**
    * GET /boats/:id - Get single boat details
+   * Accepts either UUID (internal ID) or sourceId (external system ID)
    */
   router.get(
     '/:id',
@@ -106,12 +107,23 @@ export function createBoatsRouter(db: Database): Router {
         throw ApiError.unauthorized('Club context required');
       }
 
-      const params = uuidParamSchema.parse(req.params);
+      const id = req.params.id;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-      const boat = await db.query.boatCache.findFirst({
-        where: (bc, { and: andFn, eq: eqFn }) =>
-          andFn(eqFn(bc.id, params.id), eqFn(bc.clubId, req.club!.id)),
-      });
+      let boat;
+      if (isUuid) {
+        // Lookup by internal UUID
+        boat = await db.query.boatCache.findFirst({
+          where: (bc, { and: andFn, eq: eqFn }) =>
+            andFn(eqFn(bc.id, id), eqFn(bc.clubId, req.club!.id)),
+        });
+      } else {
+        // Lookup by external sourceId
+        boat = await db.query.boatCache.findFirst({
+          where: (bc, { and: andFn, eq: eqFn }) =>
+            andFn(eqFn(bc.revsportBoatId, id), eqFn(bc.clubId, req.club!.id)),
+        });
+      }
 
       if (!boat) {
         throw ApiError.notFound('Boat');

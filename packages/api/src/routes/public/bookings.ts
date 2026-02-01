@@ -17,6 +17,7 @@ import { bookingsQuerySchema } from '../../schemas/index.js';
 interface BookingResponse {
   id: string;
   boatId: string;
+  boatSourceId: string | null; // External system boat ID
   boatName: string;
   date: string;
   sessionName: string | null;
@@ -78,6 +79,7 @@ export function createBookingsRouter(db: Database): Router {
             columns: {
               id: true,
               name: true,
+              revsportBoatId: true,
             },
           },
         },
@@ -103,6 +105,7 @@ export function createBookingsRouter(db: Database): Router {
       const data: BookingResponse[] = bookings.map((booking) => ({
         id: booking.id,
         boatId: booking.boatId,
+        boatSourceId: (booking as any).boat?.revsportBoatId ?? null,
         boatName: (booking as any).boat?.name ?? 'Unknown',
         date: booking.bookingDate,
         sessionName: booking.sessionName,
