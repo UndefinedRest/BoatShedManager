@@ -337,9 +337,96 @@ All requests are scoped to a club based on the subdomain:
         put: {
           tags: ['Admin'],
           summary: 'Update display configuration',
+          description: 'Update branding colors and display settings for the club',
           security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    branding: {
+                      type: 'object',
+                      description: 'Club branding settings',
+                      properties: {
+                        logoUrl: { type: 'string', format: 'uri', nullable: true, description: 'URL to club logo' },
+                        primaryColor: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', example: '#1e3a5f', description: 'Primary color (hex)' },
+                        secondaryColor: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', example: '#c9a227', description: 'Secondary color (hex)' },
+                        customCSS: { type: 'string', nullable: true, description: 'Custom CSS for the display' },
+                      },
+                    },
+                    displayConfig: {
+                      type: 'object',
+                      description: 'Display configuration settings',
+                      properties: {
+                        showCountdown: { type: 'boolean', description: 'Show countdown timer' },
+                        refreshInterval: { type: 'integer', example: 300000, description: 'Refresh interval in milliseconds' },
+                        sessionTimes: {
+                          type: 'object',
+                          description: 'Session time definitions',
+                          properties: {
+                            morning1: {
+                              type: 'object',
+                              properties: {
+                                start: { type: 'string', example: '05:00' },
+                                end: { type: 'string', example: '07:00' },
+                              },
+                            },
+                            morning2: {
+                              type: 'object',
+                              properties: {
+                                start: { type: 'string', example: '07:00' },
+                                end: { type: 'string', example: '09:00' },
+                              },
+                            },
+                            evening: {
+                              type: 'object',
+                              properties: {
+                                start: { type: 'string', example: '16:00' },
+                                end: { type: 'string', example: '19:00' },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                example: {
+                  branding: {
+                    primaryColor: '#1e3a5f',
+                    secondaryColor: '#c9a227',
+                  },
+                  displayConfig: {
+                    showCountdown: true,
+                    refreshInterval: 300000,
+                  },
+                },
+              },
+            },
+          },
           responses: {
-            200: { description: 'Configuration updated' },
+            200: {
+              description: 'Configuration updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          message: { type: 'string', example: 'Display configuration updated successfully' },
+                          updated: { type: 'array', items: { type: 'string' }, example: ['branding', 'displayConfig'] },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
             401: { description: 'Unauthorized' },
           },
         },
