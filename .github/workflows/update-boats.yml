@@ -1,0 +1,118 @@
+name: Update Boat List from RevSport
+
+on:
+  # Run daily at 2am AEST (4pm UTC previous day)
+  schedule:
+    - cron: '0 16 * * *'
+
+  # Allow manual trigger via GitHub UI
+  workflow_dispatch:
+
+jobs:
+  update-boats:
+    runs-on: ubuntu-latest
+
+    # Grant write permissions for pushing changes
+    permissions:
+      contents: write
+
+    defaults:
+      run:
+        working-directory: apps/booking-page
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/booking-page/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm install --production
+          echo "✅ Dependencies installed"
+
+      - name: Fetch boats from RevSport
+        run: node scripts/fetch-boats.js
+        env:
+          REVSPORT_USERNAME: ${{ secrets.REVSPORT_USERNAME }}
+          REVSPORT_PASSWORD: ${{ secrets.REVSPORT_PASSWORD }}
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet boats.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  No changes to boats.json"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "✅ boats.json has been updated"
+          fi
+
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add boats.json
+          git commit -m "chore: update boat list from RevSport
+
+          Updated boat data from RevSport /bookings page
+          Automated by GitHub Actions
+
+          [skip ci]"
+          git push
+
+      - name: Trigger Render deploy
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          echo "🚀 Triggering Render deploy..."
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_BOOKING_PAGE }}"
+          echo ""
+          echo "✅ Render deploy triggered"
+
+      - name: No changes
+        if: steps.check_changes.outputs.changed == 'false'
+        run: |
+          echo "No changes detected - boats.json is already up to date"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check_changes.outputs.changed }}" == "true" ]; then
+            echo "✅ boats.json updated and committed" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Render deploy triggered" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️  No changes - boats.json already up to date" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+      # Create an issue if the update fails
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '⚠️ Boat list update failed',
+              body: `The automated boat list update from RevSport failed.
+
+              **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              **Time:** ${new Date().toISOString()}
+
+              Please check the workflow logs and verify RevSport credentials.
+
+              The existing boats.json will continue to be used (graceful degradation).`,
+              labels: ['automation', 'bug']
+            })

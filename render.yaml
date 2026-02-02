@@ -14,6 +14,26 @@
 # Database is hosted on Supabase (Sydney region), not Render.
 
 services:
+  # Static Site - LMRC Boat Booking Page (lakemacrowing.au)
+  # Migrated from Netlify to reduce costs and simplify infrastructure.
+  # This is a static HTML/JS site with daily boats.json updates via GitHub Actions.
+  - type: web
+    name: lmrc-booking-page
+    runtime: static
+    buildCommand: ""  # No build needed - static HTML files
+    staticPublishPath: apps/booking-page
+    headers:
+      - path: /boats.json
+        name: Cache-Control
+        value: public, max-age=300  # 5 min cache for boat data
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=3600  # 1 hour for HTML/assets
+    routes:
+      - type: rewrite
+        source: /
+        destination: /index.html
+
   # Web Service - Express API + static frontend
   - type: web
     name: rowing-boards-web
