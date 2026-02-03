@@ -21,10 +21,11 @@ This guide documents the migration of the LMRC boat booking page from Netlify to
 
 ## Prerequisites
 
-- [ ] Access to Render dashboard (https://dashboard.render.com)
-- [ ] Access to GitHub repository secrets
+- [x] Access to Render dashboard (https://dashboard.render.com)
+- [x] Access to GitHub repository secrets
 - [ ] Access to domain DNS (for lakemacrowing.au)
 - [ ] Access to Netlify dashboard (for cancellation)
+- [x] UptimeRobot monitoring configured
 
 ---
 
@@ -169,6 +170,19 @@ After 48 hours of stable operation:
 
 ---
 
+## Monitoring (UptimeRobot)
+
+UptimeRobot is configured to monitor the services:
+
+| Monitor | URL | Interval | Purpose |
+|---------|-----|----------|---------|
+| Rowing Boards API | `https://lmrc.rowandlift.au/health` | 5 min | Keep SaaS server awake + alerts |
+| LMRC Booking Page | `https://lakemacrowing.au/book-a-boat.html` | 5 min | Alerts only (static site doesn't sleep) |
+
+**Note**: The 5-minute ping interval keeps the free-tier SaaS server from sleeping (Render spins down after 15 min idle).
+
+---
+
 ## Rollback Plan
 
 If issues occur after DNS cutover:
@@ -237,6 +251,7 @@ GitHub Monorepo (LMRC)
 - [ ] Site loads correctly at lakemacrowing.au
 - [ ] Query parameters work (`?boat_id=8584`)
 - [ ] First automated update succeeds (2am)
+- [x] UptimeRobot monitoring configured
 - [ ] 48 hours stable operation
 - [ ] Netlify cancelled/archived
 - [ ] BoatBooking repo archived
