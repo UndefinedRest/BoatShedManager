@@ -115,7 +115,7 @@
       "category": "Club Boat"
     },
     "6299": {
-      "name": "1X - Catch 22 (65kg)",
+      "name": "1X - Wintech single scull (Catch 22) Damaged (65kg)",
       "weight": "65kg",
       "type": "1X",
       "category": "Club Boat"
@@ -271,7 +271,7 @@
       "category": "RACER"
     }
   },
-  "lastUpdated": "2026-02-03T22:35:34.053Z",
+  "lastUpdated": "2026-02-04T05:40:09.751Z",
   "source": "RevSport (automated)",
   "totalBoats": 45,
   "updateFrequency": "Daily via GitHub Actions"
