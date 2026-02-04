@@ -577,25 +577,24 @@
 
         const boat = boatData.boats[boatId];
         const damaged = isDamagedBoat(boat);
+        let boatName = boat.name;
 
-        // Parse the name to extract type, name, and weight
-        // Format is like: "2X - Watagan (90kg)"
-        const nameMatch = boat.name.match(/^(?:(\w+)\s*-\s*)?([^(]+?)(?:\s*\(([^)]+)\))?$/);
-
-        if (!nameMatch) {
-            // Fallback if parsing fails
-            let html = `<span class="boat-name-text">${escapeHtml(boat.name)}</span>`;
-            if (damaged) {
-                html = `<span class="damaged-icon">⚠️</span>${html}`;
-            }
-            return html;
+        // Extract type (e.g., "1X", "2X") from start of name
+        const typeMatch = boatName.match(/^(\w+)\s*-\s*/);
+        const type = typeMatch ? typeMatch[1] : '';
+        if (typeMatch) {
+            boatName = boatName.slice(typeMatch[0].length);
         }
 
-        const type = nameMatch[1] || '';
+        // Extract weight (e.g., "65kg") from end of name - look for (XXkg) pattern
+        const weightMatch = boatName.match(/\((\d+kg)\)\s*$/);
+        const weight = weightMatch ? weightMatch[1] : '';
+        if (weightMatch) {
+            boatName = boatName.slice(0, -weightMatch[0].length).trim();
+        }
+
         // Strip "Damaged" from the name - it's shown separately in the warning
-        const rawName = nameMatch[2] ? nameMatch[2].trim() : boat.name;
-        const name = rawName.replace(/\s*damaged\s*/gi, ' ').replace(/\s+/g, ' ').trim();
-        const weight = nameMatch[3] || '';
+        const name = boatName.replace(/\s*damaged\s*/gi, ' ').replace(/\s+/g, ' ').trim();
 
         let html = '';
 
