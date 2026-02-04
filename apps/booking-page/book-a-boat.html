@@ -500,12 +500,11 @@
         <div class="damaged-warning" id="damagedWarning" style="display: none;">
             <h3>
                 <span>⚠️</span>
-                Boat Currently Unavailable
-                <span>⚠️</span>
+                Boat Out of Service
             </h3>
-            <p>This boat has been marked as damaged and is not available for booking.</p>
-            <p>Please select a different boat or contact the club for more information.</p>
-            <p class="contact-info">Contact: <span id="contactEmail"></span></p>
+            <p>This boat is currently unavailable due to reported damage.</p>
+            <p>Please select a different boat, or contact the club if you have questions.</p>
+            <p class="contact-info"><span id="contactEmail"></span></p>
         </div>
 
         <div class="date-display" id="dateDisplay">
@@ -593,7 +592,9 @@
         }
 
         const type = nameMatch[1] || '';
-        const name = nameMatch[2] ? nameMatch[2].trim() : boat.name;
+        // Strip "Damaged" from the name - it's shown separately in the warning
+        const rawName = nameMatch[2] ? nameMatch[2].trim() : boat.name;
+        const name = rawName.replace(/\s*damaged\s*/gi, ' ').replace(/\s+/g, ' ').trim();
         const weight = nameMatch[3] || '';
 
         let html = '';
