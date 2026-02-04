@@ -25,7 +25,7 @@ services:
     headers:
       - path: /boats.json
         name: Cache-Control
-        value: public, max-age=300  # 5 min cache for boat data
+        value: no-cache, must-revalidate  # Always fetch fresh - damage status is safety-critical
       - path: /*
         name: Cache-Control
         value: public, max-age=3600  # 1 hour for HTML/assets
