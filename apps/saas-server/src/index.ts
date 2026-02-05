@@ -15,6 +15,12 @@ import express, { type Request, type Response } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import { createDb } from '@lmrc/db';
 import { createTenantMiddleware } from '@lmrc/tenant';
@@ -121,8 +127,14 @@ app.use('/api/v1', createApiRouter(db, {
 }));
 
 // Static frontend (booking board display)
-// TODO: Serve static files from apps/booking-board once built
-// app.use(express.static('public'));
+// Serve static files from public directory
+const publicPath = path.join(__dirname, '..', 'public');
+app.use(express.static(publicPath));
+
+// Serve index.html for the root path (after API routes)
+app.get('/', (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
 
 // 404 handler for non-API routes
 app.use((req: Request, res: Response) => {
