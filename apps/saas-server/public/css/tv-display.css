@@ -400,6 +400,53 @@ body {
   min-width: 0; /* Critical for ellipsis to work in flexbox */
 }
 
+/* ===== Desktop Hover Tooltips ===== */
+/* JavaScript-based tooltip (appended to body to avoid overflow clipping) */
+@media (hover: hover) and (pointer: fine) {
+  .session-item.has-booking {
+    cursor: pointer;
+  }
+}
+
+/* Tooltip element (created by JavaScript) */
+.booking-tooltip {
+  position: fixed;
+  background: var(--bg-dark, #1a1a2e);
+  color: var(--text-on-dark, #ffffff);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  min-width: 160px;
+  max-width: 280px;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.booking-tooltip.visible {
+  opacity: 1;
+}
+
+.booking-tooltip .tooltip-boat {
+  font-weight: 700;
+  color: var(--accent-gold, #f4c430);
+  margin-bottom: 4px;
+}
+
+.booking-tooltip .tooltip-member {
+  font-weight: 600;
+}
+
+.booking-tooltip .tooltip-time {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 .status-available-text {
   color: var(--text-light);
   font-style: italic;
@@ -536,18 +583,18 @@ body {
 }
 
 /* ===== RESPONSIVE LAYOUTS ===== */
-/* TV mode (>=1920px): No changes - existing styles apply */
+/* TV mode (≥1920px): No changes - existing styles apply */
 
-/* Desktop mode (768px - 1919px) */
-@media screen and (max-width: 1919px) {
+/* Desktop Wide (1200px - 1919px): Two-column layout like TV */
+@media screen and (min-width: 1200px) and (max-width: 1919px) {
   :root {
-    --font-column-title: 24px;
-    --font-boat-name: 20px;
-    --font-booking: 16px;
-    --font-footer: 16px;
-    --boat-row-height: 50px;
-    --session-row-height: 25px;
-    --boat-name-width: 280px;
+    --font-column-title: 22px;
+    --font-boat-name: 16px;
+    --font-booking: 14px;
+    --font-footer: 14px;
+    --boat-row-height: 44px;
+    --session-row-height: 22px;
+    --boat-name-width: 200px;
     --margin-screen: 16px;
     --gap-large: 16px;
   }
@@ -557,7 +604,82 @@ body {
   }
 
   .tv-display {
-    width: 100%; /* Override 100vw to prevent scrollbar-induced overflow */
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+
+  /* Keep two-column layout like TV mode */
+  .two-column-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gap-large);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .boat-column {
+    max-height: none;
+    max-width: 100%;
+  }
+
+  .boats-list {
+    overflow: visible;
+  }
+
+  .day-headers {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .boat-entry {
+    max-width: 100%;
+  }
+
+  .boat-days-grid {
+    min-width: 0;
+  }
+
+  .day-header {
+    font-size: 12px;
+  }
+
+  .boat-type-badge {
+    font-size: 11px;
+    padding: 1px 4px;
+  }
+
+  .boat-weight {
+    font-size: 11px;
+    padding: 1px 4px;
+  }
+
+  .display-footer {
+    grid-template-columns: 1fr auto 1fr;
+    text-align: left;
+  }
+}
+
+/* Desktop Narrow / Tablet (768px - 1199px): Single column with sticky headers */
+@media screen and (min-width: 768px) and (max-width: 1199px) {
+  :root {
+    --font-column-title: 20px;
+    --font-boat-name: 16px;
+    --font-booking: 14px;
+    --font-footer: 14px;
+    --boat-row-height: 46px;
+    --session-row-height: 23px;
+    --boat-name-width: 220px;
+    --margin-screen: 12px;
+    --gap-large: 12px;
+  }
+
+  body {
+    overflow-y: auto;
+  }
+
+  .tv-display {
+    width: 100%;
     height: auto;
     min-height: 100vh;
     box-sizing: border-box;
@@ -571,18 +693,28 @@ body {
   }
 
   .boat-column {
-    max-height: none; /* Remove height constraint */
-    max-width: 100%; /* Prevent overflow */
+    max-height: none;
+    max-width: 100%;
+  }
+
+  /* Sticky section headers */
+  .column-title {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  /* Sticky day headers below section title */
+  .day-headers {
+    position: sticky;
+    top: 52px; /* Height of column-title */
+    z-index: 19;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .boats-list {
-    overflow: visible; /* No internal scroll */
-  }
-
-  /* Ensure day headers and boat entries don't overflow */
-  .day-headers {
-    max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .boat-entry {
@@ -590,11 +722,11 @@ body {
   }
 
   .boat-days-grid {
-    min-width: 0; /* Allow grid to shrink */
+    min-width: 0;
   }
 
   .day-header {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .display-footer {
@@ -738,6 +870,474 @@ body {
   /* Hide sweep badge on mobile */
   .boat-sweep-badge {
     display: none;
+  }
+}
+
+/* ===== MOBILE LANDSCAPE VIEW ===== */
+/* Improved grid readability for landscape phones/small tablets */
+@media screen and (max-width: 767px) and (orientation: landscape) {
+  :root {
+    --font-column-title: 14px;
+    --font-boat-name: 13px;
+    --font-booking: 11px;
+    --font-footer: 10px;
+    --boat-row-height: 36px;
+    --session-row-height: 18px;
+    --boat-name-width: 130px;
+    --margin-screen: 6px;
+    --gap-large: 6px;
+    --gap-medium: 4px;
+  }
+
+  /* Show grid view (already default), ensure mobile portrait view hidden */
+  .mobile-portrait-view {
+    display: none !important;
+  }
+
+  .two-column-grid {
+    display: grid !important;
+    grid-template-columns: 1fr; /* Single column in landscape */
+  }
+
+  /* Sticky section headers */
+  .column-title {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 6px 10px;
+  }
+
+  /* Sticky day headers */
+  .day-headers {
+    position: sticky;
+    top: 32px;
+    z-index: 19;
+  }
+
+  .day-header {
+    font-size: 10px;
+    padding: 3px 2px;
+  }
+
+  /* More readable boat info */
+  .boat-info {
+    flex-direction: row; /* Keep horizontal layout */
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+  }
+
+  .boat-type-badge {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  .boat-name-text {
+    font-size: var(--font-boat-name);
+  }
+
+  /* Show booking times in landscape (more space than portrait) */
+  .booking-time {
+    display: inline;
+    font-size: 10px;
+  }
+
+  .booking-member {
+    font-size: var(--font-booking);
+  }
+
+  .session-item {
+    gap: 3px;
+    padding: 0 3px;
+  }
+
+  /* Compact footer for landscape */
+  .display-footer {
+    padding-top: 4px;
+    margin-top: 4px;
+    gap: 4px;
+  }
+
+  .footer-logo {
+    height: 18px;
+  }
+
+  .club-name {
+    font-size: 11px;
+  }
+
+  /* Smaller damaged overlay */
+  .damaged-overlay {
+    font-size: 14px;
+    letter-spacing: 2px;
+  }
+}
+
+/* ===== MOBILE PORTRAIT VIEW ===== */
+/* Single-day card view for mobile in portrait orientation */
+
+/* Hide mobile view by default */
+.mobile-portrait-view {
+  display: none;
+}
+
+/* Mobile Portrait Mode (<768px AND portrait orientation) */
+@media screen and (max-width: 767px) and (orientation: portrait) {
+  /* Make the whole display a flex column with fixed header/footer */
+  .tv-display {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+    overflow: hidden;
+  }
+
+  /* Show mobile portrait view, hide grid view */
+  .mobile-portrait-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0; /* Important for flex child scrolling */
+  }
+
+  .two-column-grid {
+    display: none !important;
+  }
+
+  /* Reset some mobile-landscape cramped styles */
+  :root {
+    --font-column-title: 16px;
+    --font-boat-name: 15px;
+    --font-booking: 14px;
+    --margin-screen: 8px;
+    --gap-small: 6px;
+    --gap-medium: 10px;
+  }
+
+  /* ===== Day Navigation (Sticky Header) ===== */
+  .day-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+    border-bottom: 2px solid var(--border-medium);
+    background: var(--bg-primary);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .day-nav-arrow {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: var(--accent-navy);
+    color: white;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .day-nav-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .day-nav-arrow:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .day-nav-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    flex: 1;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    padding: 0 4px;
+  }
+
+  .day-nav-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .day-tab {
+    padding: 8px 14px;
+    border: 2px solid var(--border-medium);
+    border-radius: 8px;
+    background: white;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    scroll-snap-align: center;
+    transition: all 0.2s ease;
+  }
+
+  .day-tab.active {
+    background: var(--accent-navy);
+    border-color: var(--accent-navy);
+    color: white;
+  }
+
+  .day-tab:active {
+    transform: scale(0.97);
+  }
+
+  /* ===== Mobile Cards Container (Scrollable Area) ===== */
+  .mobile-cards-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--gap-medium) var(--margin-screen);
+    min-height: 0; /* Critical for flex child scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ===== Section Headers ===== */
+  .mobile-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--accent-navy);
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--gap-small);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .mobile-section-header .section-toggle {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+
+  .mobile-section-header.collapsed + .mobile-section-boats {
+    display: none;
+  }
+
+  .mobile-section-boats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-small);
+    margin-bottom: var(--gap-medium);
+  }
+
+  /* ===== Boat Cards ===== */
+  .mobile-boat-card {
+    background: white;
+    border: 1px solid var(--border-medium);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .mobile-boat-card.damaged {
+    border-color: var(--damaged-icon-color);
+    background: var(--damaged-row-bg);
+  }
+
+  .mobile-boat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  /* Boat type background colors for card headers */
+  .mobile-boat-card.type-1x .mobile-boat-header {
+    background: var(--boat-type-1x-bg);
+  }
+
+  .mobile-boat-card.type-2x .mobile-boat-header {
+    background: var(--boat-type-2x-bg);
+  }
+
+  .mobile-boat-card.type-4x .mobile-boat-header {
+    background: var(--boat-type-4x-bg);
+  }
+
+  .mobile-boat-card.type-tinnie .mobile-boat-header {
+    background: var(--boat-type-tinnies-bg);
+  }
+
+  .mobile-boat-card.type-other .mobile-boat-header {
+    background: var(--boat-type-other-bg);
+  }
+
+  .mobile-boat-badge {
+    background: var(--boat-type-badge-bg, var(--accent-blue));
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .mobile-boat-name {
+    font-size: var(--font-boat-name);
+    font-weight: 700;
+    color: var(--text-primary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-boat-weight {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .mobile-damaged-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--damaged-icon-color);
+    background: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--damaged-icon-color);
+  }
+
+  /* ===== Session Rows ===== */
+  .mobile-sessions {
+    padding: 0;
+  }
+
+  .mobile-session-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-light);
+    min-height: 44px; /* Touch-friendly height */
+  }
+
+  .mobile-session-row:last-child {
+    border-bottom: none;
+  }
+
+  .mobile-session-label {
+    width: 36px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .mobile-session-time {
+    width: 50px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--booking-time-color, var(--status-booked));
+    flex-shrink: 0;
+  }
+
+  .mobile-session-member {
+    flex: 1;
+    font-size: var(--font-booking);
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-session-available {
+    color: var(--text-light);
+    font-style: italic;
+  }
+
+  /* Damaged boat sessions */
+  .mobile-boat-card.damaged .mobile-sessions {
+    position: relative;
+  }
+
+  .mobile-boat-card.damaged .mobile-session-row {
+    opacity: 0.5;
+  }
+
+  .mobile-damaged-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--damaged-text-color);
+    opacity: 0.3;
+    pointer-events: none;
+    letter-spacing: 4px;
+  }
+
+  /* ===== Empty State ===== */
+  .mobile-no-bookings {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  /* ===== Footer (Sticky Bottom) ===== */
+  .display-footer {
+    padding: var(--gap-small) var(--margin-screen);
+    margin-top: 0;
+    border-top: 2px solid var(--border-medium);
+    background: var(--bg-primary);
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+  }
+
+  .footer-center {
+    order: -1; /* Move logo/name to top */
+    margin-bottom: var(--gap-small);
+  }
+
+  .footer-logo {
+    height: 24px;
+  }
+
+  .club-name {
+    font-size: 13px;
+  }
+
+  .footer-left, .footer-right {
+    font-size: 11px;
+  }
+
+  .auto-refresh {
+    display: none; /* Hide countdown on mobile */
+  }
+
+  /* Ensure view container allows footer to be sticky */
+  .view-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
   }
 }
 

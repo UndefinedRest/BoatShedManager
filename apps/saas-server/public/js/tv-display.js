@@ -59,6 +59,12 @@ class TVDisplayController {
       tinniesDayHeaders: document.getElementById('tinniesDayHeaders'),
       todayDateFooter: document.getElementById('todayDateFooter'),
       lastUpdated: document.getElementById('lastUpdated'),
+      // Mobile portrait view elements
+      mobilePortraitView: document.getElementById('mobilePortraitView'),
+      dayNavTabs: document.getElementById('dayNavTabs'),
+      dayNavPrev: document.getElementById('dayNavPrev'),
+      dayNavNext: document.getElementById('dayNavNext'),
+      mobileCardsContainer: document.getElementById('mobileCardsContainer'),
     };
 
     this.bookingData = null;
@@ -66,6 +72,8 @@ class TVDisplayController {
     this.countdownTimer = null;
     this.countdownSeconds = 0;
     this.isInitialLoad = true;
+    this.selectedDayIndex = 0; // For mobile portrait view: 0 = today
+    this.collapsedSections = new Set(); // Track collapsed sections in mobile view
   }
 
   /**
@@ -76,6 +84,9 @@ class TVDisplayController {
 
     // Apply CSS variables for layout
     document.documentElement.style.setProperty('--days-to-display', this.daysToDisplay);
+
+    // Setup mobile view event listeners
+    this.setupMobileEventListeners();
 
     // Start clock immediately
     this.updateClock();
@@ -337,10 +348,17 @@ class TVDisplayController {
   }
 
   /**
-   * Render the two-column boat display
+   * Render the boat display (grid or mobile portrait depending on viewport)
    */
   render() {
     if (!this.bookingData) return;
+
+    // Check if we're in mobile portrait mode
+    if (this.isMobilePortrait()) {
+      console.log('[TV Display] Rendering mobile portrait view');
+      this.renderMobileView();
+      return;
+    }
 
     // Generate day headers for all columns
     this.renderDayHeaders();
@@ -501,6 +519,280 @@ class TVDisplayController {
     tinnies.sort((a, b) => getBoatName(a).localeCompare(getBoatName(b)));
 
     return { clubBoats, raceBoats, tinnies };
+  }
+
+  // ============================================================================
+  // MOBILE PORTRAIT VIEW METHODS
+  // ============================================================================
+
+  /**
+   * Setup event listeners for mobile portrait view
+   */
+  setupMobileEventListeners() {
+    // Day navigation arrow buttons
+    if (this.elements.dayNavPrev) {
+      this.elements.dayNavPrev.addEventListener('click', () => {
+        if (this.selectedDayIndex > 0) {
+          this.selectedDayIndex--;
+          this.renderMobileView();
+        }
+      });
+    }
+
+    if (this.elements.dayNavNext) {
+      this.elements.dayNavNext.addEventListener('click', () => {
+        if (this.selectedDayIndex < this.daysToDisplay - 1) {
+          this.selectedDayIndex++;
+          this.renderMobileView();
+        }
+      });
+    }
+  }
+
+  /**
+   * Check if current viewport is mobile portrait
+   */
+  isMobilePortrait() {
+    // Check for forced mode first
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    if (mode === 'mobile-portrait') return true;
+    if (mode === 'tv' || mode === 'desktop' || mode === 'mobile') return false;
+
+    // Check viewport: width < 768px AND portrait orientation
+    const isNarrow = window.innerWidth < 768;
+    const isPortrait = window.innerHeight > window.innerWidth;
+
+    return isNarrow && isPortrait;
+  }
+
+  /**
+   * Render mobile portrait card view
+   */
+  renderMobileView() {
+    if (!this.elements.mobileCardsContainer || !this.elements.dayNavTabs) return;
+
+    // Render day navigation tabs
+    this.renderDayNavTabs();
+
+    // Update arrow button states
+    this.updateDayNavArrows();
+
+    // Get selected date string
+    const today = new Date();
+    const selectedDate = new Date(today);
+    selectedDate.setDate(today.getDate() + this.selectedDayIndex);
+    const selectedDateStr = this.formatDate(selectedDate);
+
+    // Split boats into categories
+    const { clubBoats, raceBoats, tinnies } = this.splitBoatsByClassification();
+
+    // Clear and render cards container
+    this.elements.mobileCardsContainer.innerHTML = '';
+
+    // Render Club Boats section
+    this.renderMobileSection('club', 'CLUB BOATS', clubBoats, selectedDateStr);
+
+    // Render Race Boats section
+    this.renderMobileSection('race', 'RACE BOATS', raceBoats, selectedDateStr);
+
+    // Render Tinnies section (if any)
+    if (tinnies.length > 0) {
+      this.renderMobileSection('tinnies', 'TINNIES', tinnies, selectedDateStr);
+    }
+  }
+
+  /**
+   * Render day navigation tabs
+   */
+  renderDayNavTabs() {
+    this.elements.dayNavTabs.innerHTML = '';
+
+    const today = new Date();
+    for (let i = 0; i < this.daysToDisplay; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+
+      const tab = document.createElement('button');
+      tab.className = 'day-tab' + (i === this.selectedDayIndex ? ' active' : '');
+      tab.dataset.dayIndex = i;
+
+      if (i === 0) {
+        tab.textContent = 'TODAY';
+      } else {
+        const dayName = date.toLocaleDateString('en-AU', { weekday: 'short' }).toUpperCase();
+        const dayNum = date.getDate();
+        tab.textContent = `${dayName} ${dayNum}`;
+      }
+
+      // Click handler
+      tab.addEventListener('click', () => {
+        this.selectedDayIndex = i;
+        this.renderMobileView();
+      });
+
+      this.elements.dayNavTabs.appendChild(tab);
+    }
+
+    // Scroll active tab into view
+    const activeTab = this.elements.dayNavTabs.querySelector('.active');
+    if (activeTab) {
+      activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }
+
+  /**
+   * Update day navigation arrow button states
+   */
+  updateDayNavArrows() {
+    if (this.elements.dayNavPrev) {
+      this.elements.dayNavPrev.disabled = this.selectedDayIndex === 0;
+    }
+    if (this.elements.dayNavNext) {
+      this.elements.dayNavNext.disabled = this.selectedDayIndex >= this.daysToDisplay - 1;
+    }
+  }
+
+  /**
+   * Render a section of boat cards for mobile view
+   */
+  renderMobileSection(sectionId, title, boats, dateStr) {
+    const container = this.elements.mobileCardsContainer;
+
+    // Section header
+    const header = document.createElement('div');
+    header.className = 'mobile-section-header' + (this.collapsedSections.has(sectionId) ? ' collapsed' : '');
+    header.innerHTML = `
+      <span>${title} (${boats.length})</span>
+      <span class="section-toggle">${this.collapsedSections.has(sectionId) ? '▶' : '▼'}</span>
+    `;
+    header.addEventListener('click', () => {
+      if (this.collapsedSections.has(sectionId)) {
+        this.collapsedSections.delete(sectionId);
+      } else {
+        this.collapsedSections.add(sectionId);
+      }
+      this.renderMobileView();
+    });
+    container.appendChild(header);
+
+    // Section boats container
+    const boatsContainer = document.createElement('div');
+    boatsContainer.className = 'mobile-section-boats';
+
+    if (!this.collapsedSections.has(sectionId)) {
+      // Render boat cards
+      boats.forEach(boat => {
+        const card = this.createMobileBoatCard(boat, dateStr, sectionId === 'tinnies');
+        boatsContainer.appendChild(card);
+      });
+    }
+
+    container.appendChild(boatsContainer);
+  }
+
+  /**
+   * Create a boat card for mobile view
+   */
+  createMobileBoatCard(boat, dateStr, isTinnie = false) {
+    const card = document.createElement('div');
+    card.className = 'mobile-boat-card';
+
+    // Add boat type class
+    const typeClass = isTinnie ? 'type-tinnie' : this.getBoatTypeClass(boat.type);
+    card.classList.add(typeClass);
+
+    // Check if damaged
+    const isDamaged = boat.isDamaged;
+    if (isDamaged) {
+      card.classList.add('damaged');
+    }
+
+    // Boat name
+    const boatName = boat.nickname || boat.displayName;
+
+    // Build header HTML
+    let headerHTML = '';
+    if (!isTinnie && boat.type) {
+      headerHTML += `<span class="mobile-boat-badge">${boat.type}</span>`;
+    }
+    if (isDamaged) {
+      headerHTML += '<span class="mobile-damaged-badge">DAMAGED</span>';
+    }
+    headerHTML += `<span class="mobile-boat-name" title="${this.escapeHtml(boatName)}">${this.escapeHtml(boatName)}</span>`;
+    if (boat.weight) {
+      headerHTML += `<span class="mobile-boat-weight">${boat.weight}kg</span>`;
+    }
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'mobile-boat-header';
+    header.innerHTML = headerHTML;
+    card.appendChild(header);
+
+    // Sessions container
+    const sessionsContainer = document.createElement('div');
+    sessionsContainer.className = 'mobile-sessions';
+
+    // Get bookings for selected date
+    const bookings = this.getBookingsForDate(boat, dateStr);
+
+    // AM1 session
+    const am1Row = this.createMobileSessionRow('AM1', bookings.morning1);
+    sessionsContainer.appendChild(am1Row);
+
+    // AM2 session
+    const am2Row = this.createMobileSessionRow('AM2', bookings.morning2);
+    sessionsContainer.appendChild(am2Row);
+
+    // Add damaged overlay if applicable
+    if (isDamaged) {
+      const overlay = document.createElement('div');
+      overlay.className = 'mobile-damaged-overlay';
+      overlay.textContent = 'DAMAGED';
+      sessionsContainer.appendChild(overlay);
+    }
+
+    card.appendChild(sessionsContainer);
+
+    return card;
+  }
+
+  /**
+   * Create a session row for mobile view
+   */
+  createMobileSessionRow(label, booking) {
+    const row = document.createElement('div');
+    row.className = 'mobile-session-row';
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'mobile-session-label';
+    labelSpan.textContent = label;
+    row.appendChild(labelSpan);
+
+    if (booking) {
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'mobile-session-time';
+      timeSpan.textContent = booking.startTime;
+      row.appendChild(timeSpan);
+
+      const memberSpan = document.createElement('span');
+      memberSpan.className = 'mobile-session-member';
+      memberSpan.textContent = this.formatMemberName(booking.memberName);
+      row.appendChild(memberSpan);
+    } else {
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'mobile-session-time';
+      timeSpan.textContent = '—';
+      row.appendChild(timeSpan);
+
+      const availableSpan = document.createElement('span');
+      availableSpan.className = 'mobile-session-member mobile-session-available';
+      availableSpan.textContent = 'available';
+      row.appendChild(availableSpan);
+    }
+
+    return row;
   }
 
   /**
