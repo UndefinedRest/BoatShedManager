@@ -562,13 +562,16 @@
         const boats = {};
         for (const boat of apiData) {
             if (boat.sourceId) {
+                // Use nickname from metadata if available, otherwise fall back to name
+                // API stores: name="Xtreme double/pair", metadata.nickname="Watagan"
+                const displayName = boat.metadata?.nickname || boat.name;
+
                 // Construct formatted name like "2X - Watagan (90kg)" to match JSON format
-                // This is what the name parser expects
                 let formattedName = '';
                 if (boat.boatType) {
                     formattedName += boat.boatType + ' - ';
                 }
-                formattedName += boat.name;
+                formattedName += displayName;
                 if (boat.isDamaged) {
                     formattedName += ' Damaged';
                 }
