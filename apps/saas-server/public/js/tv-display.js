@@ -105,11 +105,19 @@ class TVDisplayController {
   async init() {
     console.log('[TV Display] Initializing SaaS version...');
 
+    // Apply TV mode class to body if in TV mode (enables TV-specific CSS)
+    if (this.isTvMode()) {
+      document.body.classList.add('tv-mode');
+      console.log('[TV Display] TV mode enabled - fixed wide layout, no controls');
+    }
+
     // Apply CSS variables for layout
     document.documentElement.style.setProperty('--days-to-display', this.daysToDisplay);
 
-    // Setup mobile view event listeners
-    this.setupMobileEventListeners();
+    // Setup mobile view event listeners (interactive mode only)
+    if (!this.isTvMode()) {
+      this.setupMobileEventListeners();
+    }
 
     // Setup desktop tooltip
     this.setupTooltip();
