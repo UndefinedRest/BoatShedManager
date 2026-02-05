@@ -153,8 +153,9 @@ In-Shed Display (Optional)
 - `node-cron` job scheduler for per-club scraping (no Redis yet)
 - Encrypted credential storage (AES-256 in database)
 - Responsive layouts: TV (existing widescreen), desktop (single-column), mobile
+- **Interactive booking board (PC/mobile)**: When not on a TV display, members can click empty slots to book (redirects to RevSport), click boat names to view booking calendars, adjust font size for accessibility, and smoothly scroll long boat lists
 - LMRC as first tenant; recruit 1-2 beta clubs
-- **Scope**: Read-only board display + club admin configuration. No booking entry.
+- **Scope**: Read-only board display + club admin configuration. No booking entry (clicking to book redirects to RevSport).
 
 ### Phase B: Self-Service & Growth
 - Full admin dashboard (React): club setup wizard, boat management, branding editor
@@ -299,6 +300,6 @@ These items are being implemented on the **current Raspberry Pi deployment** bef
 
 ---
 
-**Last Updated**: 2026-01-28
+**Last Updated**: 2026-02-06
 **Status**: Strategic pivot to cloud-first SaaS (under review)
 **Origin**: Based on LMRC production deployment + Claude.ai SaaS architecture analysis (Jan 2026)

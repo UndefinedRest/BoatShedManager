@@ -64,6 +64,17 @@ export function createDisplayRouter(db: Database): Router {
         changedFields.push('displayConfig');
       }
 
+      // Update TV display config if provided
+      if (input.tvDisplayConfig) {
+        const currentTvDisplayConfig =
+          ((req.club as any).tvDisplayConfig as Record<string, unknown>) ?? {};
+        updates.tvDisplayConfig = {
+          ...currentTvDisplayConfig,
+          ...input.tvDisplayConfig,
+        };
+        changedFields.push('tvDisplayConfig');
+      }
+
       if (changedFields.length === 0) {
         throw ApiError.validation('No fields to update');
       }

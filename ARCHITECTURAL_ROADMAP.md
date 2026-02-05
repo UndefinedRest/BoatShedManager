@@ -575,7 +575,18 @@ services:
 - User preferences (localStorage) **never** affect the TV display at the boatshed
 - Club branding applies everywhere — users cannot override logo/colours
 - TV display settings are separate from user-facing web/mobile settings
-- `?mode=tv` query param indicates boatshed display (loads TV config, disables interactivity)
+
+**Display Mode Behavior** (explicit TV mode):
+
+| URL | Mode | Behavior |
+|-----|------|----------|
+| `board.lakemacrowing.au/` | Interactive (default) | Click to book, font controls, scrolling, tooltips |
+| `board.lakemacrowing.au/?mode=tv` | TV Display | Read-only, no interactivity, loads TV-specific config |
+
+- **Default is interactive**: All users browsing without `?mode=tv` get the full interactive experience
+- **TV mode is opt-in**: Only the boatshed Pi (configured by admin) uses `?mode=tv`
+- **No auto-detection**: Large monitors do NOT automatically trigger TV mode
+- **Principle**: "Default to interactive, opt-in to passive display"
 
 **Config API Endpoints**:
 - `GET /api/v1/config/display` — Returns merged config for current context (detects TV mode)

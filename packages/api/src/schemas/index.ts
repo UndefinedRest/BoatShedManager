@@ -87,6 +87,7 @@ export const brandingSchema = z.object({
 export const displayConfigUpdateSchema = z.object({
   branding: brandingSchema.optional(),
   displayConfig: z.record(z.unknown()).optional(),
+  tvDisplayConfig: z.record(z.unknown()).optional(),
 });
 
 /**
