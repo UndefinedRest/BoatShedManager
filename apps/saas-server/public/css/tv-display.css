@@ -686,28 +686,29 @@ body {
   }
 }
 
-/* Desktop Narrow / Tablet (768px - 1199px): Single column with fixed footer */
+/* Desktop Narrow / Tablet (768px - 1199px): Single column with compact fixed footer */
 @media screen and (min-width: 768px) and (max-width: 1199px) {
   :root {
-    --font-column-title: 20px;
-    --font-boat-name: 16px;
-    --font-booking: 14px;
-    --font-footer: 14px;
-    --boat-row-height: 46px;
-    --session-row-height: 23px;
-    --boat-name-width: 220px;
-    --margin-screen: 12px;
-    --gap-large: 12px;
+    --font-column-title: 16px;
+    --font-boat-name: 15px;
+    --font-booking: 13px;
+    --font-footer: 12px;
+    --boat-row-height: 42px;
+    --session-row-height: 21px;
+    --boat-name-width: 180px;
+    --margin-screen: 10px;
+    --gap-large: 8px;
+    --gap-medium: 6px;
   }
 
   body {
-    overflow: hidden; /* Prevent body scroll - content scrolls instead */
+    overflow: hidden;
   }
 
   .tv-display {
     width: 100%;
     height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -719,38 +720,61 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Important for flex child scrolling */
+    min-height: 0;
   }
 
+  /* Single scrollable column containing all sections */
   .two-column-grid {
-    grid-template-columns: 1fr; /* Single column */
-    gap: var(--gap-medium);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     width: 100%;
     box-sizing: border-box;
     flex: 1;
-    overflow-y: auto; /* Scroll within the grid */
+    overflow-y: auto;
     min-height: 0;
   }
 
   .boat-column {
     max-height: none;
     max-width: 100%;
+    border: none;
+    border-radius: 0;
   }
 
-  /* Sticky section headers within scrolling container */
+  /* Section titles as inline separators */
   .column-title {
     position: sticky;
     top: 0;
     z-index: 20;
+    padding: 6px var(--margin-screen);
+    margin: 0;
+    font-size: var(--font-column-title);
+    background: var(--accent-navy);
   }
 
-  /* Sticky day headers below section title */
-  .day-headers {
+  /* Only show day headers in first boat column (Club Boats) */
+  .boat-column:first-child .day-headers {
     position: sticky;
-    top: 52px; /* Height of column-title */
+    top: 32px; /* Below column title */
     z-index: 19;
-    max-width: 100%;
-    overflow: hidden;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-medium);
+  }
+
+  /* Hide redundant day headers in Race Boats section */
+  .boat-column:nth-child(2) .day-headers {
+    display: none;
+  }
+
+  /* Tinnies section - also hide its day headers */
+  .tinnies-section .day-headers {
+    display: none;
+  }
+
+  /* Tinnies title styling */
+  .tinnies-section .column-title {
+    top: 0;
   }
 
   .boats-list {
@@ -766,19 +790,69 @@ body {
   }
 
   .day-header {
-    font-size: 13px;
+    font-size: 11px;
+    padding: 4px 2px;
   }
 
+  /* ===== Compact Footer for Narrow View ===== */
   .display-footer {
-    grid-template-columns: 1fr;
-    text-align: center;
-    gap: var(--gap-small);
-    flex-shrink: 0; /* Prevent footer from shrinking */
-    margin-top: auto; /* Push to bottom if content is short */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 12px;
+    padding: 6px var(--margin-screen);
+    flex-shrink: 0;
+    border-top: 2px solid var(--border-medium);
+    margin-top: 0;
   }
 
-  .footer-left, .footer-right {
+  /* Hide logo and club name on narrow - saves vertical space */
+  .footer-center {
+    display: none;
+  }
+
+  .footer-left {
+    flex-direction: row;
     align-items: center;
+    gap: 0;
+  }
+
+  .footer-right {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    font-size: var(--font-footer);
+  }
+
+  .view-label {
+    font-size: var(--font-footer);
+    font-weight: 600;
+  }
+
+  #lastUpdated,
+  #autoRefreshDisplay {
+    font-size: 11px;
+  }
+
+  /* Keep font controls inline and compact */
+  .font-size-controls {
+    display: flex !important;
+    gap: 2px;
+  }
+
+  .font-size-btn-inline {
+    padding: 3px 6px;
+    font-size: 11px;
+    min-width: auto;
+  }
+
+  .font-size-btn-inline.font-size-current {
+    padding: 3px 4px;
+  }
+
+  #fontSizePercent {
+    font-size: 10px;
   }
 }
 
