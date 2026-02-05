@@ -88,6 +88,22 @@ class TVDisplayController {
     // Setup mobile view event listeners
     this.setupMobileEventListeners();
 
+    // Setup desktop tooltip
+    this.setupTooltip();
+
+    // Listen for orientation changes (mobile device rotation)
+    window.addEventListener('orientationchange', () => {
+      console.log('[TV Display] Orientation changed, re-rendering...');
+      setTimeout(() => this.render(), 100); // Small delay for orientation to settle
+    });
+
+    // Listen for resize (for desktop browser testing and responsive layout)
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => this.render(), 150);
+    });
+
     // Start clock immediately
     this.updateClock();
     setInterval(() => this.updateClock(), this.clockInterval);
@@ -96,6 +112,9 @@ class TVDisplayController {
     await this.loadData();
 
     // Schedule periodic refresh
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
     this.refreshTimer = setInterval(() => {
       console.log('[TV Display] Auto-refresh triggered');
       this.loadData();
@@ -550,6 +569,103 @@ class TVDisplayController {
   }
 
   /**
+   * Setup tooltip for desktop hover on bookings
+   */
+  setupTooltip() {
+    // Only setup on devices with hover capability
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      return;
+    }
+
+    // Create tooltip element
+    this.tooltipElement = document.createElement('div');
+    this.tooltipElement.className = 'booking-tooltip';
+    this.tooltipElement.innerHTML = `
+      <div class="tooltip-boat"></div>
+      <div class="tooltip-member"></div>
+      <div class="tooltip-time"></div>
+    `;
+    document.body.appendChild(this.tooltipElement);
+
+    // Use event delegation on the main view container
+    const container = this.elements.mainView;
+    if (!container) return;
+
+    container.addEventListener('mouseenter', (e) => {
+      const target = e.target.closest('.session-item.has-booking');
+      if (target) {
+        this.showTooltip(target);
+      }
+    }, true);
+
+    container.addEventListener('mouseleave', (e) => {
+      const target = e.target.closest('.session-item.has-booking');
+      if (target) {
+        this.hideTooltip();
+      }
+    }, true);
+
+    container.addEventListener('mousemove', (e) => {
+      if (this.tooltipElement.classList.contains('visible')) {
+        this.positionTooltip(e.clientX, e.clientY);
+      }
+    });
+  }
+
+  /**
+   * Show tooltip with booking details
+   */
+  showTooltip(element) {
+    const boat = element.getAttribute('data-tooltip-boat');
+    const member = element.getAttribute('data-tooltip-member');
+    const time = element.getAttribute('data-tooltip-time');
+
+    this.tooltipElement.querySelector('.tooltip-boat').textContent = boat;
+    this.tooltipElement.querySelector('.tooltip-member').textContent = member;
+    this.tooltipElement.querySelector('.tooltip-time').textContent = time;
+
+    this.tooltipElement.classList.add('visible');
+  }
+
+  /**
+   * Hide tooltip
+   */
+  hideTooltip() {
+    if (this.tooltipElement) {
+      this.tooltipElement.classList.remove('visible');
+    }
+  }
+
+  /**
+   * Position tooltip near cursor
+   */
+  positionTooltip(x, y) {
+    const tooltip = this.tooltipElement;
+    const padding = 15;
+
+    // Position above and to the right of cursor
+    let left = x + padding;
+    let top = y - tooltip.offsetHeight - padding;
+
+    // Keep within viewport bounds
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Flip to left if too close to right edge
+    if (left + tooltip.offsetWidth > viewportWidth - padding) {
+      left = x - tooltip.offsetWidth - padding;
+    }
+
+    // Flip below if too close to top
+    if (top < padding) {
+      top = y + padding;
+    }
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  }
+
+  /**
    * Check if current viewport is mobile portrait
    */
   isMobilePortrait() {
@@ -703,7 +819,7 @@ class TVDisplayController {
     card.classList.add(typeClass);
 
     // Check if damaged
-    const isDamaged = boat.isDamaged;
+    const isDamaged = this.isDamagedBoat(boat);
     if (isDamaged) {
       card.classList.add('damaged');
     }
@@ -815,7 +931,7 @@ class TVDisplayController {
     const boatName = boat.nickname || boat.displayName;
 
     // Check if boat is damaged
-    const isDamaged = boat.isDamaged;
+    const isDamaged = this.isDamagedBoat(boat);
     if (isDamaged) {
       entry.classList.add('damaged-boat');
     }
@@ -1089,6 +1205,22 @@ class TVDisplayController {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  /**
+   * Check if a boat is marked as damaged
+   */
+  isDamagedBoat(boat) {
+    // Check the isDamaged flag from API
+    if (boat.isDamaged === true) {
+      return true;
+    }
+
+    // Also check nickname, displayName for "damaged" text (fallback)
+    const nickname = (boat.nickname || '').toLowerCase();
+    const displayName = (boat.displayName || '').toLowerCase();
+
+    return nickname.includes('damaged') || displayName.includes('damaged');
   }
 }
 
