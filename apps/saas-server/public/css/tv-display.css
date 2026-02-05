@@ -660,7 +660,7 @@ body {
   }
 }
 
-/* Desktop Narrow / Tablet (768px - 1199px): Single column with sticky headers */
+/* Desktop Narrow / Tablet (768px - 1199px): Single column with fixed footer */
 @media screen and (min-width: 768px) and (max-width: 1199px) {
   :root {
     --font-column-title: 20px;
@@ -675,14 +675,25 @@ body {
   }
 
   body {
-    overflow-y: auto;
+    overflow: hidden; /* Prevent body scroll - content scrolls instead */
   }
 
   .tv-display {
     width: 100%;
-    height: auto;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+    display: flex;
+    flex-direction: column;
     box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .view-container {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Important for flex child scrolling */
   }
 
   .two-column-grid {
@@ -690,6 +701,9 @@ body {
     gap: var(--gap-medium);
     width: 100%;
     box-sizing: border-box;
+    flex: 1;
+    overflow-y: auto; /* Scroll within the grid */
+    min-height: 0;
   }
 
   .boat-column {
@@ -697,7 +711,7 @@ body {
     max-width: 100%;
   }
 
-  /* Sticky section headers */
+  /* Sticky section headers within scrolling container */
   .column-title {
     position: sticky;
     top: 0;
@@ -733,6 +747,8 @@ body {
     grid-template-columns: 1fr;
     text-align: center;
     gap: var(--gap-small);
+    flex-shrink: 0; /* Prevent footer from shrinking */
+    margin-top: auto; /* Push to bottom if content is short */
   }
 
   .footer-left, .footer-right {
