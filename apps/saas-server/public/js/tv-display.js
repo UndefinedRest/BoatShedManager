@@ -19,6 +19,20 @@ function applyDisplayMode() {
 applyDisplayMode();
 
 class TVDisplayController {
+  // Map API error codes to user-friendly messages
+  // Technical details are logged to console, not shown to users
+  static ERROR_MESSAGES = {
+    'VALIDATION_ERROR': 'Unable to load booking data. Please refresh the page.',
+    'NOT_FOUND': 'Booking data is temporarily unavailable.',
+    'RATE_LIMITED': 'Too many requests. Please wait a moment.',
+    'UPSTREAM_ERROR': 'The booking system is currently unavailable.',
+    'UNAUTHORIZED': 'Access denied. Please contact support.',
+    'FORBIDDEN': 'Access denied. Please contact support.',
+    'INTERNAL_ERROR': 'A server error occurred. Please try again.',
+    'NETWORK_ERROR': 'Unable to connect to the server. Please check your connection.',
+    'default': 'Something went wrong. Please try again.'
+  };
+
   constructor() {
     this.clockInterval = 1000; // 1 second
     this.retryDelay = 30000; // 30 seconds on error
@@ -78,6 +92,53 @@ class TVDisplayController {
   }
 
   /**
+   * Parse an API error response into a structured error object.
+   * Returns { code, message, requestId } for logging and display.
+   */
+  async parseApiError(response) {
+    const errorInfo = {
+      code: 'UNKNOWN_ERROR',
+      message: null,
+      requestId: null,
+      httpStatus: response.status
+    };
+
+    try {
+      const errorBody = await response.json();
+      if (errorBody.error) {
+        errorInfo.code = errorBody.error.code || 'UNKNOWN_ERROR';
+        errorInfo.message = errorBody.error.message || null;
+        errorInfo.requestId = errorBody.error.requestId || null;
+      }
+    } catch {
+      // Response body wasn't JSON, use HTTP status to infer error code
+      if (response.status === 400) errorInfo.code = 'VALIDATION_ERROR';
+      else if (response.status === 401) errorInfo.code = 'UNAUTHORIZED';
+      else if (response.status === 403) errorInfo.code = 'FORBIDDEN';
+      else if (response.status === 404) errorInfo.code = 'NOT_FOUND';
+      else if (response.status === 429) errorInfo.code = 'RATE_LIMITED';
+      else if (response.status >= 500) errorInfo.code = 'INTERNAL_ERROR';
+    }
+
+    return errorInfo;
+  }
+
+  /**
+   * Get user-friendly error message from error code.
+   * Optionally appends a short reference ID for support.
+   */
+  getUserFriendlyError(errorInfo) {
+    const message = TVDisplayController.ERROR_MESSAGES[errorInfo.code]
+      || TVDisplayController.ERROR_MESSAGES.default;
+
+    // Append short reference ID if available (first 8 chars of requestId)
+    if (errorInfo.requestId) {
+      return `${message} (Ref: ${errorInfo.requestId.slice(0, 8)})`;
+    }
+    return message;
+  }
+
+  /**
    * Load data from the generic API endpoints
    * Fetches boats and bookings separately, then merges client-side
    */
@@ -98,20 +159,68 @@ class TVDisplayController {
       const toDate = this.formatDate(endDate);
 
       // Fetch boats and bookings in parallel
-      const [boatsResponse, bookingsResponse] = await Promise.all([
-        fetch('/api/v1/boats?limit=200'),
-        fetch(`/api/v1/bookings?from=${fromDate}&to=${toDate}&limit=500`)
-      ]);
+      let boatsResponse, bookingsResponse;
+      try {
+        [boatsResponse, bookingsResponse] = await Promise.all([
+          fetch('/api/v1/boats?limit=200'),
+          fetch(`/api/v1/bookings?from=${fromDate}&to=${toDate}&limit=500`)
+        ]);
+      } catch (networkError) {
+        // Network-level failure (no connection, DNS failure, etc.)
+        console.error('[TV Display] Network error:', networkError.message);
+        throw {
+          code: 'NETWORK_ERROR',
+          message: networkError.message,
+          requestId: null,
+          isNetworkError: true
+        };
+      }
 
-      if (!boatsResponse.ok || !bookingsResponse.ok) {
-        throw new Error('Failed to fetch data from server');
+      // Check for HTTP errors and parse error responses
+      if (!boatsResponse.ok) {
+        const errorInfo = await this.parseApiError(boatsResponse);
+        console.error('[TV Display] Boats API error:', {
+          code: errorInfo.code,
+          httpStatus: errorInfo.httpStatus,
+          requestId: errorInfo.requestId,
+          technicalMessage: errorInfo.message
+        });
+        throw errorInfo;
+      }
+
+      if (!bookingsResponse.ok) {
+        const errorInfo = await this.parseApiError(bookingsResponse);
+        console.error('[TV Display] Bookings API error:', {
+          code: errorInfo.code,
+          httpStatus: errorInfo.httpStatus,
+          requestId: errorInfo.requestId,
+          technicalMessage: errorInfo.message
+        });
+        throw errorInfo;
       }
 
       const boatsResult = await boatsResponse.json();
       const bookingsResult = await bookingsResponse.json();
 
-      if (!boatsResult.success || !bookingsResult.success) {
-        throw new Error('API returned error status');
+      // Check for API-level errors (success: false in response body)
+      if (!boatsResult.success) {
+        const errorInfo = {
+          code: boatsResult.error?.code || 'UNKNOWN_ERROR',
+          message: boatsResult.error?.message,
+          requestId: boatsResult.error?.requestId
+        };
+        console.error('[TV Display] Boats API returned error:', errorInfo);
+        throw errorInfo;
+      }
+
+      if (!bookingsResult.success) {
+        const errorInfo = {
+          code: bookingsResult.error?.code || 'UNKNOWN_ERROR',
+          message: bookingsResult.error?.message,
+          requestId: bookingsResult.error?.requestId
+        };
+        console.error('[TV Display] Bookings API returned error:', errorInfo);
+        throw errorInfo;
       }
 
       // Transform data into the format the renderer expects
@@ -137,13 +246,27 @@ class TVDisplayController {
       this.updateLastUpdated();
       this.startCountdown();
 
-    } catch (error) {
-      console.error('[TV Display] Error loading data:', error);
+    } catch (errorInfo) {
+      // errorInfo is either our structured error object or a native Error
+      const structuredError = errorInfo.code ? errorInfo : {
+        code: 'UNKNOWN_ERROR',
+        message: errorInfo.message || 'Unknown error',
+        requestId: null
+      };
+
+      // Log technical details for debugging (visible in dev tools)
+      console.error('[TV Display] Error loading data:', {
+        code: structuredError.code,
+        requestId: structuredError.requestId,
+        technicalMessage: structuredError.message
+      });
 
       if (this.isInitialLoad) {
-        this.showError(error.message);
+        // Show user-friendly error message
+        const userMessage = this.getUserFriendlyError(structuredError);
+        this.showError(userMessage);
       } else {
-        console.error('[TV Display] Background refresh failed - keeping existing data visible');
+        console.warn('[TV Display] Background refresh failed - keeping existing data visible');
       }
 
       // Retry after delay

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TV Display Error Handling Tests</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+    .pass { background: #d4edda; border-color: #28a745; }
+    .fail { background: #f8d7da; border-color: #dc3545; }
+    .pending { background: #fff3cd; border-color: #ffc107; }
+    h1 { margin-bottom: 20px; }
+    pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>TV Display Error Handling Tests</h1>
+  <div id="results"></div>
+
+  <script>
+    // Mock the TVDisplayController error handling methods for testing
+    const ERROR_MESSAGES = {
+      'VALIDATION_ERROR': 'Unable to load booking data. Please refresh the page.',
+      'NOT_FOUND': 'Booking data is temporarily unavailable.',
+      'RATE_LIMITED': 'Too many requests. Please wait a moment.',
+      'UPSTREAM_ERROR': 'The booking system is currently unavailable.',
+      'UNAUTHORIZED': 'Access denied. Please contact support.',
+      'FORBIDDEN': 'Access denied. Please contact support.',
+      'INTERNAL_ERROR': 'A server error occurred. Please try again.',
+      'NETWORK_ERROR': 'Unable to connect to the server. Please check your connection.',
+      'default': 'Something went wrong. Please try again.'
+    };
+
+    function getUserFriendlyError(errorInfo) {
+      const message = ERROR_MESSAGES[errorInfo.code] || ERROR_MESSAGES.default;
+      if (errorInfo.requestId) {
+        return `${message} (Ref: ${errorInfo.requestId.slice(0, 8)})`;
+      }
+      return message;
+    }
+
+    async function parseApiError(response) {
+      const errorInfo = {
+        code: 'UNKNOWN_ERROR',
+        message: null,
+        requestId: null,
+        httpStatus: response.status
+      };
+
+      try {
+        const errorBody = await response.json();
+        if (errorBody.error) {
+          errorInfo.code = errorBody.error.code || 'UNKNOWN_ERROR';
+          errorInfo.message = errorBody.error.message || null;
+          errorInfo.requestId = errorBody.error.requestId || null;
+        }
+      } catch {
+        if (response.status === 400) errorInfo.code = 'VALIDATION_ERROR';
+        else if (response.status === 401) errorInfo.code = 'UNAUTHORIZED';
+        else if (response.status === 403) errorInfo.code = 'FORBIDDEN';
+        else if (response.status === 404) errorInfo.code = 'NOT_FOUND';
+        else if (response.status === 429) errorInfo.code = 'RATE_LIMITED';
+        else if (response.status >= 500) errorInfo.code = 'INTERNAL_ERROR';
+      }
+
+      return errorInfo;
+    }
+
+    // Test results container
+    const results = document.getElementById('results');
+    let passCount = 0;
+    let failCount = 0;
+
+    function addResult(name, passed, details) {
+      const div = document.createElement('div');
+      div.className = `test ${passed ? 'pass' : 'fail'}`;
+      div.innerHTML = `<strong>${passed ? 'PASS' : 'FAIL'}: ${name}</strong><pre>${details}</pre>`;
+      results.appendChild(div);
+      if (passed) passCount++; else failCount++;
+    }
+
+    // Test cases
+    async function runTests() {
+      // Test 1: VALIDATION_ERROR (the limit=1000 scenario)
+      {
+        const testName = 'VALIDATION_ERROR (limit=1000 scenario)';
+        const errorInfo = {
+          code: 'VALIDATION_ERROR',
+          message: 'Number must be less than or equal to 500',
+          requestId: 'b96dc354-1d69-454b-9db4-65a13d1a4e84'
+        };
+        const userMessage = getUserFriendlyError(errorInfo);
+        const expected = 'Unable to load booking data. Please refresh the page. (Ref: b96dc354)';
+        const passed = userMessage === expected;
+        addResult(testName, passed,
+          `Input: ${JSON.stringify(errorInfo)}\nExpected: ${expected}\nActual: ${userMessage}`);
+      }
+
+      // Test 2: VALIDATION_ERROR without requestId
+      {
+        const testName = 'VALIDATION_ERROR without requestId';
+        const errorInfo = { code: 'VALIDATION_ERROR', message: 'Bad request', requestId: null };
+        const userMessage = getUserFriendlyError(errorInfo);
+        const expected = 'Unable to load booking data. Please refresh the page.';
+        const passed = userMessage === expected;
+        addResult(testName, passed,
+          `Input: ${JSON.stringify(errorInfo)}\nExpected: ${expected}\nActual: ${userMessage}`);
+      }
+
+      // Test 3: RATE_LIMITED error
+      {
+        const testName = 'RATE_LIMITED error';
+        const errorInfo = { code: 'RATE_LIMITED', requestId: 'abc12345-test' };
+        const userMessage = getUserFriendlyError(errorInfo);
+        const expected = 'Too many requests. Please wait a moment. (Ref: abc12345)';
+        const passed = userMessage === expected;
+        addResult(testName, passed,
+          `Input: ${JSON.stringify(errorInfo)}\nExpected: ${expected}\nActual: ${userMessage}`);
+      }
+
+      // Test 4: Unknown error code falls back to default
+      {
+        const testName = 'Unknown error code uses default message';
+        const errorInfo = { code: 'SOME_NEW_ERROR_CODE', requestId: null };
+        const userMessage = getUserFriendlyError(errorInfo);
+        const expected = 'Something went wrong. Please try again.';
+        const passed = userMessage === expected;
+        addResult(testName, passed,
+          `Input: ${JSON.stringify(errorInfo)}\nExpected: ${expected}\nActual: ${userMessage}`);
+      }
+
+      // Test 5: Technical message is NOT exposed to user
+      {
+        const testName = 'Technical error message NOT exposed to user';
+        const errorInfo = {
+          code: 'VALIDATION_ERROR',
+          message: 'Number must be less than or equal to 500', // Technical detail
+          requestId: 'test-123'
+        };
+        const userMessage = getUserFriendlyError(errorInfo);
+        const containsTechnicalDetail = userMessage.includes('500') || userMessage.includes('Number');
+        const passed = !containsTechnicalDetail;
+        addResult(testName, passed,
+          `User message should NOT contain technical details\nUser sees: "${userMessage}"\nTechnical detail hidden: "${errorInfo.message}"`);
+      }
+
+      // Test 6: Request ID is truncated to 8 characters
+      {
+        const testName = 'Request ID truncated to 8 characters';
+        const errorInfo = {
+          code: 'INTERNAL_ERROR',
+          requestId: 'b96dc354-1d69-454b-9db4-65a13d1a4e84'
+        };
+        const userMessage = getUserFriendlyError(errorInfo);
+        const passed = userMessage.includes('(Ref: b96dc354)') &&
+                       !userMessage.includes('1d69-454b');
+        addResult(testName, passed,
+          `Full requestId: ${errorInfo.requestId}\nUser sees: "${userMessage}"\nOnly first 8 chars shown: ${passed}`);
+      }
+
+      // Test 7: Live API test - VALIDATION_ERROR with limit=1000
+      {
+        const testName = 'Live API: limit=1000 returns VALIDATION_ERROR';
+        try {
+          const response = await fetch('/api/v1/bookings?limit=1000');
+          if (response.ok) {
+            addResult(testName, false, 'Expected 400 error but got 200 OK');
+          } else {
+            const errorInfo = await parseApiError(response);
+            const userMessage = getUserFriendlyError(errorInfo);
+            const passed = errorInfo.code === 'VALIDATION_ERROR' &&
+                           !userMessage.includes('500') &&
+                           userMessage.includes('Unable to load');
+            addResult(testName, passed,
+              `HTTP Status: ${response.status}\nParsed error code: ${errorInfo.code}\nUser message: "${userMessage}"\nTechnical message (hidden): "${errorInfo.message}"`);
+          }
+        } catch (e) {
+          addResult(testName, false, `Network error: ${e.message}`);
+        }
+      }
+
+      // Test 8: Live API test - valid request succeeds
+      {
+        const testName = 'Live API: valid limit=100 succeeds';
+        try {
+          const response = await fetch('/api/v1/bookings?limit=100');
+          const passed = response.ok;
+          const body = await response.json();
+          addResult(testName, passed,
+            `HTTP Status: ${response.status}\nSuccess: ${body.success}`);
+        } catch (e) {
+          addResult(testName, false, `Error: ${e.message}`);
+        }
+      }
+
+      // Summary
+      const summary = document.createElement('div');
+      summary.className = `test ${failCount === 0 ? 'pass' : 'fail'}`;
+      summary.innerHTML = `<strong>SUMMARY: ${passCount} passed, ${failCount} failed</strong>`;
+      results.insertBefore(summary, results.firstChild);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
