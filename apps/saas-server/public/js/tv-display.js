@@ -100,7 +100,7 @@ class TVDisplayController {
       // Fetch boats and bookings in parallel
       const [boatsResponse, bookingsResponse] = await Promise.all([
         fetch('/api/v1/boats?limit=200'),
-        fetch(`/api/v1/bookings?from=${fromDate}&to=${toDate}&limit=1000`)
+        fetch(`/api/v1/bookings?from=${fromDate}&to=${toDate}&limit=500`)
       ]);
 
       if (!boatsResponse.ok || !bookingsResponse.ok) {
