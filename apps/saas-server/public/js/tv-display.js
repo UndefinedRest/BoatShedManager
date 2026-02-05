@@ -982,11 +982,11 @@ class TVDisplayController {
       const bookings = this.getBookingsForDate(boat, dateStr);
 
       // AM1 session for this day
-      const am1 = this.createSessionItem(bookings.morning1);
+      const am1 = this.createSessionItem(bookings.morning1, boatName);
       dayColumn.appendChild(am1);
 
       // AM2 session for this day
-      const am2 = this.createSessionItem(bookings.morning2);
+      const am2 = this.createSessionItem(bookings.morning2, boatName);
       dayColumn.appendChild(am2);
 
       daysGrid.appendChild(dayColumn);
@@ -1008,13 +1008,19 @@ class TVDisplayController {
   /**
    * Create a session item
    */
-  createSessionItem(booking) {
+  createSessionItem(booking, boatName = '') {
     const item = document.createElement('div');
     item.className = 'session-item';
 
     if (booking) {
       // Format member name (first name + last initial)
       const formattedName = this.formatMemberName(booking.memberName);
+
+      // Add tooltip data for desktop hover
+      item.classList.add('has-booking');
+      item.setAttribute('data-tooltip-boat', boatName);
+      item.setAttribute('data-tooltip-member', booking.memberName);
+      item.setAttribute('data-tooltip-time', `${booking.startTime} - ${booking.endTime}`);
 
       item.innerHTML = `
         <span class="booking-time">${booking.startTime}</span>
