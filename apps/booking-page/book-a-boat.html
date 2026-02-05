@@ -562,8 +562,22 @@
         const boats = {};
         for (const boat of apiData) {
             if (boat.sourceId) {
+                // Construct formatted name like "2X - Watagan (90kg)" to match JSON format
+                // This is what the name parser expects
+                let formattedName = '';
+                if (boat.boatType) {
+                    formattedName += boat.boatType + ' - ';
+                }
+                formattedName += boat.name;
+                if (boat.isDamaged) {
+                    formattedName += ' Damaged';
+                }
+                if (boat.weight) {
+                    formattedName += ` (${boat.weight}kg)`;
+                }
+
                 boats[boat.sourceId] = {
-                    name: boat.name,
+                    name: formattedName,
                     weight: boat.weight ? `${boat.weight}kg` : '',
                     type: boat.boatType || '',
                     category: boat.boatCategory || 'Club Boat'
