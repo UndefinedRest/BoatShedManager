@@ -4,7 +4,7 @@
 
 **Document Type**: Architectural Roadmap & Technical Backlog
 **Target Audience**: Product Management & Engineering
-**Last Updated**: 2026-01-31
+**Last Updated**: 2026-02-06
 **Status**: SaaS pivot - replaces Pi-centric roadmap (v1.0, Oct 2025)
 
 ---
@@ -230,7 +230,8 @@ CREATE TABLE clubs (
 
     timezone VARCHAR(100) DEFAULT 'Australia/Sydney',
     branding JSONB DEFAULT '{}',                      -- {logoUrl, primaryColor, secondaryColor, customCSS}
-    display_config JSONB DEFAULT '{}',                -- Migrated from tv-display.json schema
+    display_config JSONB DEFAULT '{}',                -- Web/mobile display settings (user-facing)
+    tv_display_config JSONB DEFAULT '{}',             -- TV/boatshed display settings (row heights, fonts for 55" at 2m)
     status VARCHAR(50) DEFAULT 'trial',               -- trial, active, suspended, cancelled
     subscription_tier VARCHAR(50) DEFAULT 'basic',    -- basic, pro, premium, enterprise
     subscription_expires_at TIMESTAMP,
@@ -551,17 +552,67 @@ services:
 ---
 
 #### [A8] LMRC Migration
-**Effort**: S (1 week) | **Risk**: Medium | **Dependencies**: A1-A7
+**Effort**: M (2-3 weeks) | **Risk**: Medium | **Dependencies**: A1-A7
 
+**Migration Tasks**:
 - Seed LMRC as first club in database (subdomain: `lmrc`)
 - Migrate boat metadata from JSON to `boats` table
-- Migrate display config from `tv-display.json` to `clubs.display_config`
+- Migrate display config from `tv-display.json` to database (see config architecture below)
 - Encrypt and store RevSport credentials
 - Run cloud and Pi deployments in parallel during validation
-- Cutover: Point Pi's Chromium kiosk at `lmrc.rowandlift.au` instead of `localhost:3000`
+- Cutover: Point Pi's Chromium kiosk at `board.lakemacrowing.au?mode=tv`
 - Keep Pi's local server as fallback (if cloud goes down, revert kiosk URL)
 
+**Configuration Architecture** (three distinct layers):
+
+| Layer | Controlled By | Affects | Storage | Examples |
+|-------|--------------|---------|---------|----------|
+| **Club branding** | Club admin | All viewers (TV + web + mobile) | Database: `clubs.display_config` | Logo, colours, club name |
+| **TV display settings** | Club admin | Boatshed TV only | Database: `clubs.tv_display_config` | Row heights, font sizes, days to display (optimized for 55" at 2m) |
+| **User preferences** | Individual user | Their device only | localStorage | Font size (accessibility) |
+
+**Key Principles**:
+- User preferences (localStorage) **never** affect the TV display at the boatshed
+- Club branding applies everywhere — users cannot override logo/colours
+- TV display settings are separate from user-facing web/mobile settings
+- `?mode=tv` query param indicates boatshed display (loads TV config, disables interactivity)
+
+**Config API Endpoints**:
+- `GET /api/v1/config/display` — Returns merged config for current context (detects TV mode)
+- `GET /api/v1/config/branding` — Returns club branding (public, cached)
+- `POST /api/v1/admin/config` — Admin updates club config (auth required, Phase B)
+
+**Config Page (Phase A interim)**:
+- Port existing Pi config page to SaaS server at `/config` (protected URL)
+- Saves to database instead of JSON files
+- Replaced by admin dashboard in Phase B
+
 **Phase A onboarding**: Manual. Platform operator adds clubs directly in the database and assists with initial configuration. Acceptable for 1-3 clubs during alpha.
+
+---
+
+#### [A9] Interactive Booking Board for PC and Mobile
+**Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: A5, A8
+**Status**: Not started
+
+When not in TV mode (e.g., accessed via PC or mobile browser), the booking board becomes interactive:
+
+**Core Features**:
+- **Click empty cell to book**: Clicking an empty session cell opens the RevSport booking process for that boat, date, and session. Disabled for already-booked sessions.
+- **Click boat name for boat page**: Clicking the boat name navigates to the boat's booking calendar page on RevSport.
+- **Font size controls**: Allow users to increase/decrease font size for better readability on different devices and for accessibility.
+- **Smooth scrolling**: When the boat list exceeds the window height, ensure smooth vertical scrolling with clear visual indicators.
+
+**Implementation Notes**:
+- Detect `?mode=tv` to disable interactivity (TV displays are read-only, no keyboard/mouse)
+- Use boat metadata (`bookingUrl`, `calendarUrl`) from API for navigation links
+- Persist font size preference in localStorage
+- Consider touch-friendly tap targets for mobile (44px minimum)
+- Session booking links use RevSport's direct booking URL format
+
+**Out of Scope**:
+- Actual booking creation (handled by RevSport)
+- Authentication for booking (handled by RevSport login flow)
 
 ---
 

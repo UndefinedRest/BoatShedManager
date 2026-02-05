@@ -31,7 +31,8 @@ export const clubs = pgTable('clubs', {
 
   timezone: varchar('timezone', { length: 100 }).default('Australia/Sydney'),
   branding: jsonb('branding').default({}), // {logoUrl, primaryColor, secondaryColor, customCSS}
-  displayConfig: jsonb('display_config').default({}), // Migrated from tv-display.json schema
+  displayConfig: jsonb('display_config').default({}), // Web/mobile display settings (user-facing)
+  tvDisplayConfig: jsonb('tv_display_config').default({}), // TV/boatshed display settings (row heights, fonts for 55" at 2m)
 
   status: varchar('status', { length: 50 }).default('trial'), // trial, active, suspended, cancelled
   subscriptionTier: varchar('subscription_tier', { length: 50 }).default('basic'), // basic, pro, premium, enterprise
