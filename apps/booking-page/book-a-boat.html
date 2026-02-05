@@ -548,14 +548,61 @@
     // Global variable to store boat data
     let boatData = null;
 
-    // Load boat data from JSON file
+    // API endpoint for production
+    const API_BASE = 'https://lmrc.rowandlift.au';
+
+    // Check if running in local development
+    function isLocalDev() {
+        return window.location.hostname === 'localhost' ||
+               window.location.hostname === '127.0.0.1';
+    }
+
+    // Transform API response to boats.json format
+    function transformApiResponse(apiData) {
+        const boats = {};
+        for (const boat of apiData) {
+            if (boat.sourceId) {
+                boats[boat.sourceId] = {
+                    name: boat.name,
+                    weight: boat.weight ? `${boat.weight}kg` : '',
+                    type: boat.boatType || '',
+                    category: boat.boatCategory || 'Club Boat'
+                };
+            }
+        }
+        return {
+            boats,
+            lastUpdated: new Date().toISOString(),
+            source: 'SaaS API',
+            totalBoats: Object.keys(boats).length
+        };
+    }
+
+    // Load boat data from API (production) or JSON file (local dev)
     async function loadBoatData() {
         try {
-            const response = await fetch('boats.json');
-            if (!response.ok) {
-                throw new Error('Failed to load boat data');
+            if (isLocalDev()) {
+                // Local development: use static JSON file
+                console.log('[Boats] Loading from local boats.json');
+                const response = await fetch('boats.json');
+                if (!response.ok) {
+                    throw new Error('Failed to load boat data from JSON');
+                }
+                boatData = await response.json();
+            } else {
+                // Production: use SaaS API
+                console.log('[Boats] Loading from API:', API_BASE);
+                const response = await fetch(`${API_BASE}/api/v1/boats?limit=100`);
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.status}`);
+                }
+                const apiResponse = await response.json();
+                if (!apiResponse.success || !apiResponse.data) {
+                    throw new Error('Invalid API response');
+                }
+                boatData = transformApiResponse(apiResponse.data);
             }
-            boatData = await response.json();
+            console.log('[Boats] Loaded', boatData.totalBoats, 'boats');
             return boatData;
         } catch (error) {
             console.error('Error loading boat data:', error);

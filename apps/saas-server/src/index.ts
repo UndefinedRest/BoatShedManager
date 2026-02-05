@@ -57,7 +57,7 @@ app.use(helmet({
   },
 }));
 
-// CORS - allow requests from subdomains
+// CORS - allow requests from subdomains and booking page
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
@@ -67,7 +67,9 @@ app.use(cors({
     }
     // Allow any subdomain of the base domain
     const allowedPattern = new RegExp(`^https?://([a-z0-9-]+\\.)?${BASE_DOMAIN.replace('.', '\\.')}$`);
-    if (allowedPattern.test(origin) || origin.includes('localhost')) {
+    // Also allow the LMRC booking page domain
+    const isBookingPage = /^https?:\/\/(www\.)?lakemacrowing\.au$/.test(origin);
+    if (allowedPattern.test(origin) || isBookingPage || origin.includes('localhost')) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
