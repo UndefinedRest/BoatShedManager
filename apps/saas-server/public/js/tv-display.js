@@ -83,8 +83,11 @@ class TVDisplayController {
 
     this.bookingData = null;
 
-    // Font size settings
-    this.fontScale = 1.0;
+    // Font size settings - separate scales for portrait and landscape views
+    this.fontScales = {
+      portrait: 1.0,
+      landscape: 1.0,
+    };
     this.fontScaleMin = 0.8;
     this.fontScaleMax = 1.5;
     this.fontScaleStep = 0.1;
@@ -117,14 +120,20 @@ class TVDisplayController {
     // Listen for orientation changes (mobile device rotation)
     window.addEventListener('orientationchange', () => {
       console.log('[TV Display] Orientation changed, re-rendering...');
-      setTimeout(() => this.render(), 100); // Small delay for orientation to settle
+      setTimeout(() => {
+        this.onViewModeChanged(); // Apply correct font scale for new orientation
+        this.render();
+      }, 100); // Small delay for orientation to settle
     });
 
     // Listen for resize (for desktop browser testing and responsive layout)
     let resizeTimeout;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => this.render(), 150);
+      resizeTimeout = setTimeout(() => {
+        this.onViewModeChanged(); // Apply correct font scale for new view
+        this.render();
+      }, 150);
     });
 
     // Start clock immediately
@@ -1265,6 +1274,30 @@ class TVDisplayController {
   }
 
   /**
+   * Get current view mode key for font scale storage
+   * Portrait and landscape views need different scales due to different base typography
+   */
+  getFontScaleViewMode() {
+    return this.isMobilePortrait() ? 'portrait' : 'landscape';
+  }
+
+  /**
+   * Get current font scale for the active view mode
+   */
+  getCurrentFontScale() {
+    const mode = this.getFontScaleViewMode();
+    return this.fontScales[mode];
+  }
+
+  /**
+   * Set font scale for the active view mode
+   */
+  setCurrentFontScale(scale) {
+    const mode = this.getFontScaleViewMode();
+    this.fontScales[mode] = scale;
+  }
+
+  /**
    * Setup font size controls for interactive mode
    */
   setupFontSizeControls() {
@@ -1274,8 +1307,8 @@ class TVDisplayController {
       return;
     }
 
-    // Load saved font scale from localStorage
-    this.loadFontScale();
+    // Load saved font scales from localStorage
+    this.loadFontScales();
 
     // Show controls
     if (this.elements.fontSizeControls) {
@@ -1317,43 +1350,79 @@ class TVDisplayController {
       this.elements.fontResetSheet.addEventListener('click', () => this.resetFontSize());
     }
 
-    console.log('[TV Display] Font size controls initialized, scale:', this.fontScale);
+    console.log('[TV Display] Font size controls initialized, scales:', this.fontScales);
   }
 
   /**
-   * Load font scale from localStorage
+   * Load font scales from localStorage (separate for portrait and landscape)
    */
-  loadFontScale() {
-    const saved = localStorage.getItem('userPrefs.fontSize');
-    if (saved) {
-      const scale = parseFloat(saved);
+  loadFontScales() {
+    // Load portrait scale
+    const savedPortrait = localStorage.getItem('userPrefs.fontSize.portrait');
+    if (savedPortrait) {
+      const scale = parseFloat(savedPortrait);
       if (!isNaN(scale) && scale >= this.fontScaleMin && scale <= this.fontScaleMax) {
-        this.fontScale = scale;
+        this.fontScales.portrait = scale;
       }
     }
+
+    // Load landscape scale
+    const savedLandscape = localStorage.getItem('userPrefs.fontSize.landscape');
+    if (savedLandscape) {
+      const scale = parseFloat(savedLandscape);
+      if (!isNaN(scale) && scale >= this.fontScaleMin && scale <= this.fontScaleMax) {
+        this.fontScales.landscape = scale;
+      }
+    }
+
+    // Migrate old single-value storage if exists (one-time migration)
+    const oldSaved = localStorage.getItem('userPrefs.fontSize');
+    if (oldSaved && !savedPortrait && !savedLandscape) {
+      const scale = parseFloat(oldSaved);
+      if (!isNaN(scale) && scale >= this.fontScaleMin && scale <= this.fontScaleMax) {
+        // Apply old value to both (user can then adjust separately)
+        this.fontScales.portrait = scale;
+        this.fontScales.landscape = scale;
+        this.saveFontScales();
+      }
+      localStorage.removeItem('userPrefs.fontSize'); // Clean up old key
+    }
+
     this.applyFontScale();
   }
 
   /**
-   * Save font scale to localStorage
+   * Save current font scales to localStorage
    */
-  saveFontScale() {
-    localStorage.setItem('userPrefs.fontSize', this.fontScale.toString());
+  saveFontScales() {
+    localStorage.setItem('userPrefs.fontSize.portrait', this.fontScales.portrait.toString());
+    localStorage.setItem('userPrefs.fontSize.landscape', this.fontScales.landscape.toString());
   }
 
   /**
-   * Apply current font scale to CSS variable
+   * Apply current font scale to CSS variable (based on active view mode)
    */
   applyFontScale() {
-    document.documentElement.style.setProperty('--user-font-scale', this.fontScale);
+    const scale = this.getCurrentFontScale();
+    document.documentElement.style.setProperty('--user-font-scale', scale);
     this.updateFontSizeDisplay();
+  }
+
+  /**
+   * Called when view mode changes (orientation/resize) to apply the appropriate scale
+   */
+  onViewModeChanged() {
+    if (this.isTvMode()) return;
+    this.applyFontScale();
+    console.log('[TV Display] View mode changed, applied scale for:', this.getFontScaleViewMode());
   }
 
   /**
    * Update the font size percentage display
    */
   updateFontSizeDisplay() {
-    const percent = Math.round(this.fontScale * 100) + '%';
+    const scale = this.getCurrentFontScale();
+    const percent = Math.round(scale * 100) + '%';
     if (this.elements.fontSizePercent) {
       this.elements.fontSizePercent.textContent = percent;
     }
@@ -1363,39 +1432,43 @@ class TVDisplayController {
   }
 
   /**
-   * Increase font size
+   * Increase font size for current view mode
    */
   increaseFontSize() {
-    if (this.fontScale < this.fontScaleMax) {
-      this.fontScale = Math.min(this.fontScaleMax, this.fontScale + this.fontScaleStep);
-      this.fontScale = Math.round(this.fontScale * 10) / 10; // Round to 1 decimal
+    const currentScale = this.getCurrentFontScale();
+    if (currentScale < this.fontScaleMax) {
+      let newScale = Math.min(this.fontScaleMax, currentScale + this.fontScaleStep);
+      newScale = Math.round(newScale * 10) / 10; // Round to 1 decimal
+      this.setCurrentFontScale(newScale);
       this.applyFontScale();
-      this.saveFontScale();
-      console.log('[TV Display] Font size increased to', this.fontScale);
+      this.saveFontScales();
+      console.log('[TV Display] Font size increased to', newScale, 'for', this.getFontScaleViewMode());
     }
   }
 
   /**
-   * Decrease font size
+   * Decrease font size for current view mode
    */
   decreaseFontSize() {
-    if (this.fontScale > this.fontScaleMin) {
-      this.fontScale = Math.max(this.fontScaleMin, this.fontScale - this.fontScaleStep);
-      this.fontScale = Math.round(this.fontScale * 10) / 10; // Round to 1 decimal
+    const currentScale = this.getCurrentFontScale();
+    if (currentScale > this.fontScaleMin) {
+      let newScale = Math.max(this.fontScaleMin, currentScale - this.fontScaleStep);
+      newScale = Math.round(newScale * 10) / 10; // Round to 1 decimal
+      this.setCurrentFontScale(newScale);
       this.applyFontScale();
-      this.saveFontScale();
-      console.log('[TV Display] Font size decreased to', this.fontScale);
+      this.saveFontScales();
+      console.log('[TV Display] Font size decreased to', newScale, 'for', this.getFontScaleViewMode());
     }
   }
 
   /**
-   * Reset font size to default
+   * Reset font size to default for current view mode
    */
   resetFontSize() {
-    this.fontScale = 1.0;
+    this.setCurrentFontScale(1.0);
     this.applyFontScale();
-    this.saveFontScale();
-    console.log('[TV Display] Font size reset to default');
+    this.saveFontScales();
+    console.log('[TV Display] Font size reset to default for', this.getFontScaleViewMode());
   }
 
   /**
