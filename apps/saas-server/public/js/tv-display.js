@@ -65,9 +65,29 @@ class TVDisplayController {
       dayNavPrev: document.getElementById('dayNavPrev'),
       dayNavNext: document.getElementById('dayNavNext'),
       mobileCardsContainer: document.getElementById('mobileCardsContainer'),
+      // Font size controls
+      fontSizeControls: document.getElementById('fontSizeControls'),
+      fontDecrease: document.getElementById('fontDecrease'),
+      fontIncrease: document.getElementById('fontIncrease'),
+      fontReset: document.getElementById('fontReset'),
+      fontSizePercent: document.getElementById('fontSizePercent'),
+      // Mobile font size elements
+      fontSizeFab: document.getElementById('fontSizeFab'),
+      fontSizeSheet: document.getElementById('fontSizeSheet'),
+      fontSizeSheetBackdrop: document.getElementById('fontSizeSheetBackdrop'),
+      fontDecreaseSheet: document.getElementById('fontDecreaseSheet'),
+      fontIncreaseSheet: document.getElementById('fontIncreaseSheet'),
+      fontResetSheet: document.getElementById('fontResetSheet'),
+      fontSizePercentSheet: document.getElementById('fontSizePercentSheet'),
     };
 
     this.bookingData = null;
+
+    // Font size settings
+    this.fontScale = 1.0;
+    this.fontScaleMin = 0.8;
+    this.fontScaleMax = 1.5;
+    this.fontScaleStep = 0.1;
     this.refreshTimer = null;
     this.countdownTimer = null;
     this.countdownSeconds = 0;
@@ -90,6 +110,9 @@ class TVDisplayController {
 
     // Setup desktop tooltip
     this.setupTooltip();
+
+    // Setup font size controls (interactive mode only)
+    this.setupFontSizeControls();
 
     // Listen for orientation changes (mobile device rotation)
     window.addEventListener('orientationchange', () => {
@@ -1227,6 +1250,170 @@ class TVDisplayController {
     const displayName = (boat.displayName || '').toLowerCase();
 
     return nickname.includes('damaged') || displayName.includes('damaged');
+  }
+
+  // ============================================================================
+  // FONT SIZE CONTROLS (Interactive Mode Only)
+  // ============================================================================
+
+  /**
+   * Check if we're in TV mode (font controls should be hidden)
+   */
+  isTvMode() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'tv';
+  }
+
+  /**
+   * Setup font size controls for interactive mode
+   */
+  setupFontSizeControls() {
+    // Don't setup controls in TV mode
+    if (this.isTvMode()) {
+      console.log('[TV Display] TV mode - font controls disabled');
+      return;
+    }
+
+    // Load saved font scale from localStorage
+    this.loadFontScale();
+
+    // Show controls
+    if (this.elements.fontSizeControls) {
+      this.elements.fontSizeControls.classList.remove('hidden');
+    }
+    if (this.elements.fontSizeFab) {
+      this.elements.fontSizeFab.classList.remove('hidden');
+    }
+
+    // Desktop controls
+    if (this.elements.fontDecrease) {
+      this.elements.fontDecrease.addEventListener('click', () => this.decreaseFontSize());
+    }
+    if (this.elements.fontIncrease) {
+      this.elements.fontIncrease.addEventListener('click', () => this.increaseFontSize());
+    }
+    if (this.elements.fontReset) {
+      this.elements.fontReset.addEventListener('click', () => this.resetFontSize());
+    }
+
+    // Mobile FAB - open sheet
+    if (this.elements.fontSizeFab) {
+      this.elements.fontSizeFab.addEventListener('click', () => this.openFontSizeSheet());
+    }
+
+    // Mobile sheet backdrop - close sheet
+    if (this.elements.fontSizeSheetBackdrop) {
+      this.elements.fontSizeSheetBackdrop.addEventListener('click', () => this.closeFontSizeSheet());
+    }
+
+    // Mobile sheet controls
+    if (this.elements.fontDecreaseSheet) {
+      this.elements.fontDecreaseSheet.addEventListener('click', () => this.decreaseFontSize());
+    }
+    if (this.elements.fontIncreaseSheet) {
+      this.elements.fontIncreaseSheet.addEventListener('click', () => this.increaseFontSize());
+    }
+    if (this.elements.fontResetSheet) {
+      this.elements.fontResetSheet.addEventListener('click', () => this.resetFontSize());
+    }
+
+    console.log('[TV Display] Font size controls initialized, scale:', this.fontScale);
+  }
+
+  /**
+   * Load font scale from localStorage
+   */
+  loadFontScale() {
+    const saved = localStorage.getItem('userPrefs.fontSize');
+    if (saved) {
+      const scale = parseFloat(saved);
+      if (!isNaN(scale) && scale >= this.fontScaleMin && scale <= this.fontScaleMax) {
+        this.fontScale = scale;
+      }
+    }
+    this.applyFontScale();
+  }
+
+  /**
+   * Save font scale to localStorage
+   */
+  saveFontScale() {
+    localStorage.setItem('userPrefs.fontSize', this.fontScale.toString());
+  }
+
+  /**
+   * Apply current font scale to CSS variable
+   */
+  applyFontScale() {
+    document.documentElement.style.setProperty('--user-font-scale', this.fontScale);
+    this.updateFontSizeDisplay();
+  }
+
+  /**
+   * Update the font size percentage display
+   */
+  updateFontSizeDisplay() {
+    const percent = Math.round(this.fontScale * 100) + '%';
+    if (this.elements.fontSizePercent) {
+      this.elements.fontSizePercent.textContent = percent;
+    }
+    if (this.elements.fontSizePercentSheet) {
+      this.elements.fontSizePercentSheet.textContent = percent;
+    }
+  }
+
+  /**
+   * Increase font size
+   */
+  increaseFontSize() {
+    if (this.fontScale < this.fontScaleMax) {
+      this.fontScale = Math.min(this.fontScaleMax, this.fontScale + this.fontScaleStep);
+      this.fontScale = Math.round(this.fontScale * 10) / 10; // Round to 1 decimal
+      this.applyFontScale();
+      this.saveFontScale();
+      console.log('[TV Display] Font size increased to', this.fontScale);
+    }
+  }
+
+  /**
+   * Decrease font size
+   */
+  decreaseFontSize() {
+    if (this.fontScale > this.fontScaleMin) {
+      this.fontScale = Math.max(this.fontScaleMin, this.fontScale - this.fontScaleStep);
+      this.fontScale = Math.round(this.fontScale * 10) / 10; // Round to 1 decimal
+      this.applyFontScale();
+      this.saveFontScale();
+      console.log('[TV Display] Font size decreased to', this.fontScale);
+    }
+  }
+
+  /**
+   * Reset font size to default
+   */
+  resetFontSize() {
+    this.fontScale = 1.0;
+    this.applyFontScale();
+    this.saveFontScale();
+    console.log('[TV Display] Font size reset to default');
+  }
+
+  /**
+   * Open mobile font size bottom sheet
+   */
+  openFontSizeSheet() {
+    if (this.elements.fontSizeSheet) {
+      this.elements.fontSizeSheet.classList.remove('hidden');
+    }
+  }
+
+  /**
+   * Close mobile font size bottom sheet
+   */
+  closeFontSizeSheet() {
+    if (this.elements.fontSizeSheet) {
+      this.elements.fontSizeSheet.classList.add('hidden');
+    }
   }
 }
 

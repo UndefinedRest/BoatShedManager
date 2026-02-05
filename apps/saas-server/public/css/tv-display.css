@@ -1365,3 +1365,214 @@ body.mode-mobile .boat-entry {
   flex-direction: column !important;
   height: auto !important;
 }
+
+/* ===== USER FONT SIZE CONTROLS ===== */
+/* Interactive mode only - hidden in TV mode */
+
+:root {
+  --user-font-scale: 1; /* Set by JavaScript from localStorage */
+}
+
+/* Apply user font scale to content text (not structural elements) */
+.boat-name-text,
+.booking-member,
+.booking-time,
+.mobile-boat-name,
+.mobile-session-member,
+.mobile-session-time {
+  font-size: calc(var(--font-boat-name) * var(--user-font-scale));
+}
+
+.booking-member,
+.mobile-session-member {
+  font-size: calc(var(--font-booking) * var(--user-font-scale));
+}
+
+/* ===== Desktop Font Size Controls (in footer) ===== */
+.font-size-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 16px;
+  padding: 4px 8px;
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+.font-size-btn-inline {
+  width: 32px;
+  height: 28px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.font-size-btn-inline:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.font-size-btn-inline:active {
+  background: #cbd5e1;
+  transform: scale(0.95);
+}
+
+.font-size-btn-inline.font-size-current {
+  width: 48px;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.font-size-btn-inline.font-size-current:hover {
+  background: #e2e8f0;
+}
+
+#fontSizePercent {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ===== Mobile Font Size Floating Button ===== */
+.font-size-fab {
+  position: fixed;
+  bottom: 70px; /* Above footer */
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #1e40af;
+  color: white;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.font-size-fab:hover {
+  background: #1e3a8a;
+  transform: scale(1.05);
+}
+
+.font-size-fab:active {
+  transform: scale(0.95);
+}
+
+/* ===== Mobile Font Size Bottom Sheet ===== */
+.font-size-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.font-size-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.font-size-sheet-content {
+  position: relative;
+  background: white;
+  border-radius: 16px 16px 0 0;
+  padding: 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0));
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.font-size-sheet-header {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 20px;
+}
+
+.font-size-sheet-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.font-size-btn {
+  width: 72px;
+  height: 56px;
+  border: 2px solid #cbd5e1;
+  background: white;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.font-size-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.font-size-btn:active {
+  background: #e2e8f0;
+  transform: scale(0.95);
+}
+
+.font-size-btn.font-size-reset {
+  width: 80px;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#fontSizePercentSheet {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+/* ===== Hide Font Controls in TV Mode ===== */
+body.mode-tv .font-size-controls,
+body.mode-tv .font-size-fab,
+body.mode-tv .font-size-sheet {
+  display: none !important;
+}
+
+/* ===== Show/Hide Based on Viewport ===== */
+/* Desktop: show footer controls, hide FAB */
+@media (min-width: 768px) {
+  .font-size-fab {
+    display: none !important;
+  }
+}
+
+/* Mobile portrait: show FAB, hide footer controls */
+@media (max-width: 767px) and (orientation: portrait) {
+  .font-size-controls {
+    display: none !important;
+  }
+}
+
+/* Mobile landscape: show footer controls, hide FAB */
+@media (max-width: 767px) and (orientation: landscape) {
+  .font-size-fab {
+    display: none !important;
+  }
+}

@@ -79,6 +79,26 @@
             </div>
         </main>
 
+        <!-- Mobile Font Size Button (floating, interactive mode only) -->
+        <button class="font-size-fab hidden" id="fontSizeFab" aria-label="Adjust text size">
+            Aa
+        </button>
+
+        <!-- Mobile Font Size Bottom Sheet -->
+        <div class="font-size-sheet hidden" id="fontSizeSheet">
+            <div class="font-size-sheet-backdrop" id="fontSizeSheetBackdrop"></div>
+            <div class="font-size-sheet-content">
+                <div class="font-size-sheet-header">Text Size</div>
+                <div class="font-size-sheet-controls">
+                    <button class="font-size-btn" id="fontDecreaseSheet" aria-label="Decrease text size">A−</button>
+                    <button class="font-size-btn font-size-reset" id="fontResetSheet" aria-label="Reset text size">
+                        <span id="fontSizePercentSheet">100%</span>
+                    </button>
+                    <button class="font-size-btn" id="fontIncreaseSheet" aria-label="Increase text size">A+</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Footer (always visible) -->
         <footer class="display-footer">
             <div class="footer-left">
@@ -89,6 +109,14 @@
                 <span class="club-name">Lake Macquarie Rowing Club</span>
             </div>
             <div class="footer-right">
+                <!-- Font Size Controls (desktop, interactive mode only) -->
+                <div class="font-size-controls hidden" id="fontSizeControls">
+                    <button class="font-size-btn-inline" id="fontDecrease" aria-label="Decrease text size">A−</button>
+                    <button class="font-size-btn-inline font-size-current" id="fontReset" aria-label="Reset text size">
+                        <span id="fontSizePercent">100%</span>
+                    </button>
+                    <button class="font-size-btn-inline" id="fontIncrease" aria-label="Increase text size">A+</button>
+                </div>
                 <span id="lastUpdated">Last updated: --:--</span>
                 <span id="autoRefreshDisplay" class="auto-refresh">• Next update: --:--</span>
             </div>
