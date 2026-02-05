@@ -695,7 +695,7 @@ body {
     --font-footer: 12px;
     --boat-row-height: 42px;
     --session-row-height: 21px;
-    --boat-name-width: 180px;
+    --boat-name-width: 320px; /* Wide enough for full boat names */
     --margin-screen: 10px;
     --gap-large: 8px;
     --gap-medium: 6px;
@@ -731,7 +731,7 @@ body {
     width: 100%;
     box-sizing: border-box;
     flex: 1;
-    overflow-y: auto;
+    overflow-y: scroll; /* Always show scrollbar */
     min-height: 0;
   }
 
@@ -747,16 +747,27 @@ body {
     position: sticky;
     top: 0;
     z-index: 20;
-    padding: 6px var(--margin-screen);
+    padding: 8px var(--margin-screen);
     margin: 0;
     font-size: var(--font-column-title);
     background: var(--accent-navy);
   }
 
+  /* Add spacing before 2nd and subsequent section headers */
+  .boat-column:not(:first-child) {
+    margin-top: 16px;
+    border-top: 3px solid var(--border-medium);
+  }
+
+  .tinnies-section {
+    margin-top: 16px;
+    border-top: 3px solid var(--border-medium);
+  }
+
   /* Only show day headers in first boat column (Club Boats) */
   .boat-column:first-child .day-headers {
     position: sticky;
-    top: 32px; /* Below column title */
+    top: 36px; /* Below column title */
     z-index: 19;
     background: var(--bg-primary);
     border-bottom: 1px solid var(--border-medium);
