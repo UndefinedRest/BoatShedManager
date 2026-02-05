@@ -242,14 +242,14 @@ GitHub Monorepo (LMRC)
 
 ## Verification Checklist
 
-- [ ] Render static site created and deploying
-- [ ] Deploy hook configured and working
-- [ ] GitHub secrets added to monorepo
+- [x] Render static site created and deploying
+- [x] Deploy hook configured and working
+- [x] GitHub secrets added to monorepo
 - [ ] Manual workflow run succeeds
-- [ ] Custom domain configured in Render
-- [ ] DNS updated to point to Render
-- [ ] Site loads correctly at lakemacrowing.au
-- [ ] Query parameters work (`?boat_id=8584`)
+- [x] Custom domain configured in Render
+- [x] DNS updated to point to Render
+- [x] Site loads correctly at lakemacrowing.au
+- [x] Query parameters work (`?boat_id=8585`)
 - [ ] First automated update succeeds (2am)
 - [x] UptimeRobot monitoring configured
 - [ ] 48 hours stable operation
