@@ -148,6 +148,12 @@
             justify-content: center;
             gap: 16px;
             flex-wrap: wrap;
+            opacity: 0;
+            transition: opacity 0.2s ease-in;
+        }
+
+        h1.loaded {
+            opacity: 1;
         }
 
         .boat-type-badge {
@@ -690,7 +696,9 @@
 
         // Update boat name header after data is loaded
         const boatNameHTML = getBoatNameHTML(BOAT_ID);
-        document.getElementById('boatNameHeader').innerHTML = boatNameHTML;
+        const headerEl = document.getElementById('boatNameHeader');
+        headerEl.innerHTML = boatNameHTML;
+        headerEl.classList.add('loaded');
 
         // Set contact email
         document.getElementById('contactEmail').textContent = CONTACT_EMAIL;
