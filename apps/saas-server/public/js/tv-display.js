@@ -92,8 +92,6 @@ class TVDisplayController {
     this.fontScaleMax = 1.5;
     this.fontScaleStep = 0.1;
     this.refreshTimer = null;
-    this.countdownTimer = null;
-    this.countdownSeconds = 0;
     this.isInitialLoad = true;
     this.selectedDayIndex = 0; // For mobile portrait view: 0 = today
     this.collapsedSections = new Set(); // Track collapsed sections in mobile view
@@ -312,9 +310,8 @@ class TVDisplayController {
         console.log('[TV Display] Initial load complete - display is now visible');
       }
 
-      // Update timestamps and countdown
+      // Update timestamp
       this.updateLastUpdated();
-      this.startCountdown();
 
     } catch (errorInfo) {
       // errorInfo is either our structured error object or a native Error
@@ -1156,40 +1153,6 @@ class TVDisplayController {
       hour12: false
     });
     this.elements.lastUpdated.textContent = `Last updated: ${timeStr}`;
-  }
-
-  /**
-   * Start countdown timer to next refresh
-   */
-  startCountdown() {
-    if (this.countdownTimer) {
-      clearInterval(this.countdownTimer);
-    }
-
-    this.countdownSeconds = Math.round(this.refreshInterval / 1000);
-
-    const autoRefreshDisplay = document.getElementById('autoRefreshDisplay');
-    if (!autoRefreshDisplay) return;
-
-    this.updateCountdownDisplay(autoRefreshDisplay);
-
-    this.countdownTimer = setInterval(() => {
-      this.countdownSeconds--;
-      if (this.countdownSeconds <= 0) {
-        this.countdownSeconds = 0;
-      }
-      this.updateCountdownDisplay(autoRefreshDisplay);
-    }, 1000);
-  }
-
-  /**
-   * Update countdown display
-   */
-  updateCountdownDisplay(element) {
-    const minutes = Math.floor(this.countdownSeconds / 60);
-    const seconds = this.countdownSeconds % 60;
-    const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    element.textContent = `• Next update: ${timeStr}`;
   }
 
   /**
