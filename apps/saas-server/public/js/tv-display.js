@@ -887,6 +887,9 @@ class TVDisplayController {
     if (boat.weight) {
       headerHTML += `<span class="mobile-boat-weight">${boat.weight}kg</span>`;
     }
+    if (boat.sweepCapable) {
+      headerHTML += '<span class="mobile-boat-sweep">SWEEP</span>';
+    }
 
     // Header
     const header = document.createElement('div');
