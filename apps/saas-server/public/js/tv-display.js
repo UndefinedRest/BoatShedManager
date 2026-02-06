@@ -129,7 +129,7 @@ class TVDisplayController {
       setTimeout(() => {
         this.onViewModeChanged(); // Apply correct font scale for new orientation
         this.render();
-      }, 100); // Small delay for orientation to settle
+      }, 350); // Longer delay for viewport dimensions to fully settle on mobile
     });
 
     // Listen for resize (for desktop browser testing and responsive layout)

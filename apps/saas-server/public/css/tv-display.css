@@ -1062,6 +1062,12 @@ body {
     --gap-medium: 4px;
   }
 
+  /* Prevent viewport overflow during orientation change */
+  .tv-display {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
   /* Show grid view (already default), ensure mobile portrait view hidden */
   .mobile-portrait-view {
     display: none !important;
@@ -1070,6 +1076,7 @@ body {
   .two-column-grid {
     display: grid !important;
     grid-template-columns: 1fr; /* Single column in landscape */
+    max-width: 100%;
   }
 
   /* Sticky section headers */
