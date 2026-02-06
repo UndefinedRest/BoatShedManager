@@ -806,6 +806,26 @@ body {
     padding: 4px 2px;
   }
 
+  /* Compact badges to fit within row height */
+  .boat-type-badge {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  .boat-weight {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  .boat-sweep-badge {
+    font-size: 9px;
+    padding: 1px 3px;
+  }
+
+  .boat-badges-vertical {
+    gap: 1px;
+  }
+
   /* ===== Compact Footer for Narrow View ===== */
   .display-footer {
     display: flex;
