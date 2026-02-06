@@ -95,6 +95,7 @@ class TVDisplayController {
     this.isInitialLoad = true;
     this.selectedDayIndex = 0; // For mobile portrait view: 0 = today
     this.collapsedSections = new Set(); // Track collapsed sections in mobile view
+    this.bookingPageUrl = null; // URL for boat booking page (from config)
   }
 
   /**
@@ -107,6 +108,12 @@ class TVDisplayController {
     if (this.isTvMode()) {
       document.body.classList.add('tv-mode');
       console.log('[TV Display] TV mode enabled - fixed wide layout, no controls');
+    }
+
+    // Load config to get booking page URL (interactive mode only)
+    if (!this.isTvMode()) {
+      await this.loadConfig();
+      this.setupBoatNameLinks();
     }
 
     // Apply CSS variables for layout
@@ -865,6 +872,10 @@ class TVDisplayController {
     const boatName = boat.nickname || boat.displayName;
 
     // Build header HTML
+    const isClickable = this.isBoatClickable(boat);
+    const clickableClass = isClickable ? ' clickable' : '';
+    const dataSourceId = isClickable ? ` data-source-id="${boat.sourceId}"` : '';
+
     let headerHTML = '';
     if (!isTinnie && boat.type) {
       headerHTML += `<span class="mobile-boat-badge">${boat.type}</span>`;
@@ -872,7 +883,7 @@ class TVDisplayController {
     if (isDamaged) {
       headerHTML += '<span class="mobile-damaged-badge">DAMAGED</span>';
     }
-    headerHTML += `<span class="mobile-boat-name" title="${this.escapeHtml(boatName)}">${this.escapeHtml(boatName)}</span>`;
+    headerHTML += `<span class="mobile-boat-name${clickableClass}"${dataSourceId} title="${this.escapeHtml(boatName)}">${this.escapeHtml(boatName)}</span>`;
     if (boat.weight) {
       headerHTML += `<span class="mobile-boat-weight">${boat.weight}kg</span>`;
     }
@@ -974,10 +985,14 @@ class TVDisplayController {
     }
 
     // Build boat info HTML
+    const isClickable = this.isBoatClickable(boat);
+    const clickableClass = isClickable ? ' clickable' : '';
+    const dataSourceId = isClickable ? ` data-source-id="${boat.sourceId}"` : '';
+
     let boatInfoHTML = `
       ${isTinnie ? '' : `<span class="boat-type-badge">${boat.type}</span>`}
       ${isDamaged ? '<span class="damaged-icon" title="Boat is damaged">⚠️</span>' : ''}
-      <span class="boat-name-text" title="${this.escapeHtml(boatName)}">${this.escapeHtml(boatName)}</span>
+      <span class="boat-name-text${clickableClass}"${dataSourceId} title="${this.escapeHtml(boatName)}">${this.escapeHtml(boatName)}</span>
     `;
 
     // Add badges (weight and sweep) in vertical container if either exists
@@ -1230,6 +1245,66 @@ class TVDisplayController {
     const displayName = (boat.displayName || '').toLowerCase();
 
     return nickname.includes('damaged') || displayName.includes('damaged');
+  }
+
+  // ============================================================================
+  // BOAT NAME LINKS (Interactive Mode Only)
+  // ============================================================================
+
+  /**
+   * Load config from API to get booking page URL
+   */
+  async loadConfig() {
+    try {
+      const response = await fetch('/api/v1/config');
+      if (!response.ok) {
+        console.warn('[TV Display] Failed to load config:', response.status);
+        return;
+      }
+      const result = await response.json();
+      if (result.success && result.data?.displayConfig?.bookingPageUrl) {
+        this.bookingPageUrl = result.data.displayConfig.bookingPageUrl;
+        console.log('[TV Display] Booking page URL loaded:', this.bookingPageUrl);
+      }
+    } catch (error) {
+      console.warn('[TV Display] Error loading config:', error.message);
+    }
+  }
+
+  /**
+   * Setup click handlers for boat names to open booking page
+   * Uses event delegation on the main view container
+   */
+  setupBoatNameLinks() {
+    if (!this.bookingPageUrl || this.isTvMode()) {
+      return;
+    }
+
+    // Use event delegation - attach handler to main view
+    this.elements.mainView?.addEventListener('click', (e) => {
+      const boatNameEl = e.target.closest('.boat-name-text.clickable, .mobile-boat-name.clickable');
+      if (!boatNameEl) return;
+
+      const sourceId = boatNameEl.dataset.sourceId;
+      if (!sourceId) {
+        console.warn('[TV Display] No sourceId found for boat name click');
+        return;
+      }
+
+      // Construct booking URL and open in new tab
+      const bookingUrl = `${this.bookingPageUrl}?boat_id=${sourceId}`;
+      console.log('[TV Display] Opening booking page:', bookingUrl);
+      window.open(bookingUrl, '_blank', 'noopener,noreferrer');
+    });
+
+    console.log('[TV Display] Boat name links enabled');
+  }
+
+  /**
+   * Check if boat name should be clickable (has sourceId and URL configured)
+   */
+  isBoatClickable(boat) {
+    return !this.isTvMode() && this.bookingPageUrl && boat.sourceId;
   }
 
   // ============================================================================
