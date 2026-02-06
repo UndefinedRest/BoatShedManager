@@ -740,6 +740,7 @@ body {
     max-width: 100%;
     border: none;
     border-radius: 0;
+    overflow: visible; /* Override base hidden - allow content to flow into scrollable parent */
   }
 
   /* Section titles as inline separators */
