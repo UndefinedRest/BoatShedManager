@@ -639,22 +639,47 @@ body {
     min-height: 0;
   }
 
+  /* Each column scrolls independently */
   .boat-column {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    max-width: 100%;
-  }
-
-  .boats-list {
-    flex: 1;
-    overflow-y: auto;
+    overflow-y: auto; /* Column is the scroll container */
     overflow-x: hidden;
+    max-width: 100%;
+    min-height: 0; /* Critical: allows flex child to shrink and enable scrolling */
   }
 
+  /* Column title sticky at top of each column */
+  .column-title {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex-shrink: 0;
+  }
+
+  /* Day headers sticky below column title */
   .day-headers {
+    position: sticky;
+    top: 50px; /* Below column title */
+    z-index: 19;
     max-width: 100%;
     overflow: hidden;
+    flex-shrink: 0;
+    background: #f8fafc;
+  }
+
+  /* Boats list flows naturally within scrollable column */
+  .boats-list {
+    overflow: visible; /* Don't double-scroll, column handles it */
+  }
+
+  /* Tinnies section title also sticky within scroll */
+  .tinnies-section .column-title {
+    top: 0; /* Reset to top when it reaches scroll position */
+  }
+
+  .tinnies-section .day-headers {
+    display: none; /* Hide redundant day headers in tinnies */
   }
 
   .boat-entry {
