@@ -328,15 +328,11 @@ body {
 .boat-name-text.clickable,
 .mobile-boat-name.clickable {
   cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: var(--text-light);
-  text-underline-offset: 2px;
 }
 
 .boat-name-text.clickable:hover,
 .mobile-boat-name.clickable:hover {
   color: var(--accent-blue);
-  text-decoration-color: var(--accent-blue);
 }
 
 .boat-name-text.clickable:active,
