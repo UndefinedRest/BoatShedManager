@@ -2,8 +2,8 @@
  * Booking Board Display Styles
  *
  * Responsive layout for all screen sizes:
- * - Desktop wide (1200px+): Two-column grid
- * - Desktop narrow (768-1199px): Single-column scrollable
+ * - Desktop wide (1400px+): Two-column grid
+ * - Desktop narrow (768-1399px): Single-column scrollable
  * - Mobile portrait (<768px portrait): Card-based day view
  * - Mobile landscape (<768px landscape): Compact grid
  *
@@ -621,8 +621,8 @@ body {
 /* ===== RESPONSIVE LAYOUTS (Interactive Mode) ===== */
 /* These breakpoints only apply in interactive mode. TV mode uses fixed layout. */
 
-/* Desktop Wide (1200px+): Two-column layout with fixed footer */
-@media screen and (min-width: 1200px) {
+/* Desktop Wide (1400px+): Two-column layout with fixed footer */
+@media screen and (min-width: 1400px) {
   :root {
     --font-column-title: 22px;
     --font-boat-name: 16px;
@@ -754,8 +754,8 @@ body {
   }
 }
 
-/* Desktop Narrow / Tablet (768px - 1199px): Single column with compact fixed footer */
-@media screen and (min-width: 768px) and (max-width: 1199px) {
+/* Desktop Narrow / Tablet (768px - 1399px): Single column with compact fixed footer */
+@media screen and (min-width: 768px) and (max-width: 1399px) {
   :root {
     --font-column-title: 16px;
     --font-boat-name: 15px;
