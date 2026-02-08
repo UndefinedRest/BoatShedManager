@@ -96,6 +96,7 @@ class TVDisplayController {
     this.selectedDayIndex = 0; // For mobile portrait view: 0 = today
     this.collapsedSections = new Set(); // Track collapsed sections in mobile view
     this.bookingPageUrl = null; // URL for boat booking page (from config)
+    this.bookingBaseUrl = null; // RevSport confirm URL base for direct session booking
   }
 
   /**
@@ -110,10 +111,11 @@ class TVDisplayController {
       console.log('[TV Display] TV mode enabled - fixed wide layout, no controls');
     }
 
-    // Load config to get booking page URL (interactive mode only)
+    // Load config to get booking URLs (interactive mode only)
     if (!this.isTvMode()) {
       await this.loadConfig();
       this.setupBoatNameLinks();
+      this.setupSessionBookingLinks();
     }
 
     // Apply CSS variables for layout
@@ -903,13 +905,14 @@ class TVDisplayController {
 
     // Get bookings for selected date
     const bookings = this.getBookingsForDate(boat, dateStr);
+    const bookable = this.isSessionBookable(boat);
 
     // AM1 session
-    const am1Row = this.createMobileSessionRow('AM1', bookings.morning1);
+    const am1Row = this.createMobileSessionRow('AM1', bookings.morning1, bookable ? { sourceId: boat.sourceId, date: dateStr, session: 1 } : null);
     sessionsContainer.appendChild(am1Row);
 
     // AM2 session
-    const am2Row = this.createMobileSessionRow('AM2', bookings.morning2);
+    const am2Row = this.createMobileSessionRow('AM2', bookings.morning2, bookable ? { sourceId: boat.sourceId, date: dateStr, session: 2 } : null);
     sessionsContainer.appendChild(am2Row);
 
     // Add damaged overlay if applicable
@@ -927,8 +930,11 @@ class TVDisplayController {
 
   /**
    * Create a session row for mobile view
+   * @param {string} label - Session label (AM1, AM2)
+   * @param {Object|null} booking - Booking data, or null if empty
+   * @param {Object|null} bookingContext - { sourceId, date, session } for bookable empty rows
    */
-  createMobileSessionRow(label, booking) {
+  createMobileSessionRow(label, booking, bookingContext = null) {
     const row = document.createElement('div');
     row.className = 'mobile-session-row';
 
@@ -957,6 +963,14 @@ class TVDisplayController {
       availableSpan.className = 'mobile-session-member mobile-session-available';
       availableSpan.textContent = 'available';
       row.appendChild(availableSpan);
+
+      // Make empty row bookable
+      if (bookingContext) {
+        row.classList.add('bookable');
+        row.dataset.sourceId = bookingContext.sourceId;
+        row.dataset.date = bookingContext.date;
+        row.dataset.session = bookingContext.session;
+      }
     }
 
     return row;
@@ -1037,11 +1051,12 @@ class TVDisplayController {
       const bookings = this.getBookingsForDate(boat, dateStr);
 
       // AM1 session for this day
-      const am1 = this.createSessionItem(bookings.morning1, boatName);
+      const bookable = this.isSessionBookable(boat);
+      const am1 = this.createSessionItem(bookings.morning1, boatName, bookable ? { sourceId: boat.sourceId, date: dateStr, session: 1 } : null);
       dayColumn.appendChild(am1);
 
       // AM2 session for this day
-      const am2 = this.createSessionItem(bookings.morning2, boatName);
+      const am2 = this.createSessionItem(bookings.morning2, boatName, bookable ? { sourceId: boat.sourceId, date: dateStr, session: 2 } : null);
       dayColumn.appendChild(am2);
 
       daysGrid.appendChild(dayColumn);
@@ -1062,8 +1077,11 @@ class TVDisplayController {
 
   /**
    * Create a session item
+   * @param {Object|null} booking - Booking data, or null if empty
+   * @param {string} boatName - Display name for tooltip
+   * @param {Object|null} bookingContext - { sourceId, date, session } for bookable empty cells
    */
-  createSessionItem(booking, boatName = '') {
+  createSessionItem(booking, boatName = '', bookingContext = null) {
     const item = document.createElement('div');
     item.className = 'session-item';
 
@@ -1081,8 +1099,12 @@ class TVDisplayController {
         <span class="booking-time">${booking.startTime}</span>
         <span class="booking-member">${this.escapeHtml(formattedName)}</span>
       `;
-    } else {
-      item.innerHTML = '';
+    } else if (bookingContext) {
+      // Empty cell that can be booked
+      item.classList.add('bookable');
+      item.dataset.sourceId = bookingContext.sourceId;
+      item.dataset.date = bookingContext.date;
+      item.dataset.session = bookingContext.session;
     }
 
     return item;
@@ -1265,9 +1287,14 @@ class TVDisplayController {
         return;
       }
       const result = await response.json();
-      if (result.success && result.data?.displayConfig?.bookingPageUrl) {
-        this.bookingPageUrl = result.data.displayConfig.bookingPageUrl;
+      const config = result.success ? result.data?.displayConfig : null;
+      if (config?.bookingPageUrl) {
+        this.bookingPageUrl = config.bookingPageUrl;
         console.log('[TV Display] Booking page URL loaded:', this.bookingPageUrl);
+      }
+      if (config?.bookingBaseUrl) {
+        this.bookingBaseUrl = config.bookingBaseUrl;
+        console.log('[TV Display] Booking base URL loaded:', this.bookingBaseUrl);
       }
     } catch (error) {
       console.warn('[TV Display] Error loading config:', error.message);
@@ -1308,6 +1335,70 @@ class TVDisplayController {
    */
   isBoatClickable(boat) {
     return !this.isTvMode() && this.bookingPageUrl && boat.sourceId;
+  }
+
+  // ============================================================================
+  // SESSION BOOKING LINKS (Interactive Mode Only)
+  // ============================================================================
+
+  /**
+   * Setup click handlers for empty session cells to open RevSport booking
+   * Uses event delegation on the main view container
+   */
+  setupSessionBookingLinks() {
+    if (!this.bookingBaseUrl || this.isTvMode()) {
+      return;
+    }
+
+    this.elements.mainView?.addEventListener('click', (e) => {
+      const bookableCell = e.target.closest('.session-item.bookable, .mobile-session-row.bookable');
+      if (!bookableCell) return;
+
+      const sourceId = bookableCell.dataset.sourceId;
+      const dateStr = bookableCell.dataset.date;
+      const sessionIndex = parseInt(bookableCell.dataset.session, 10);
+
+      const bookingUrl = this.buildBookingUrl(sourceId, dateStr, sessionIndex);
+      if (bookingUrl) {
+        console.log('[TV Display] Opening session booking:', bookingUrl);
+        window.open(bookingUrl, '_blank', 'noopener,noreferrer');
+      }
+    });
+
+    console.log('[TV Display] Session booking links enabled');
+  }
+
+  /**
+   * Check if a session cell should be bookable (empty cell, not damaged, has sourceId)
+   */
+  isSessionBookable(boat) {
+    return !this.isTvMode() && this.bookingBaseUrl && boat.sourceId && !this.isDamagedBoat(boat);
+  }
+
+  /**
+   * Build RevSport booking confirmation URL for a specific session
+   */
+  buildBookingUrl(sourceId, dateStr, sessionIndex) {
+    if (!this.bookingBaseUrl || !sourceId) return null;
+
+    // Parse date from YYYY-MM-DD to DD/MM/YYYY (RevSport format)
+    const [yyyy, mm, dd] = dateStr.split('-');
+    const formattedDate = `${dd}/${mm}/${yyyy}`;
+
+    // Get session times
+    const session = sessionIndex === 1 ? this.sessions.morning1 : this.sessions.morning2;
+
+    const params = new URLSearchParams({
+      freq: '1',
+      dateStart: '',
+      dateEnd: '',
+      date: formattedDate,
+      timeStart: session.start,
+      timeEnd: session.end,
+      booking_type: 'oneoff'
+    });
+
+    return `${this.bookingBaseUrl}${sourceId}?${params.toString()}`;
   }
 
   // ============================================================================
