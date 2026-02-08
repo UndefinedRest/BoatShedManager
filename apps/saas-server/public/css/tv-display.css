@@ -316,7 +316,7 @@ body {
 .boat-name-text {
   font-size: var(--font-boat-name);
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.3;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -354,7 +354,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  align-items: flex-start;
+  align-items: flex-end;
   flex-shrink: 0;
 }
 
@@ -734,6 +734,18 @@ body {
     text-align: left;
     flex-shrink: 0;
   }
+
+  .footer-left {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+  }
+
+  .footer-right {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
 }
 
 /* Desktop Narrow / Tablet (768px - 1199px): Single column with compact fixed footer */
@@ -889,8 +901,8 @@ body {
     margin-top: 0;
   }
 
-  /* Hide logo and club name on narrow - saves vertical space */
-  .footer-center {
+  /* Show logo but hide club name on narrow - saves horizontal space */
+  .footer-center .club-name {
     display: none;
   }
 
