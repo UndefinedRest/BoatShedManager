@@ -1175,7 +1175,7 @@ class TVDisplayController {
   updateClock() {
     const now = new Date();
 
-    const footerStr = 'TODAY - ' + now.toLocaleDateString('en-AU', {
+    const footerStr = now.toLocaleDateString('en-AU', {
       weekday: 'long',
       day: 'numeric',
       month: 'long'
@@ -1409,14 +1409,16 @@ class TVDisplayController {
 
       const dayIndex = Array.from(daysGrid.children).indexOf(dayColumn);
 
-      // Highlight all day headers at this index (visible ones will show)
-      document.querySelectorAll('.day-headers').forEach(container => {
-        const header = container.children[dayIndex + 1]; // +1 for spacer
+      // Find the day-headers container in the same section
+      const section = bookableCell.closest('.tinnies-section') || bookableCell.closest('.boat-column');
+      const dayHeaders = section?.querySelector('.day-headers');
+      if (dayHeaders) {
+        const header = dayHeaders.children[dayIndex + 1]; // +1 for spacer
         if (header?.classList.contains('day-header')) {
           header.classList.add('highlighted');
           highlightedHeaders.push(header);
         }
-      });
+      }
     });
 
     this.elements.mainView?.addEventListener('mouseleave', () => {
