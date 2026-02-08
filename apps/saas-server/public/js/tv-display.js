@@ -79,6 +79,9 @@ class TVDisplayController {
       fontIncreaseSheet: document.getElementById('fontIncreaseSheet'),
       fontResetSheet: document.getElementById('fontResetSheet'),
       fontSizePercentSheet: document.getElementById('fontSizePercentSheet'),
+      // Refresh button elements
+      refreshBtn: document.getElementById('refreshBtn'),
+      refreshFab: document.getElementById('refreshFab'),
     };
 
     this.bookingData = null;
@@ -98,6 +101,9 @@ class TVDisplayController {
     this.bookingPageUrl = null; // URL for boat booking page (from config)
     this.bookingBaseUrl = null; // RevSport confirm URL base for direct session booking
     this.startDateCutoffHour = 12; // After noon, shift display to start from tomorrow
+    this.isRefreshing = false; // True while loadData() is in-flight
+    this.lastManualRefresh = 0; // Timestamp of last manual refresh
+    this.manualRefreshCooldown = 30000; // 30s cooldown - matches server Cache-Control max-age
   }
 
   /**
@@ -132,6 +138,9 @@ class TVDisplayController {
 
     // Setup font size controls (interactive mode only)
     this.setupFontSizeControls();
+
+    // Setup manual refresh button (interactive mode only)
+    this.setupRefreshButton();
 
     // Listen for orientation changes (mobile device rotation)
     window.addEventListener('orientationchange', () => {
@@ -221,6 +230,7 @@ class TVDisplayController {
    * Fetches boats and bookings separately, then merges client-side
    */
   async loadData() {
+    this.isRefreshing = true;
     try {
       if (this.isInitialLoad) {
         console.log('[TV Display] Initial load - showing loading screen');
@@ -322,6 +332,7 @@ class TVDisplayController {
 
       // Update timestamp
       this.updateLastUpdated();
+      this.isRefreshing = false;
 
     } catch (errorInfo) {
       // errorInfo is either our structured error object or a native Error
@@ -345,6 +356,9 @@ class TVDisplayController {
       } else {
         console.warn('[TV Display] Background refresh failed - keeping existing data visible');
       }
+
+      this.isRefreshing = false;
+      this.setRefreshButtonState('ready');
 
       // Retry after delay
       setTimeout(() => this.loadData(), this.retryDelay);
@@ -1552,6 +1566,109 @@ class TVDisplayController {
     }
 
     console.log('[TV Display] Font size controls initialized, scales:', this.fontScales);
+  }
+
+  // ============================================================================
+  // MANUAL REFRESH (Interactive Mode Only)
+  // ============================================================================
+
+  /**
+   * Setup manual refresh button for interactive mode
+   */
+  setupRefreshButton() {
+    if (this.isTvMode()) {
+      return;
+    }
+
+    // Show buttons
+    if (this.elements.refreshBtn) {
+      this.elements.refreshBtn.classList.remove('hidden');
+    }
+    if (this.elements.refreshFab) {
+      this.elements.refreshFab.classList.remove('hidden');
+    }
+
+    // Click handlers
+    if (this.elements.refreshBtn) {
+      this.elements.refreshBtn.addEventListener('click', () => this.manualRefresh());
+    }
+    if (this.elements.refreshFab) {
+      this.elements.refreshFab.addEventListener('click', () => this.manualRefresh());
+    }
+
+    console.log('[TV Display] Manual refresh button initialized');
+  }
+
+  /**
+   * Trigger a manual data refresh with cooldown protection
+   */
+  async manualRefresh() {
+    // Check cooldown
+    const now = Date.now();
+    const elapsed = now - this.lastManualRefresh;
+    if (elapsed < this.manualRefreshCooldown) {
+      const remaining = Math.ceil((this.manualRefreshCooldown - elapsed) / 1000);
+      console.log(`[TV Display] Manual refresh cooldown: ${remaining}s remaining`);
+      return;
+    }
+
+    // Prevent double-trigger while already refreshing
+    if (this.isRefreshing) {
+      console.log('[TV Display] Refresh already in progress');
+      return;
+    }
+
+    console.log('[TV Display] Manual refresh triggered');
+    this.lastManualRefresh = now;
+
+    // Show loading state on buttons
+    this.setRefreshButtonState('refreshing');
+
+    // Perform the refresh
+    await this.loadData();
+
+    // Reset auto-refresh timer so the next auto-refresh is a full interval from now
+    this.resetAutoRefreshTimer();
+
+    // After refresh completes, enter cooldown state
+    this.setRefreshButtonState('cooldown');
+
+    // Clear cooldown state after the cooldown period
+    setTimeout(() => {
+      this.setRefreshButtonState('ready');
+    }, this.manualRefreshCooldown);
+  }
+
+  /**
+   * Update visual state of refresh buttons
+   * @param {'ready'|'refreshing'|'cooldown'} state
+   */
+  setRefreshButtonState(state) {
+    const buttons = [this.elements.refreshBtn, this.elements.refreshFab].filter(Boolean);
+
+    for (const btn of buttons) {
+      btn.classList.remove('refreshing', 'cooldown');
+
+      if (state === 'refreshing') {
+        btn.classList.add('refreshing');
+      } else if (state === 'cooldown') {
+        btn.classList.add('cooldown');
+      }
+    }
+  }
+
+  /**
+   * Reset the auto-refresh interval timer.
+   * Called after manual refresh so the next auto-refresh is a full interval from now.
+   */
+  resetAutoRefreshTimer() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+    this.refreshTimer = setInterval(() => {
+      console.log('[TV Display] Auto-refresh triggered');
+      this.loadData();
+    }, this.refreshInterval);
   }
 
   /**

@@ -613,6 +613,7 @@ When not in TV mode (e.g., accessed via PC or mobile browser), the booking board
 - **Click boat name for boat page**: Clicking the boat name navigates to the boat's booking calendar page on RevSport.
 - **Font size controls**: Allow users to increase/decrease font size for better readability on different devices and for accessibility.
 - **Smooth scrolling**: When the boat list exceeds the window height, ensure smooth vertical scrolling with clear visual indicators.
+- **Manual refresh**: Refresh button in footer (desktop/landscape) and as FAB (mobile portrait) with 30-second cooldown to prevent excessive API polling. Resets auto-refresh timer after manual refresh.
 
 **Implementation Notes**:
 - Detect `?mode=tv` to disable interactivity (TV displays are read-only, no keyboard/mouse)

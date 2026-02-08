@@ -954,6 +954,13 @@ body {
   #fontSizePercent {
     font-size: 10px;
   }
+
+  .refresh-btn-inline {
+    width: 28px;
+    height: 24px;
+    font-size: 15px;
+    margin-right: 6px;
+  }
 }
 
 /* Mobile mode (<768px) */
@@ -1680,6 +1687,46 @@ body.mode-mobile .boat-entry {
   font-weight: 500;
 }
 
+/* ===== Manual Refresh Button (Desktop, in footer) ===== */
+.refresh-btn-inline {
+  width: 32px;
+  height: 28px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  border-radius: 4px;
+  font-size: 18px;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  margin-right: 8px;
+  line-height: 1;
+}
+
+.refresh-btn-inline:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.refresh-btn-inline:active {
+  background: #cbd5e1;
+  transform: scale(0.95);
+}
+
+.refresh-btn-inline.refreshing {
+  animation: spin 1s linear infinite;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.refresh-btn-inline.cooldown {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* ===== Mobile Font Size Floating Button ===== */
 .font-size-fab {
   position: fixed;
@@ -1709,6 +1756,50 @@ body.mode-mobile .boat-entry {
 
 .font-size-fab:active {
   transform: scale(0.95);
+}
+
+/* ===== Mobile Refresh Floating Button ===== */
+.refresh-fab {
+  position: fixed;
+  bottom: 126px; /* Above font-size FAB */
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #059669;
+  color: white;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.refresh-fab:hover {
+  background: #047857;
+  transform: scale(1.05);
+}
+
+.refresh-fab:active {
+  transform: scale(0.95);
+}
+
+.refresh-fab.refreshing {
+  animation: spin 1s linear infinite;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.refresh-fab.cooldown {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: #6b7280;
 }
 
 /* ===== Mobile Font Size Bottom Sheet ===== */
@@ -1788,31 +1879,36 @@ body.mode-mobile .boat-entry {
   color: #6b7280;
 }
 
-/* ===== Hide Font Controls in TV Mode ===== */
+/* ===== Hide Interactive Controls in TV Mode ===== */
 body.tv-mode .font-size-controls,
 body.tv-mode .font-size-fab,
-body.tv-mode .font-size-sheet {
+body.tv-mode .font-size-sheet,
+body.tv-mode .refresh-btn-inline,
+body.tv-mode .refresh-fab {
   display: none !important;
 }
 
 /* ===== Show/Hide Based on Viewport ===== */
-/* Desktop: show footer controls, hide FAB */
+/* Desktop: show footer controls, hide FABs */
 @media (min-width: 768px) {
-  .font-size-fab {
+  .font-size-fab,
+  .refresh-fab {
     display: none !important;
   }
 }
 
-/* Mobile portrait: show FAB, hide footer controls */
+/* Mobile portrait: show FABs, hide footer controls */
 @media (max-width: 767px) and (orientation: portrait) {
-  .font-size-controls {
+  .font-size-controls,
+  .refresh-btn-inline {
     display: none !important;
   }
 }
 
-/* Mobile landscape: show footer controls, hide FAB */
+/* Mobile landscape: show footer controls, hide FABs */
 @media (max-width: 767px) and (orientation: landscape) {
-  .font-size-fab {
+  .font-size-fab,
+  .refresh-fab {
     display: none !important;
   }
 }
