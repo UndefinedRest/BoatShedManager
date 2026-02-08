@@ -902,6 +902,10 @@ body {
   }
 
   /* Show logo but hide club name on narrow - saves horizontal space */
+  .footer-center {
+    order: -1;
+  }
+
   .footer-center .club-name {
     display: none;
   }
@@ -910,6 +914,7 @@ body {
     flex-direction: row;
     align-items: center;
     gap: 0;
+    margin-left: auto;
   }
 
   .footer-right {
