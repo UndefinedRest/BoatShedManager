@@ -1393,6 +1393,37 @@ class TVDisplayController {
       }
     });
 
+    // Highlight day header when hovering a bookable cell (desktop only)
+    let highlightedHeaders = [];
+    this.elements.mainView?.addEventListener('mouseover', (e) => {
+      // Clear previous highlights
+      highlightedHeaders.forEach(el => el.classList.remove('highlighted'));
+      highlightedHeaders = [];
+
+      const bookableCell = e.target.closest('.session-item.bookable');
+      if (!bookableCell) return;
+
+      const dayColumn = bookableCell.closest('.day-column');
+      const daysGrid = bookableCell.closest('.boat-days-grid');
+      if (!dayColumn || !daysGrid) return;
+
+      const dayIndex = Array.from(daysGrid.children).indexOf(dayColumn);
+
+      // Highlight all day headers at this index (visible ones will show)
+      document.querySelectorAll('.day-headers').forEach(container => {
+        const header = container.children[dayIndex + 1]; // +1 for spacer
+        if (header?.classList.contains('day-header')) {
+          header.classList.add('highlighted');
+          highlightedHeaders.push(header);
+        }
+      });
+    });
+
+    this.elements.mainView?.addEventListener('mouseleave', () => {
+      highlightedHeaders.forEach(el => el.classList.remove('highlighted'));
+      highlightedHeaders = [];
+    });
+
     console.log('[TV Display] Session booking links enabled');
   }
 

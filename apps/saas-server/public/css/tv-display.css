@@ -235,6 +235,12 @@ body {
   border-right: none;
 }
 
+/* Highlight day header when hovering a bookable cell in that column */
+.day-header.highlighted {
+  background: rgba(14, 165, 233, 0.15);
+  color: var(--accent-blue);
+}
+
 /* ===== Boat Entry (Boat info left, sessions stacked right) ===== */
 .boat-entry {
   height: var(--boat-row-height);
