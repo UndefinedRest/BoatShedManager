@@ -175,8 +175,8 @@
       "category": "RACER"
     },
     "7545": {
-      "name": "2X - Robert Wallace (80kg)",
-      "weight": "80kg",
+      "name": "2X - Robert Wallace (70kg)",
+      "weight": "70kg",
       "type": "2X",
       "category": "RACER"
     },
@@ -187,8 +187,8 @@
       "category": "RACER"
     },
     "7547": {
-      "name": "4X - Jeanette Beeton (85kg)",
-      "weight": "85kg",
+      "name": "4X - Jeanette Beeton (70kg)",
+      "weight": "70kg",
       "type": "4X",
       "category": "RACER"
     },
@@ -271,7 +271,7 @@
       "category": "RACER"
     }
   },
-  "lastUpdated": "2026-02-08T08:33:06.803Z",
+  "lastUpdated": "2026-02-08T08:36:46.800Z",
   "source": "RevSport (automated)",
   "totalBoats": 45,
   "updateFrequency": "Daily via GitHub Actions"
