@@ -1227,15 +1227,17 @@ class TVDisplayController {
 
   /**
    * Get the start date for the display range.
-   * Before the cutoff hour, returns today. After, returns tomorrow.
-   * This shifts the 7-day window forward once sessions are over for the day.
+   * Returns the start date for the booking board display window.
+   * Currently always returns today due to RevSport's 6-day advance booking limit.
+   * To shift the window forward after a cutoff hour, uncomment the conditional below.
    */
   getStartDate() {
     const now = new Date();
-    if (now.getHours() >= this.startDateCutoffHour) {
-      now.setDate(now.getDate() + 1);
-    }
-    // Reset to start of day
+    // RevSport enforces a 6-day advance booking limit, so always start from today.
+    // To shift the start date (e.g. after noon), uncomment the following:
+    // if (now.getHours() >= this.startDateCutoffHour) {
+    //   now.setDate(now.getDate() + 1);
+    // }
     now.setHours(0, 0, 0, 0);
     return now;
   }
