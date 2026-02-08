@@ -13,8 +13,8 @@
       "category": "Club Boat"
     },
     "6277": {
-      "name": "2X - Better Transport (85kg)",
-      "weight": "85kg",
+      "name": "2X - Better Transport (70kg)",
+      "weight": "70kg",
       "type": "2X",
       "category": "Club Boat"
     },
@@ -61,8 +61,8 @@
       "category": "Club Boat"
     },
     "6286": {
-      "name": "4X - Lake Mac (80kg)",
-      "weight": "80kg",
+      "name": "4X - Lake Mac (70kg)",
+      "weight": "70kg",
       "type": "4X",
       "category": "RACER"
     },
@@ -91,8 +91,8 @@
       "category": "Club"
     },
     "6293": {
-      "name": "2X - Endurance (85kg)",
-      "weight": "85kg",
+      "name": "2X - Endurance (80kg)",
+      "weight": "80kg",
       "type": "2X",
       "category": "RACER"
     },
@@ -145,8 +145,8 @@
       "category": "Club Boat"
     },
     "6307": {
-      "name": "2X - Jenny Luff (90kg)",
-      "weight": "90kg",
+      "name": "2X - Jenny Luff (85kg)",
+      "weight": "85kg",
       "type": "2X",
       "category": "Club Boat"
     },
@@ -169,8 +169,8 @@
       "category": "RACER"
     },
     "7544": {
-      "name": "2X - Ian Krix (70kg)",
-      "weight": "70kg",
+      "name": "2X - Ian Krix (65kg)",
+      "weight": "65kg",
       "type": "2X",
       "category": "RACER"
     },
@@ -181,8 +181,8 @@
       "category": "RACER"
     },
     "7546": {
-      "name": "4X - Ray Beeton (75kg)",
-      "weight": "75kg",
+      "name": "4X - Ray Beeton (70kg)",
+      "weight": "70kg",
       "type": "4X",
       "category": "RACER"
     },
@@ -199,26 +199,26 @@
       "category": "Club Boat"
     },
     "8585": {
-      "name": "2X - Rusty (70kg)",
-      "weight": "70kg",
+      "name": "2X - Rusty (75kg)",
+      "weight": "75kg",
       "type": "2X",
       "category": "RACER"
     },
     "8586": {
-      "name": "2X - Partridge (95kg)",
-      "weight": "95kg",
+      "name": "2X - Partridge (90kg)",
+      "weight": "90kg",
       "type": "2X",
       "category": "Club Boat"
     },
     "8587": {
-      "name": "2X - Silver Speer (95kg)",
-      "weight": "95kg",
+      "name": "2X - Silver Speer (80kg)",
+      "weight": "80kg",
       "type": "2X",
       "category": "RACER"
     },
     "10146": {
-      "name": "1X - Kilaben (105kg)",
-      "weight": "105kg",
+      "name": "1X - Kilaben (95kg)",
+      "weight": "95kg",
       "type": "1X",
       "category": "Club Boat"
     },
@@ -271,7 +271,7 @@
       "category": "RACER"
     }
   },
-  "lastUpdated": "2026-02-08T08:26:34.858Z",
+  "lastUpdated": "2026-02-08T08:33:06.803Z",
   "source": "RevSport (automated)",
   "totalBoats": 45,
   "updateFrequency": "Daily via GitHub Actions"
