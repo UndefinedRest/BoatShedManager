@@ -97,6 +97,7 @@ class TVDisplayController {
     this.collapsedSections = new Set(); // Track collapsed sections in mobile view
     this.bookingPageUrl = null; // URL for boat booking page (from config)
     this.bookingBaseUrl = null; // RevSport confirm URL base for direct session booking
+    this.startDateCutoffHour = 12; // After noon, shift display to start from tomorrow
   }
 
   /**
@@ -227,8 +228,8 @@ class TVDisplayController {
         console.log('[TV Display] Background refresh - fetching new data silently...');
       }
 
-      // Calculate date range (today + 7 days)
-      const today = new Date();
+      // Calculate date range (start date + 7 days)
+      const today = this.getStartDate();
       const endDate = new Date(today);
       endDate.setDate(today.getDate() + this.daysToDisplay);
 
@@ -510,7 +511,7 @@ class TVDisplayController {
     headers.push(boatSpacer);
 
     // Add headers for each day
-    const today = new Date();
+    const today = this.getStartDate();
     for (let i = 0; i < this.daysToDisplay; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
@@ -518,7 +519,7 @@ class TVDisplayController {
       const header = document.createElement('div');
       header.className = 'day-header';
 
-      if (i === 0) {
+      if (this.isToday(date)) {
         header.textContent = 'TODAY';
       } else {
         // Format: "WED 28"
@@ -741,7 +742,7 @@ class TVDisplayController {
     this.updateDayNavArrows();
 
     // Get selected date string
-    const today = new Date();
+    const today = this.getStartDate();
     const selectedDate = new Date(today);
     selectedDate.setDate(today.getDate() + this.selectedDayIndex);
     const selectedDateStr = this.formatDate(selectedDate);
@@ -770,7 +771,7 @@ class TVDisplayController {
   renderDayNavTabs() {
     this.elements.dayNavTabs.innerHTML = '';
 
-    const today = new Date();
+    const today = this.getStartDate();
     for (let i = 0; i < this.daysToDisplay; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
@@ -779,7 +780,7 @@ class TVDisplayController {
       tab.className = 'day-tab' + (i === this.selectedDayIndex ? ' active' : '');
       tab.dataset.dayIndex = i;
 
-      if (i === 0) {
+      if (this.isToday(date)) {
         tab.textContent = 'TODAY';
       } else {
         const dayName = date.toLocaleDateString('en-AU', { weekday: 'short' }).toUpperCase();
@@ -1038,7 +1039,7 @@ class TVDisplayController {
     daysGrid.className = 'boat-days-grid';
 
     // Create columns for each day
-    const today = new Date();
+    const today = this.getStartDate();
     for (let i = 0; i < this.daysToDisplay; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
@@ -1222,6 +1223,31 @@ class TVDisplayController {
   showError(message) {
     this.elements.errorMessage.textContent = message;
     this.showView('error');
+  }
+
+  /**
+   * Get the start date for the display range.
+   * Before the cutoff hour, returns today. After, returns tomorrow.
+   * This shifts the 7-day window forward once sessions are over for the day.
+   */
+  getStartDate() {
+    const now = new Date();
+    if (now.getHours() >= this.startDateCutoffHour) {
+      now.setDate(now.getDate() + 1);
+    }
+    // Reset to start of day
+    now.setHours(0, 0, 0, 0);
+    return now;
+  }
+
+  /**
+   * Check if a date is today (used for labelling day headers)
+   */
+  isToday(date) {
+    const now = new Date();
+    return date.getFullYear() === now.getFullYear()
+      && date.getMonth() === now.getMonth()
+      && date.getDate() === now.getDate();
   }
 
   /**
