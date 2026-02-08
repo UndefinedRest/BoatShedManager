@@ -25,8 +25,8 @@
       "category": "Club Boat"
     },
     "6279": {
-      "name": "2X - Warren Bellamy (90kg)",
-      "weight": "90kg",
+      "name": "2X - Warren Bellamy (70kg)",
+      "weight": "70kg",
       "type": "2X",
       "category": "Club Boat"
     },
@@ -55,8 +55,8 @@
       "category": "Club Boat"
     },
     "6285": {
-      "name": "4X - Friends",
-      "weight": "",
+      "name": "4X - Friends (75kg)",
+      "weight": "75kg",
       "type": "4X",
       "category": "Club Boat"
     },
@@ -73,8 +73,8 @@
       "category": "Club Boat"
     },
     "6288": {
-      "name": "4X - Marden (75kg)",
-      "weight": "75kg",
+      "name": "4X - Marden (65kg)",
+      "weight": "65kg",
       "type": "4X",
       "category": "Club Boat"
     },
@@ -133,8 +133,8 @@
       "category": "Club Boat"
     },
     "6305": {
-      "name": "2X - Watagan (90kg)",
-      "weight": "90kg",
+      "name": "2X - Watagan (75kg)",
+      "weight": "75kg",
       "type": "2X",
       "category": "Club Boat"
     },
@@ -271,7 +271,7 @@
       "category": "RACER"
     }
   },
-  "lastUpdated": "2026-02-07T16:23:48.030Z",
+  "lastUpdated": "2026-02-08T08:26:34.858Z",
   "source": "RevSport (automated)",
   "totalBoats": 45,
   "updateFrequency": "Daily via GitHub Actions"
