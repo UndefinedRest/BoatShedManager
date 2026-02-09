@@ -628,6 +628,31 @@ When not in TV mode (e.g., accessed via PC or mobile browser), the booking board
 
 ---
 
+#### [A10] Remove LMRC-Specific Hardcoding (Multi-Tenant Readiness)
+**Effort**: S (1 week) | **Risk**: Low | **Dependencies**: A5, A8
+**Status**: Not started
+
+Before onboarding a second club, all LMRC-specific values hardcoded in the SaaS codebase must be replaced with configuration-driven alternatives (club DB config, `displayConfig`, or environment variables).
+
+**High Priority (blocks second club)**:
+- **CORS origins**: `lakemacrowing.au` hardcoded in web server CORS policy → derive allowed origins from `BASE_DOMAIN` env var or club domain config (`apps/saas-server/src/index.ts`)
+- **Session times**: `06:30-07:30`, `07:30-08:30` hardcoded in frontend → fetch from `/api/v1/config` endpoint, store in club `displayConfig` (`apps/saas-server/public/js/tv-display.js`)
+- **Session count**: Two morning sessions assumed throughout display code → support configurable session definitions per club
+
+**Medium Priority (works but incorrect for some clubs)**:
+- **Timezone in scheduler**: `Australia/Sydney` hardcoded in 5 places in cron schedules and adapter creation → use `club.timezone` from database (`packages/scraper/src/scheduler.ts`)
+- **Boat type sort order**: `{ '4X': 1, '2X': 2, '1X': 3 }` hardcoded → load from club `displayConfig` (`apps/saas-server/public/js/tv-display.js`)
+- **Boat column split logic**: Club/Race/Tinnie three-column layout assumes LMRC's classification scheme (R/T/RT + tinnie category) → make grouping rules configurable per club (`apps/saas-server/public/js/tv-display.js`)
+- **Tinnie detection regex**: `/\btinnie\b/i` and `/\d+\s*HP\b/i` in parser → move to club-level boat category config (`packages/scraper/src/revsport/parser.ts`)
+
+**Low Priority (cosmetic)**:
+- Swagger default subdomain `lmrc` → generic placeholder (`apps/saas-server/src/swagger.ts`)
+- Club profile seed file → mark clearly as LMRC example (`packages/config/config/club-profile.json`)
+
+**Approach**: Extend the existing `displayConfig` JSON column on the `clubs` table to hold session definitions, boat sort order, and category grouping rules. The frontend already fetches `/api/v1/config` — add these fields to the config response. Hardcoded values become fallback defaults only when config is missing.
+
+---
+
 ### Phase B: Self-Service & Admin Dashboard
 
 #### [B1] Club Onboarding Wizard
