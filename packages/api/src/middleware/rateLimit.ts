@@ -112,6 +112,38 @@ export function createAdminWriteRateLimiter(config: RateLimitConfig = {}) {
 }
 
 /**
+ * Generate a rate limit key scoped to the club only (not per-IP).
+ * Used for shared resources where the limit is per-club regardless of user.
+ */
+function getClubKey(req: Request): string {
+  const apiReq = req as ApiRequest;
+  return apiReq.club?.id || 'unknown';
+}
+
+/**
+ * Create rate limiter for public sync endpoint
+ * Default: 1 request per 60 seconds per club (all users share the limit)
+ */
+export function createSyncRateLimiter(config: RateLimitConfig = {}) {
+  return rateLimit({
+    windowMs: 60 * 1000, // 60 seconds
+    max: 1,
+    keyGenerator: getClubKey,
+    handler: (_req, res) => {
+      res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMITED',
+          message: 'A sync was recently triggered. Please wait before trying again.',
+        },
+      });
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+}
+
+/**
  * Create rate limiter for login endpoint
  * Default: 5 attempts per 15 minutes per tenant+IP
  */

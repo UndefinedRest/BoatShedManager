@@ -103,7 +103,7 @@ class TVDisplayController {
     this.startDateCutoffHour = 12; // After noon, shift display to start from tomorrow
     this.isRefreshing = false; // True while loadData() is in-flight
     this.lastManualRefresh = 0; // Timestamp of last manual refresh
-    this.manualRefreshCooldown = 30000; // 30s cooldown - matches server Cache-Control max-age
+    this.manualRefreshCooldown = 60000; // 60s cooldown - matches server sync rate limit
   }
 
   /**
@@ -397,9 +397,17 @@ class TVDisplayController {
       });
     }
 
-    // Add bookings to their respective boats
+    // Add bookings to their respective boats and track latest scrapedAt
     let totalBookings = 0;
+    let latestScrapedAt = null;
     for (const booking of bookings) {
+      // Track the most recent scrapedAt timestamp across all bookings
+      if (booking.scrapedAt) {
+        if (!latestScrapedAt || booking.scrapedAt > latestScrapedAt) {
+          latestScrapedAt = booking.scrapedAt;
+        }
+      }
+
       const boat = boatMap.get(booking.boatId);
       if (boat && booking.bookings) {
         // The bookings field contains the actual booking data
@@ -422,7 +430,8 @@ class TVDisplayController {
       metadata: {
         generatedAt: new Date().toISOString(),
         totalBoats: boatsArray.length,
-        totalBookings: totalBookings
+        totalBookings: totalBookings,
+        lastScrapedAt: latestScrapedAt
       }
     };
   }
@@ -1198,16 +1207,22 @@ class TVDisplayController {
   }
 
   /**
-   * Update last updated timestamp
+   * Update last updated timestamp.
+   * Shows when data was last scraped from RevSport (not when the page was refreshed).
    */
   updateLastUpdated() {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-AU', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-    this.elements.lastUpdated.textContent = `Last updated: ${timeStr}`;
+    const scrapedAt = this.bookingData?.metadata?.lastScrapedAt;
+    if (scrapedAt) {
+      const scrapedDate = new Date(scrapedAt);
+      const timeStr = scrapedDate.toLocaleTimeString('en-AU', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      this.elements.lastUpdated.textContent = `Last updated: ${timeStr}`;
+    } else {
+      this.elements.lastUpdated.textContent = 'Last updated: —';
+    }
   }
 
   /**
@@ -1600,7 +1615,9 @@ class TVDisplayController {
   }
 
   /**
-   * Trigger a manual data refresh with cooldown protection
+   * Trigger a manual data refresh with cooldown protection.
+   * Calls the sync endpoint first to trigger a fresh RevSport scrape,
+   * then loads the updated data from the cache.
    */
   async manualRefresh() {
     // Check cooldown
@@ -1624,7 +1641,10 @@ class TVDisplayController {
     // Show loading state on buttons
     this.setRefreshButtonState('refreshing');
 
-    // Perform the refresh
+    // Step 1: Trigger a sync (scrape fresh data from RevSport into our cache)
+    await this.triggerSync();
+
+    // Step 2: Load the updated data from cache
     await this.loadData();
 
     // Reset auto-refresh timer so the next auto-refresh is a full interval from now
@@ -1637,6 +1657,36 @@ class TVDisplayController {
     setTimeout(() => {
       this.setRefreshButtonState('ready');
     }, this.manualRefreshCooldown);
+  }
+
+  /**
+   * Trigger a RevSport sync via the public sync endpoint.
+   * Waits for the sync to complete before returning.
+   */
+  async triggerSync() {
+    try {
+      console.log('[TV Display] Triggering sync...');
+      const response = await fetch('/api/v1/sync', { method: 'POST' });
+
+      if (!response.ok) {
+        const errorInfo = await this.parseApiError(response);
+        console.warn('[TV Display] Sync request failed:', {
+          code: errorInfo.code,
+          httpStatus: errorInfo.httpStatus,
+        });
+        return;
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        console.log('[TV Display] Sync complete:', {
+          success: result.data.success,
+          durationMs: result.data.durationMs,
+        });
+      }
+    } catch (error) {
+      console.warn('[TV Display] Sync network error:', error.message);
+    }
   }
 
   /**

@@ -39,6 +39,7 @@ import {
   createAdminReadRateLimiter,
   createAdminWriteRateLimiter,
   createLoginRateLimiter,
+  createSyncRateLimiter,
 } from './middleware/rateLimit.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createAuthMiddleware } from './middleware/auth.js';
@@ -48,6 +49,7 @@ import { createBoatsRouter } from './routes/public/boats.js';
 import { createBookingsRouter } from './routes/public/bookings.js';
 import { createConfigRouter } from './routes/public/config.js';
 import { createHealthRouter } from './routes/public/health.js';
+import { createPublicSyncRouter, type PublicSyncFn } from './routes/public/sync.js';
 
 // Admin routes
 import { createAuthRouter } from './routes/admin/auth.js';
@@ -86,6 +88,8 @@ export interface CreateApiRouterConfig extends ApiConfig {
   encryptionKey: string;
   /** Optional sync trigger function (for BullMQ integration) */
   syncTrigger?: SyncTriggerFn;
+  /** Optional public sync function for manual refresh (runs scrape synchronously) */
+  publicSyncFn?: PublicSyncFn;
 }
 
 /**
@@ -115,6 +119,7 @@ export function createApiRouter(
   publicRouter.use('/boats', createBoatsRouter(db));
   publicRouter.use('/bookings', createBookingsRouter(db));
   publicRouter.use('/config', createConfigRouter());
+  publicRouter.use('/sync', createSyncRateLimiter(), createPublicSyncRouter(config.publicSyncFn));
 
   router.use(publicRouter);
 
@@ -200,6 +205,7 @@ export {
   createAdminReadRateLimiter,
   createAdminWriteRateLimiter,
   createLoginRateLimiter,
+  createSyncRateLimiter,
   type RateLimitConfig,
 } from './middleware/rateLimit.js';
 
@@ -225,3 +231,4 @@ export * from './schemas/index.js';
 
 // Re-export sync trigger type
 export type { SyncTriggerFn } from './routes/admin/sync.js';
+export type { PublicSyncFn } from './routes/public/sync.js';

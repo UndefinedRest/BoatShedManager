@@ -25,6 +25,7 @@ const __dirname = path.dirname(__filename);
 import { createDb } from '@lmrc/db';
 import { createTenantMiddleware } from '@lmrc/tenant';
 import { createApiRouter, logger } from '@lmrc/api';
+import { ScrapeScheduler } from '@lmrc/scraper';
 
 import { setupSwagger } from './swagger.js';
 
@@ -44,6 +45,26 @@ const MARKETING_URL = process.env.MARKETING_URL || 'https://rowandlift.au';
 
 // Initialize database
 const db = createDb(process.env.DATABASE_URL!);
+
+// Create on-demand scraper for public sync (manual refresh).
+// This does NOT start cron scheduling - that runs in the separate worker process.
+const onDemandScraper = new ScrapeScheduler(db, {
+  encryptionKey: process.env.ENCRYPTION_KEY!,
+  daysAhead: parseInt(process.env.DAYS_AHEAD || '7', 10),
+  debug: NODE_ENV === 'development',
+});
+
+// Public sync function: runs a scrape for a specific club and waits for completion
+const publicSyncFn = async (clubId: string) => {
+  const club = await db.query.clubs.findFirst({
+    where: (c, { eq }) => eq(c.id, clubId),
+  });
+  if (!club) {
+    return { success: false, durationMs: 0, error: 'Club not found' };
+  }
+  const result = await onDemandScraper.scrapeClub(club);
+  return { success: result.success, durationMs: result.durationMs, error: result.error };
+};
 
 // Create Express app
 const app = express();
@@ -124,6 +145,7 @@ app.use('/api/v1', createApiRouter(db, {
   debug: NODE_ENV === 'development',
   publicRateLimit: parseInt(process.env.PUBLIC_RATE_LIMIT || '100', 10),
   adminRateLimit: parseInt(process.env.ADMIN_RATE_LIMIT || '30', 10),
+  publicSyncFn,
 }));
 
 // Static frontend (booking board display)
