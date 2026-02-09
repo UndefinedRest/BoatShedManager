@@ -900,11 +900,19 @@ body {
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
+    position: relative;
     gap: 6px 12px;
     padding: 6px var(--margin-screen);
     flex-shrink: 0;
     border-top: 2px solid var(--border-medium);
     margin-top: 0;
+  }
+
+  /* Centre logo on the footer, not between left and right content */
+  .footer-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   /* Show logo but hide club name on narrow - saves horizontal space */
@@ -1560,6 +1568,13 @@ body {
     position: sticky;
     bottom: 0;
     z-index: 100;
+  }
+
+  /* Centre logo on the footer, not between left and right content */
+  .footer-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .footer-center .club-name {
