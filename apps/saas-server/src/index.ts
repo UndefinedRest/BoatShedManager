@@ -94,9 +94,9 @@ app.use(cors({
     }
     // Allow any subdomain of the base domain
     const allowedPattern = new RegExp(`^https?://([a-z0-9-]+\\.)?${BASE_DOMAIN.replace('.', '\\.')}$`);
-    // Also allow the LMRC booking page domain
-    const isBookingPage = /^https?:\/\/(www\.)?lakemacrowing\.au$/.test(origin);
-    if (allowedPattern.test(origin) || isBookingPage || origin.includes('localhost')) {
+    // Also allow the LMRC booking page domain and its subdomains
+    const isLakeMacDomain = /^https?:\/\/([a-z0-9-]+\.)?lakemacrowing\.au$/.test(origin);
+    if (allowedPattern.test(origin) || isLakeMacDomain || origin.includes('localhost')) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
