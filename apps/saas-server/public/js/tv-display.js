@@ -229,7 +229,7 @@ class TVDisplayController {
    * Load data from the generic API endpoints
    * Fetches boats and bookings separately, then merges client-side
    */
-  async loadData() {
+  async loadData(bypassCache = false) {
     this.isRefreshing = true;
     try {
       if (this.isInitialLoad) {
@@ -246,12 +246,15 @@ class TVDisplayController {
       const fromDate = this.formatDate(today);
       const toDate = this.formatDate(endDate);
 
+      // Bypass browser HTTP cache after manual sync so fresh data is shown
+      const fetchOptions = bypassCache ? { cache: 'no-store' } : {};
+
       // Fetch boats and bookings in parallel
       let boatsResponse, bookingsResponse;
       try {
         [boatsResponse, bookingsResponse] = await Promise.all([
-          fetch('/api/v1/boats?limit=200'),
-          fetch(`/api/v1/bookings?from=${fromDate}&to=${toDate}&limit=500`)
+          fetch('/api/v1/boats?limit=200', fetchOptions),
+          fetch(`/api/v1/bookings?from=${fromDate}&to=${toDate}&limit=500`, fetchOptions)
         ]);
       } catch (networkError) {
         // Network-level failure (no connection, DNS failure, etc.)
@@ -1644,8 +1647,8 @@ class TVDisplayController {
     // Step 1: Trigger a sync (scrape fresh data from RevSport into our cache)
     await this.triggerSync();
 
-    // Step 2: Load the updated data from cache
-    await this.loadData();
+    // Step 2: Load the updated data from cache (bypass browser HTTP cache)
+    await this.loadData(true);
 
     // Reset auto-refresh timer so the next auto-refresh is a full interval from now
     this.resetAutoRefreshTimer();
