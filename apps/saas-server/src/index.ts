@@ -43,6 +43,27 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const BASE_DOMAIN = process.env.BASE_DOMAIN || 'rowandlift.au';
 const MARKETING_URL = process.env.MARKETING_URL || 'https://rowandlift.au';
 
+// --- Environment Safety: Log which database we're connecting to ---
+const dbInfo = (() => {
+  try {
+    const url = new URL(process.env.DATABASE_URL!);
+    // Supabase pooler URLs use username format: postgres.{project-id}
+    const projectId = url.username.includes('.') ? url.username.split('.')[1] : null;
+    return { host: url.hostname, projectId };
+  } catch {
+    return { host: 'unknown', projectId: null };
+  }
+})();
+// Production project ID - warn if dev server connects to it
+const PRODUCTION_PROJECT_ID = 'zwxqxizotksmwrwtdtov';
+if (NODE_ENV === 'development' && dbInfo.projectId === PRODUCTION_PROJECT_ID) {
+  logger.warn(
+    { ...dbInfo, NODE_ENV },
+    '*** WARNING: Development server is connected to the PRODUCTION database! ***'
+  );
+}
+logger.info({ NODE_ENV, ...dbInfo }, `Environment: ${NODE_ENV} | DB project: ${dbInfo.projectId ?? dbInfo.host}`);
+
 // Initialize database
 const db = createDb(process.env.DATABASE_URL!);
 

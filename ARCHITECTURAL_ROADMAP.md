@@ -653,6 +653,28 @@ Before onboarding a second club, all LMRC-specific values hardcoded in the SaaS 
 
 ---
 
+#### [A11] Interim Admin Configuration Page
+**Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: A5, A10
+**Status**: Not started
+**Plan**: [plans/A11-admin-config-page.md](plans/A11-admin-config-page.md)
+
+Self-service admin config page so club administrators can manage their own settings without database access. Required before onboarding a second club — without it, the platform operator is a human bottleneck for every config change.
+
+**Scope**:
+- Pure static HTML + vanilla JS page at `/admin.html` (no build process)
+- Login via existing JWT auth (POST /admin/login)
+- New `GET /admin/config` endpoint returning full editable config
+- Six tabs: Dashboard (scrape health + sync trigger), Branding (logo, colours), Sessions (session definitions, timezone, refresh interval), Boat Display (column grouping, sort order), Booking URLs, Data Source (RevSport credentials)
+- Frontend consumer changes: `tv-display.js` updated to read sessions, boat grouping, and sort order from config (absorbs A10 display-related items)
+
+**Deliberately deferred to Phase B**:
+- Self-service club creation/signup
+- Stripe billing integration
+- React-based polished dashboard with live preview
+- Member management
+
+---
+
 ### Phase B: Self-Service & Admin Dashboard
 
 #### [B1] Club Onboarding Wizard

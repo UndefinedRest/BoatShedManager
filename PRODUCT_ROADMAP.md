@@ -156,6 +156,7 @@ In-Shed Display (Optional)
 - **Interactive booking board (PC/mobile)**: When not on a TV display, members can click empty slots to book (redirects to RevSport), click boat names to view booking calendars, adjust font size for accessibility, and smoothly scroll long boat lists
 - **Manual refresh button**: Interactive boards include a refresh button so members can immediately see updated booking data after making a booking via RevSport
 - **Multi-tenant readiness**: Remove all LMRC-specific hardcoded values (session times, CORS domains, boat sorting, timezone) and replace with per-club configuration. Required before onboarding a second club.
+- **Interim admin config page**: Self-service web UI at `/admin.html` for club admins to manage branding, session times, boat display grouping, booking URLs, and RevSport credentials. Lightweight HTML+JS page (not the full React dashboard from Phase B). Prerequisite for onboarding a second club without operator bottleneck.
 - LMRC as first tenant; recruit 1-2 beta clubs
 - **Scope**: Read-only board display + club admin configuration. No booking entry (clicking to book redirects to RevSport).
 
