@@ -147,12 +147,6 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="brandCustomCSS">Custom CSS (advanced)</label>
-                        <textarea id="brandCustomCSS" rows="4" placeholder="/* Custom styles */" maxlength="10000"></textarea>
-                        <div class="help-text">Optional CSS overrides applied to the booking board</div>
-                    </div>
-
                     <div class="action-bar">
                         <button class="btn btn-primary" id="saveBrandingBtn">Save Branding</button>
                     </div>
@@ -174,19 +168,6 @@
 
                 <div class="card">
                     <h2>Display Settings</h2>
-                    <div class="form-group">
-                        <label for="cfgTimezone">Timezone</label>
-                        <select id="cfgTimezone">
-                            <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
-                            <option value="Australia/Melbourne">Australia/Melbourne</option>
-                            <option value="Australia/Brisbane">Australia/Brisbane</option>
-                            <option value="Australia/Adelaide">Australia/Adelaide</option>
-                            <option value="Australia/Perth">Australia/Perth</option>
-                            <option value="Australia/Hobart">Australia/Hobart</option>
-                            <option value="Australia/Darwin">Australia/Darwin</option>
-                            <option value="Pacific/Auckland">Pacific/Auckland (NZST)</option>
-                        </select>
-                    </div>
                     <div class="form-group">
                         <label for="cfgDaysToDisplay">Days to Display</label>
                         <input type="number" id="cfgDaysToDisplay" min="1" max="14" value="7">
@@ -211,19 +192,46 @@
             <!-- Boat Display Tab -->
             <div class="tab-panel" id="panel-boats">
                 <div class="card">
-                    <h2>Boat Column Groups</h2>
-                    <div class="help-text" style="margin-bottom:12px">Define how boats are grouped into columns on the booking board.</div>
-                    <div class="boat-group-list" id="boatGroupList">
-                        <!-- Boat group rows inserted by JS -->
+                    <h2>Rowing Boat Columns</h2>
+                    <div class="help-text" style="margin-bottom:16px">Rowing boats are classified as Training (T), Race/Training (RT), or Race (R) by the scraper. Assign each classification to a column.</div>
+                    <div class="column-cards">
+                        <div class="column-card">
+                            <div class="column-card-header">Column 1</div>
+                            <label class="column-card-field-label" for="col1Name">Column Name</label>
+                            <input type="text" class="column-card-input" id="col1Name" value="CLUB BOATS" placeholder="e.g. CLUB BOATS">
+                            <div class="column-card-field-label">Show boats classified as:</div>
+                            <div class="classification-checks">
+                                <label><input type="checkbox" class="col1-class" value="T" checked> T (Training)</label>
+                                <label><input type="checkbox" class="col1-class" value="RT" checked> RT (Race/Training)</label>
+                                <label><input type="checkbox" class="col1-class" value="R"> R (Race)</label>
+                            </div>
+                        </div>
+                        <div class="column-card">
+                            <div class="column-card-header">Column 2</div>
+                            <label class="column-card-field-label" for="col2Name">Column Name</label>
+                            <input type="text" class="column-card-input" id="col2Name" value="RACE BOATS" placeholder="e.g. RACE BOATS">
+                            <div class="column-card-field-label">Show boats classified as:</div>
+                            <div class="classification-checks">
+                                <label><input type="checkbox" class="col2-class" value="T"> T (Training)</label>
+                                <label><input type="checkbox" class="col2-class" value="RT"> RT (Race/Training)</label>
+                                <label><input type="checkbox" class="col2-class" value="R" checked> R (Race)</label>
+                            </div>
+                        </div>
                     </div>
-                    <div style="margin-top:12px">
-                        <button class="btn btn-secondary btn-sm" id="addBoatGroupBtn">+ Add Group</button>
+                </div>
+
+                <div class="card">
+                    <h2>Tinnies Section</h2>
+                    <div class="help-text" style="margin-bottom:12px">Tinnies are identified automatically by the scraper (by name or horsepower) and shown as a sub-section of Column 2.</div>
+                    <div class="form-group">
+                        <label for="tinnieName">Section Name</label>
+                        <input type="text" id="tinnieName" value="TINNIES" placeholder="e.g. TINNIES">
                     </div>
                 </div>
 
                 <div class="card">
                     <h2>Boat Type Sort Order</h2>
-                    <div class="help-text" style="margin-bottom:12px">Set the display order for each boat type within a column. Lower numbers appear first.</div>
+                    <div class="help-text" style="margin-bottom:12px">Drag to reorder, or use the arrows. Boats are sorted by type in this order within each column.</div>
                     <div class="sort-order-list" id="sortOrderList">
                         <!-- Sort order items inserted by JS -->
                     </div>

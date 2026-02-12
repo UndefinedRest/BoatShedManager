@@ -268,21 +268,16 @@ class AdminController {
     this.updateLogoPreview(b.logoUrl);
     this.setColour('brandPrimaryColour', 'brandPrimaryHex', b.primaryColor || '#1e3a5f');
     this.setColour('brandSecondaryColour', 'brandSecondaryHex', b.secondaryColor || '#c9a227');
-    document.getElementById('brandCustomCSS').value = b.customCSS || '';
-
     // Sessions
     const dc = this.config.displayConfig || {};
     this.renderSessionList(dc.sessions || this.getDefaultSessions());
 
     // Display settings
-    if (this.config.club?.timezone) {
-      document.getElementById('cfgTimezone').value = this.config.club.timezone;
-    }
     document.getElementById('cfgDaysToDisplay').value = dc.daysToDisplay || 7;
     document.getElementById('cfgRefreshInterval').value = dc.refreshInterval || 300000;
 
     // Boat groups
-    this.renderBoatGroupList(dc.boatGroups || this.getDefaultBoatGroups());
+    this.populateBoatGroups(dc.boatGroups || this.getDefaultBoatGroups());
 
     // Sort order
     this.renderSortOrder(dc.boatTypeSortOrder || this.getDefaultSortOrder());
@@ -344,7 +339,6 @@ class AdminController {
         logoUrl: document.getElementById('brandLogoUrl').value.trim() || null,
         primaryColor: document.getElementById('brandPrimaryHex').value.trim(),
         secondaryColor: document.getElementById('brandSecondaryHex').value.trim(),
-        customCSS: document.getElementById('brandCustomCSS').value.trim() || null,
       },
     };
 
@@ -448,10 +442,6 @@ class AdminController {
       },
     };
 
-    // Timezone is stored on the club, not displayConfig — but the PUT /admin/display
-    // endpoint merges into displayConfig. We'll store timezone there too for now.
-    data.displayConfig.timezone = document.getElementById('cfgTimezone').value;
-
     await this.saveDisplay(data, 'Sessions saved');
   }
 
@@ -473,161 +463,162 @@ class AdminController {
     ];
   }
 
-  renderBoatGroupList(groups) {
-    const container = document.getElementById('boatGroupList');
-    container.innerHTML = '';
+  populateBoatGroups(groups) {
+    // Populate Column 1
+    const col1 = groups.find(g => g.position === 'column1');
+    if (col1) {
+      document.getElementById('col1Name').value = col1.name;
+      document.querySelectorAll('.col1-class').forEach(cb => {
+        cb.checked = (col1.classifications || []).includes(cb.value);
+      });
+    }
 
-    groups.forEach((g, i) => {
-      const row = document.createElement('div');
-      row.className = 'boat-group-row';
-      row.dataset.groupId = g.id || `g${i + 1}`;
+    // Populate Column 2
+    const col2 = groups.find(g => g.position === 'column2');
+    if (col2) {
+      document.getElementById('col2Name').value = col2.name;
+      document.querySelectorAll('.col2-class').forEach(cb => {
+        cb.checked = (col2.classifications || []).includes(cb.value);
+      });
+    }
 
-      const classifications = ['T', 'R', 'RT'];
-      const classCheckboxes = classifications.map(c => {
-        const checked = (g.classifications || []).includes(c) ? 'checked' : '';
-        return `<label><input type="checkbox" class="grp-class" value="${c}" ${checked}> ${c}</label>`;
-      }).join('');
-
-      row.innerHTML = `
-        <div class="group-fields">
-          <div class="form-group">
-            <label>Group Name</label>
-            <input type="text" class="grp-name" value="${this.escapeAttr(g.name)}">
-          </div>
-          <div class="form-group">
-            <label>Position</label>
-            <select class="grp-position">
-              <option value="column1" ${g.position === 'column1' ? 'selected' : ''}>Column 1</option>
-              <option value="column2" ${g.position === 'column2' ? 'selected' : ''}>Column 2</option>
-              <option value="column2-sub" ${g.position === 'column2-sub' ? 'selected' : ''}>Column 2 (sub-section)</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Classifications</label>
-          <div class="checkbox-group">${classCheckboxes}</div>
-        </div>
-        <div class="form-group">
-          <label>Category</label>
-          <select class="grp-category">
-            <option value="race" ${g.category === 'race' ? 'selected' : ''}>Race</option>
-            <option value="tinnie" ${g.category === 'tinnie' ? 'selected' : ''}>Tinnie</option>
-          </select>
-        </div>
-        <button class="btn btn-danger btn-sm grp-delete" style="margin-top:8px">Remove Group</button>
-      `;
-      row.querySelector('.grp-delete').addEventListener('click', () => row.remove());
-      container.appendChild(row);
-    });
-  }
-
-  addBoatGroup() {
-    const container = document.getElementById('boatGroupList');
-    const count = container.children.length;
-    const newGroup = {
-      id: `g${count + 1}`,
-      name: '',
-      classifications: [],
-      category: 'race',
-      position: 'column1',
-    };
-    // Append a single group row
-    const groups = [newGroup];
-    const tempDiv = document.createElement('div');
-
-    // Re-use renderBoatGroupList logic for single item
-    const g = newGroup;
-    const row = document.createElement('div');
-    row.className = 'boat-group-row';
-    row.dataset.groupId = g.id;
-
-    const classifications = ['T', 'R', 'RT'];
-    const classCheckboxes = classifications.map(c => {
-      return `<label><input type="checkbox" class="grp-class" value="${c}"> ${c}</label>`;
-    }).join('');
-
-    row.innerHTML = `
-      <div class="group-fields">
-        <div class="form-group">
-          <label>Group Name</label>
-          <input type="text" class="grp-name" value="">
-        </div>
-        <div class="form-group">
-          <label>Position</label>
-          <select class="grp-position">
-            <option value="column1">Column 1</option>
-            <option value="column2">Column 2</option>
-            <option value="column2-sub">Column 2 (sub-section)</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Classifications</label>
-        <div class="checkbox-group">${classCheckboxes}</div>
-      </div>
-      <div class="form-group">
-        <label>Category</label>
-        <select class="grp-category">
-          <option value="race">Race</option>
-          <option value="tinnie">Tinnie</option>
-        </select>
-      </div>
-      <button class="btn btn-danger btn-sm grp-delete" style="margin-top:8px">Remove Group</button>
-    `;
-    row.querySelector('.grp-delete').addEventListener('click', () => row.remove());
-    container.appendChild(row);
+    // Populate Tinnies section name
+    const sub = groups.find(g => g.position === 'column2-sub' || g.category === 'tinnie');
+    if (sub) {
+      document.getElementById('tinnieName').value = sub.name;
+    }
   }
 
   collectBoatGroups() {
-    const rows = document.querySelectorAll('#boatGroupList .boat-group-row');
-    const groups = [];
-    for (const row of rows) {
-      const checkedBoxes = row.querySelectorAll('.grp-class:checked');
-      groups.push({
-        id: row.dataset.groupId,
-        name: row.querySelector('.grp-name').value.trim(),
-        classifications: Array.from(checkedBoxes).map(cb => cb.value),
-        category: row.querySelector('.grp-category').value,
-        position: row.querySelector('.grp-position').value,
-      });
-    }
-    return groups;
+    const col1Classes = Array.from(document.querySelectorAll('.col1-class:checked')).map(cb => cb.value);
+    const col2Classes = Array.from(document.querySelectorAll('.col2-class:checked')).map(cb => cb.value);
+
+    return [
+      { id: 'col1', name: document.getElementById('col1Name').value.trim(), classifications: col1Classes, category: 'race', position: 'column1' },
+      { id: 'col2', name: document.getElementById('col2Name').value.trim(), classifications: col2Classes, category: 'race', position: 'column2' },
+      { id: 'sub', name: document.getElementById('tinnieName').value.trim(), classifications: [], category: 'tinnie', position: 'column2-sub' },
+    ];
   }
 
   renderSortOrder(sortOrder) {
     const container = document.getElementById('sortOrderList');
+
     // Always show common boat types, merge with configured values
     const defaultTypes = ['8+', '4X', '4-', '2X', '2-', '1X'];
     const orderMap = {};
     sortOrder.forEach(s => { orderMap[s.type] = s.order; });
 
-    // Add any types from config that aren't in defaults
+    // Add any custom types from config that aren't in defaults
     sortOrder.forEach(s => {
       if (!defaultTypes.includes(s.type)) {
         defaultTypes.push(s.type);
       }
     });
 
-    container.innerHTML = defaultTypes.map((type, i) => {
-      const order = orderMap[type] ?? (i + 1);
-      return `
-        <div class="sort-order-item">
-          <label>${this.escapeHtml(type)}</label>
-          <input type="number" class="sort-val" data-type="${this.escapeAttr(type)}" value="${order}" min="1" max="99">
-        </div>
+    // Sort by configured order, then by default list position
+    const sorted = defaultTypes
+      .map((type, i) => ({ type, order: orderMap[type] ?? (i + 1) }))
+      .sort((a, b) => a.order - b.order);
+
+    this._renderSortItems(container, sorted.map(s => s.type));
+  }
+
+  /** Build the drag-and-drop list DOM for the given ordered types */
+  _renderSortItems(container, types) {
+    container.innerHTML = '';
+    types.forEach((type, i) => {
+      const item = document.createElement('div');
+      item.className = 'sort-order-item';
+      item.draggable = true;
+      item.dataset.type = type;
+
+      item.innerHTML = `
+        <span class="sort-order-drag-handle" aria-hidden="true">&#x2630;</span>
+        <span class="sort-order-rank">${i + 1}</span>
+        <span class="sort-order-label">${this.escapeHtml(type)}</span>
+        <span class="sort-order-arrows">
+          <button type="button" class="sort-up" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>&#x25B2;</button>
+          <button type="button" class="sort-down" aria-label="Move down" ${i === types.length - 1 ? 'disabled' : ''}>&#x25BC;</button>
+        </span>
       `;
-    }).join('');
+
+      // Arrow button handlers
+      item.querySelector('.sort-up').addEventListener('click', () => this._moveSortItem(container, item, -1));
+      item.querySelector('.sort-down').addEventListener('click', () => this._moveSortItem(container, item, 1));
+
+      // Drag events
+      item.addEventListener('dragstart', (e) => {
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', type);
+      });
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        this._updateSortRanks(container);
+      });
+      item.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const dragging = container.querySelector('.dragging');
+        if (dragging && dragging !== item) {
+          // Insert before or after based on cursor position within the item
+          const rect = item.getBoundingClientRect();
+          const midY = rect.top + rect.height / 2;
+          if (e.clientY < midY) {
+            container.insertBefore(dragging, item);
+          } else {
+            container.insertBefore(dragging, item.nextSibling);
+          }
+        }
+      });
+      item.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        item.classList.add('drag-over');
+      });
+      item.addEventListener('dragleave', () => {
+        item.classList.remove('drag-over');
+      });
+      item.addEventListener('drop', (e) => {
+        e.preventDefault();
+        item.classList.remove('drag-over');
+      });
+
+      container.appendChild(item);
+    });
+  }
+
+  /** Move a sort item up (-1) or down (+1) and refresh ranks/buttons */
+  _moveSortItem(container, item, direction) {
+    const sibling = direction === -1 ? item.previousElementSibling : item.nextElementSibling;
+    if (!sibling) return;
+    if (direction === -1) {
+      container.insertBefore(item, sibling);
+    } else {
+      container.insertBefore(item, sibling.nextSibling);
+    }
+    this._updateSortRanks(container);
+  }
+
+  /** Refresh rank badges and enable/disable arrow buttons after reorder */
+  _updateSortRanks(container) {
+    const items = container.querySelectorAll('.sort-order-item');
+    items.forEach((item, i) => {
+      item.querySelector('.sort-order-rank').textContent = i + 1;
+      item.querySelector('.sort-up').disabled = i === 0;
+      item.querySelector('.sort-down').disabled = i === items.length - 1;
+      item.classList.remove('drag-over');
+    });
   }
 
   collectSortOrder() {
-    const items = document.querySelectorAll('#sortOrderList .sort-val');
+    const items = document.querySelectorAll('#sortOrderList .sort-order-item');
     const order = [];
-    for (const input of items) {
+    items.forEach((item, i) => {
       order.push({
-        type: input.dataset.type,
-        order: parseInt(input.value, 10) || 99,
+        type: item.dataset.type,
+        order: i + 1,
       });
-    }
+    });
     return order;
   }
 
@@ -794,7 +785,6 @@ class AdminController {
     document.getElementById('saveSessionsBtn').addEventListener('click', () => this.saveSessions());
 
     // Boat Display
-    document.getElementById('addBoatGroupBtn').addEventListener('click', () => this.addBoatGroup());
     document.getElementById('saveBoatsBtn').addEventListener('click', () => this.saveBoatDisplay());
 
     // Booking URLs
