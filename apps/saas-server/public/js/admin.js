@@ -290,12 +290,21 @@ class AdminController {
     const ds = this.config.dataSource || {};
     document.getElementById('dsUrl').value = ds.url || '';
     document.getElementById('dsUsername').value = ds.username || '';
+    document.getElementById('dsPassword').value = '';
     const credStatus = document.getElementById('credentialStatus');
     if (ds.hasCredentials) {
       credStatus.innerHTML = '<span class="status-badge success">Credentials configured</span>';
     } else {
       credStatus.innerHTML = '<span class="status-badge warning">No credentials set</span>';
     }
+
+    // Override browser autofill — browsers fill saved credentials after JS runs,
+    // so re-apply the correct values after a short delay
+    const savedUsername = ds.username || '';
+    setTimeout(() => {
+      document.getElementById('dsUsername').value = savedUsername;
+      document.getElementById('dsPassword').value = '';
+    }, 200);
   }
 
   // ── Branding ────────────────────────────────────────────────
