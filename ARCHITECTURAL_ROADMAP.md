@@ -655,7 +655,7 @@ Before onboarding a second club, all LMRC-specific values hardcoded in the SaaS 
 
 #### [A11] Interim Admin Configuration Page
 **Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: A5, A10
-**Status**: In progress — admin UI deployed, frontend consumer changes pending
+**Status**: Complete — all steps implemented and verified on production
 **Plan**: [plans/A11-admin-config-page.md](plans/A11-admin-config-page.md)
 
 Self-service admin config page so club administrators can manage their own settings without database access. Required before onboarding a second club — without it, the platform operator is a human bottleneck for every config change.
@@ -669,18 +669,11 @@ Self-service admin config page so club administrators can manage their own setti
 - ✅ Sessions tab (dynamic session list with add/remove, days to display, refresh interval)
 - ✅ Boat Display tab (two-column card layout with classification checkboxes, drag-to-reorder sort order)
 - ✅ Booking URLs tab (booking page URL, booking base URL)
-- ✅ Data Source tab (RevSport URL, username, password with "credentials configured" indicator)
+- ✅ Data Source tab (RevSport URL, username display with display/edit mode to prevent browser autofill)
 - ✅ Scheduler reliability fix: cron callbacks now have error handling and production logging
-
-**Remaining**:
-
-- [ ] **End-to-end testing**: Verify admin page login, config save, and board reflects saved config
-
-**Verified complete** (2026-02-13):
-
-- ✅ **Step 9a-d**: Frontend already reads sessions, boatGroups, boatTypeSortOrder, and daysToDisplay from config with hardcoded fallbacks — implemented in a prior session
-- ✅ **Production setup**: Admin user exists (`gregevans2280@gmail.com`)
-- ✅ **Production config**: `displayConfig` populated with sessions, boatGroups, boatTypeSortOrder — all values match current board behaviour. Sort order has been expanded beyond hardcoded defaults to include all 6 boat types (8+, 4X, 4-, 2X, 2-, 1X)
+- ✅ Admin config API decrypts and returns RevSport username (never password)
+- ✅ **Step 9a-d**: Frontend reads sessions, boatGroups, boatTypeSortOrder, and daysToDisplay from config with hardcoded fallbacks
+- ✅ **Production verified** (2026-02-13): Admin login, all tabs displaying correct data, displayConfig matches board behaviour
 
 **Design decisions made during implementation** (diverged from original plan):
 
@@ -699,7 +692,7 @@ Self-service admin config page so club administrators can manage their own setti
 
 #### [A12] Admin Password Reset
 **Effort**: S (2-3 days) | **Risk**: Low | **Dependencies**: A5, A11
-**Status**: Not started
+**Status**: In progress — CLI script complete, admin page link and email flow deferred
 
 Admin users need a way to reset a forgotten password. Required now — platform has a live admin user who cannot log in without this. Pulled forward from B3 (which covers the full email-based flow); this interim version uses a CLI script for immediate need, with an admin-page "forgot password" flow to follow.
 
@@ -1094,6 +1087,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.13 | 2026-02-01 | Added UAT findings: bcryptjs ESM fix, optional tenant resolution for health endpoint, sourceId field for external system linking, admin scripts (create-admin-user.ts, set-custom-domain.ts), custom domain setup (board.lakemacrowing.au). |
 | 2.14 | 2026-02-12 | Updated [A11] status: admin UI (Steps 1-8) deployed to production. Step 9 (frontend consumer changes) pending. Documented design decisions (removed Custom CSS, Timezone; improved sort order and boat grouping UX). Fixed scheduler reliability (cron error handling + production logging). |
 | 2.15 | 2026-02-13 | Verified A11 Step 9 already implemented — frontend reads config with fallbacks. Production displayConfig confirmed populated and matching. Updated A11 remaining items. Added [A12] Admin Password Reset with scope of work (CLI script immediate, email flow deferred to B3). |
+| 2.16 | 2026-02-13 | Marked [A11] complete — all steps verified on production. Added environment safety infrastructure (`scripts/lib/env.ts`, refactored all CLI scripts). Created password reset CLI script ([A12] in progress). Fixed admin Data Source tab: API returns decrypted username, display/edit mode prevents browser autofill. |
 
 ---
 
