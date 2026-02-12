@@ -551,17 +551,19 @@ services:
 
 ---
 
-#### [A8] LMRC Migration
+#### [A8] LMRC Migration ✅ COMPLETE
 **Effort**: M (2-3 weeks) | **Risk**: Medium | **Dependencies**: A1-A7
+**Status**: Complete — LMRC live on cloud at board.lakemacrowing.au
 
-**Migration Tasks**:
-- Seed LMRC as first club in database (subdomain: `lmrc`)
-- Migrate boat metadata from JSON to `boats` table
-- Migrate display config from `tv-display.json` to database (see config architecture below)
-- Encrypt and store RevSport credentials
-- Run cloud and Pi deployments in parallel during validation
-- Cutover: Point Pi's Chromium kiosk at `board.lakemacrowing.au?mode=tv`
-- Keep Pi's local server as fallback (if cloud goes down, revert kiosk URL)
+**Completed**:
+- ✅ Seed LMRC as first club in database (subdomain: `lmrc`) — `packages/db/src/seed.ts`
+- ✅ Migrate boat metadata from JSON to `boat_cache` table — scraper auto-discovers fleet from RevSport
+- ✅ Migrate display config from `tv-display.json` to database — `scripts/migrate-lmrc-display-config.ts`
+- ✅ Encrypt and store RevSport credentials — `scripts/setup-lmrc-credentials.ts`
+- ✅ Cloud deployment live on Render — web service + worker service
+- ✅ Custom domain configured: `board.lakemacrowing.au` — `scripts/set-custom-domain.ts`
+- ✅ Pi kiosk pointed at cloud URL
+- Pi local server available as manual fallback (revert kiosk URL if needed)
 
 **Configuration Architecture** (three distinct layers):
 
@@ -602,58 +604,50 @@ services:
 
 ---
 
-#### [A9] Interactive Booking Board for PC and Mobile
+#### [A9] Interactive Booking Board for PC and Mobile ✅ COMPLETE
 **Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: A5, A8
-**Status**: Not started
+**Status**: Complete — all interactive features implemented and accepted
 
-When not in TV mode (e.g., accessed via PC or mobile browser), the booking board becomes interactive:
+When not in TV mode (e.g., accessed via PC or mobile browser), the booking board is fully interactive:
 
-**Core Features**:
-- **Click empty cell to book**: Clicking an empty session cell opens the RevSport booking process for that boat, date, and session. Disabled for already-booked sessions.
-- **Click boat name for boat page**: Clicking the boat name navigates to the boat's booking calendar page on RevSport.
-- **Font size controls**: Allow users to increase/decrease font size for better readability on different devices and for accessibility.
-- **Smooth scrolling**: When the boat list exceeds the window height, ensure smooth vertical scrolling with clear visual indicators.
-- **Manual refresh**: Refresh button in footer (desktop/landscape) and as FAB (mobile portrait) with 30-second cooldown to prevent excessive API polling. Resets auto-refresh timer after manual refresh.
+**Completed**:
 
-**Implementation Notes**:
-- Detect `?mode=tv` to disable interactivity (TV displays are read-only, no keyboard/mouse)
-- Use boat metadata (`bookingUrl`, `calendarUrl`) from API for navigation links
-- Persist font size preference in localStorage
-- Consider touch-friendly tap targets for mobile (44px minimum)
-- Session booking links use RevSport's direct booking URL format
-
-**Out of Scope**:
-- Actual booking creation (handled by RevSport)
-- Authentication for booking (handled by RevSport login flow)
+- ✅ **Click empty cell to book**: Opens RevSport booking URL with boat/date/session pre-filled. Disabled for already-booked sessions. Event delegation on `.session-item.bookable`.
+- ✅ **Click boat name for boat page**: Opens boat's RevSport booking calendar. Conditional on `bookingPageUrl` config and not TV mode.
+- ✅ **Font size controls**: 0.8x–1.5x range with 0.1 step. Separate scales for portrait/landscape. Persisted in localStorage. Desktop footer controls + mobile bottom sheet via FAB.
+- ✅ **Smooth scrolling**: Independent column scrolling with `overflow-y: auto`. Sticky day headers. Mobile momentum scrolling.
+- ✅ **Manual refresh**: Footer button (desktop) + FAB (mobile portrait) with 60-second cooldown. Triggers `/api/v1/sync` then reloads data with cache bypass. Resets auto-refresh timer.
+- ✅ **TV mode disables interactivity**: `?mode=tv` adds `tv-mode` class, skips all interactive setup, hides controls via CSS.
 
 ---
 
-#### [A10] Remove LMRC-Specific Hardcoding (Multi-Tenant Readiness)
+#### [A10] Remove LMRC-Specific Hardcoding (Multi-Tenant Readiness) ✅ COMPLETE
 **Effort**: S (1 week) | **Risk**: Low | **Dependencies**: A5, A8
-**Status**: Not started
+**Status**: Complete — all club-blocking items resolved; two low-priority cosmetic items deferred
 
-Before onboarding a second club, all LMRC-specific values hardcoded in the SaaS codebase must be replaced with configuration-driven alternatives (club DB config, `displayConfig`, or environment variables).
+All LMRC-specific values that would block onboarding a second club have been replaced with configuration-driven alternatives.
 
-**High Priority (blocks second club)**:
-- **CORS origins**: `lakemacrowing.au` hardcoded in web server CORS policy → derive allowed origins from `BASE_DOMAIN` env var or club domain config (`apps/saas-server/src/index.ts`)
-- **Session times**: `06:30-07:30`, `07:30-08:30` hardcoded in frontend → fetch from `/api/v1/config` endpoint, store in club `displayConfig` (`apps/saas-server/public/js/tv-display.js`)
-- **Session count**: Two morning sessions assumed throughout display code → support configurable session definitions per club
+**Completed (High Priority — blocked second club)**:
 
-**Medium Priority (works but incorrect for some clubs)**:
-- **Timezone in scheduler**: `Australia/Sydney` hardcoded in 5 places in cron schedules and adapter creation → use `club.timezone` from database (`packages/scraper/src/scheduler.ts`)
-- **Boat type sort order**: `{ '4X': 1, '2X': 2, '1X': 3 }` hardcoded → load from club `displayConfig` (`apps/saas-server/public/js/tv-display.js`)
-- **Boat column split logic**: Club/Race/Tinnie three-column layout assumes LMRC's classification scheme (R/T/RT + tinnie category) → make grouping rules configurable per club (`apps/saas-server/public/js/tv-display.js`)
-- **Tinnie detection regex**: `/\btinnie\b/i` and `/\d+\s*HP\b/i` in parser → move to club-level boat category config (`packages/scraper/src/revsport/parser.ts`)
+- ✅ **CORS origins**: Derives allowed origins from `BASE_DOMAIN` env var. Legacy `lakemacrowing.au` still allowed alongside. (`apps/saas-server/src/index.ts`)
+- ✅ **Session times**: Frontend reads `displayConfig.sessions` array from `/api/v1/config`. Falls back to hardcoded AM1/AM2 only if config missing. (`tv-display.js`)
+- ✅ **Session count**: Frontend loops `this.sessions.length` — fully dynamic, not limited to two.
 
-**Low Priority (cosmetic)**:
-- Swagger default subdomain `lmrc` → generic placeholder (`apps/saas-server/src/swagger.ts`)
-- Club profile seed file → mark clearly as LMRC example (`packages/config/config/club-profile.json`)
+**Completed (Medium Priority — incorrect for some clubs)**:
 
-**Approach**: Extend the existing `displayConfig` JSON column on the `clubs` table to hold session definitions, boat sort order, and category grouping rules. The frontend already fetches `/api/v1/config` — add these fields to the config response. Hardcoded values become fallback defaults only when config is missing.
+- ✅ **Timezone in scheduler**: Per-club `club.timezone` respected by adapter. Global cron schedule uses Australia/Sydney (appropriate — controls when scrapes run, not data processing).
+- ✅ **Boat type sort order**: Frontend reads `displayConfig.boatTypeSortOrder` from config. Falls back to `{ '4X': 1, '2X': 2, '1X': 3 }` if missing. (`tv-display.js`)
+- ✅ **Boat column split logic**: Frontend reads `displayConfig.boatGroups` for classification-based grouping with configurable column positions. Falls back to R/T/RT scheme if missing. (`tv-display.js`)
+- ✅ **Tinnie support**: Tinnies auto-detected by parser (`/\btinnie\b/i`, `/\d+\s*HP\b/i`), categorised as `boatCategory: 'tinnie'`, and routed to correct display group via `boatGroups` config. Works for all clubs using standard naming. (`packages/scraper/src/revsport/parser.ts`)
+
+**Deferred (Low Priority — cosmetic, does not block onboarding)**:
+
+- Swagger default subdomain still shows `lmrc` (`apps/saas-server/src/swagger.ts`) — cosmetic only
+- Tinnie detection regex not yet configurable per-club — works for standard naming conventions
 
 ---
 
-#### [A11] Interim Admin Configuration Page
+#### [A11] Interim Admin Configuration Page ✅ COMPLETE
 **Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: A5, A10
 **Status**: Complete — all steps implemented and verified on production
 **Plan**: [plans/A11-admin-config-page.md](plans/A11-admin-config-page.md)
@@ -1088,6 +1082,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.14 | 2026-02-12 | Updated [A11] status: admin UI (Steps 1-8) deployed to production. Step 9 (frontend consumer changes) pending. Documented design decisions (removed Custom CSS, Timezone; improved sort order and boat grouping UX). Fixed scheduler reliability (cron error handling + production logging). |
 | 2.15 | 2026-02-13 | Verified A11 Step 9 already implemented — frontend reads config with fallbacks. Production displayConfig confirmed populated and matching. Updated A11 remaining items. Added [A12] Admin Password Reset with scope of work (CLI script immediate, email flow deferred to B3). |
 | 2.16 | 2026-02-13 | Marked [A11] complete — all steps verified on production. Added environment safety infrastructure (`scripts/lib/env.ts`, refactored all CLI scripts). Created password reset CLI script ([A12] in progress). Fixed admin Data Source tab: API returns decrypted username, display/edit mode prevents browser autofill. |
+| 2.17 | 2026-02-13 | **Roadmap reconciliation against codebase.** Marked [A8] LMRC Migration as complete (seed, boat cache, display config, credentials, custom domain, deployment all done). Marked [A9] Interactive Booking Board as complete (click-to-book, boat name links, font controls, manual refresh, TV mode). Marked [A10] Remove Hardcoding as complete (CORS, sessions, session count, sort order, boat grouping, tinnies all config-driven; two cosmetic items deferred). Added Definition of Done requirement: roadmap must be updated when any item is completed. |
 
 ---
 

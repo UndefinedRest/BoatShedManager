@@ -741,15 +741,15 @@
 </script>
 
     <script>
-        // Configuration
-        const BASE_URL = 'https://www.lakemacquarierowingclub.org.au/bookings/confirm/';
+        // Configuration (defaults — overridden by SaaS API config if available)
+        let BASE_URL = 'https://www.lakemacquarierowingclub.org.au/bookings/confirm/';
         const CONTACT_EMAIL = 'enquiries@lakemacquarierowingclub.org.au';
         const urlParams = new URLSearchParams(window.location.search);
         const BOAT_ID = urlParams.get('boat_id') || '6283'; // Default to '6283' if not provided
         console.log('Boat ID:', BOAT_ID);
 
-        // --- Session configuration ---
-        const SESSIONS = [
+        // --- Session configuration (defaults — overridden by SaaS API config if available) ---
+        let SESSIONS = [
             {
                 label: "Morning Session 1",
                 startTime: "06:30",
@@ -763,6 +763,52 @@
                 display: "7:30 AM - 8:30 AM"
             }
         ];
+
+        // Format 24h time to 12h display string (e.g., "06:30" -> "6:30 AM")
+        function formatTimeDisplay(time24) {
+            const [hours, minutes] = time24.split(':').map(Number);
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const hours12 = hours % 12 || 12;
+            return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
+        }
+
+        // Load configuration from SaaS platform API.
+        // Overrides sessions, booking URL, logo, and links with admin-configured values.
+        // Falls back to hardcoded defaults above if the API is unreachable.
+        const configLoaded = (async function() {
+            if (isLocalDev()) return null;
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/config`);
+                if (!response.ok) throw new Error(`${response.status}`);
+
+                const result = await response.json();
+                if (!result.success || !result.data) throw new Error('Invalid response');
+
+                const { displayConfig, branding } = result.data;
+
+                // Update sessions from config
+                if (displayConfig?.sessions?.length) {
+                    SESSIONS = displayConfig.sessions.map(s => ({
+                        label: s.label,
+                        startTime: s.startTime,
+                        endTime: s.endTime,
+                        display: `${formatTimeDisplay(s.startTime)} - ${formatTimeDisplay(s.endTime)}`
+                    }));
+                }
+
+                // Update booking base URL
+                if (displayConfig?.bookingBaseUrl) {
+                    BASE_URL = displayConfig.bookingBaseUrl;
+                    if (!BASE_URL.endsWith('/')) BASE_URL += '/';
+                }
+
+                console.log('[Config] Loaded:', SESSIONS.length, 'sessions');
+                return { branding, bookingBaseUrl: displayConfig?.bookingBaseUrl };
+            } catch (error) {
+                console.warn('[Config] Using defaults:', error.message);
+                return null;
+            }
+        })();
 
         // Format date as DD/MM/YYYY for RevSport
         function formatDate(date) {
@@ -860,8 +906,15 @@
 
 
 
-        // Dynamically render session buttons
-        document.addEventListener('DOMContentLoaded', function() {
+        // Render session buttons, set links, and apply branding after config loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Wait for config from SaaS API (falls back to defaults on failure)
+            const config = await configLoaded;
+
+            // Re-set date picker default in case session end times changed
+            setTodayDatePicker();
+
+            // Render session buttons from (possibly updated) SESSIONS
             const timeSlotsDiv = document.getElementById('timeSlots');
             timeSlotsDiv.innerHTML = '';
             SESSIONS.forEach(session => {
@@ -873,12 +926,28 @@
                 };
                 timeSlotsDiv.appendChild(btn);
             });
-        });
 
-        // Set calendar link and add tracking
-        document.addEventListener('DOMContentLoaded', function() {
+            // Derive RevSport site origin for calendar and manage-bookings links
+            let siteOrigin = 'https://www.lakemacquarierowingclub.org.au';
+            if (config?.bookingBaseUrl) {
+                try { siteOrigin = new URL(config.bookingBaseUrl).origin; } catch (e) { /* keep default */ }
+            }
+
+            // Set calendar link
             const calendarLink = document.getElementById('calendarLink');
-            calendarLink.href = `https://www.lakemacquarierowingclub.org.au/bookings/calendar/${BOAT_ID}`;
+            calendarLink.href = `${siteOrigin}/bookings/calendar/${BOAT_ID}`;
+
+            // Set manage bookings link
+            const manageLink = document.querySelector('a[href*="my-bookings"]');
+            if (manageLink) {
+                manageLink.href = `${siteOrigin}/my-bookings`;
+            }
+
+            // Update logo from branding config
+            if (config?.branding?.logoUrl) {
+                const logoImg = document.querySelector('.header .boat-icon');
+                if (logoImg) logoImg.src = config.branding.logoUrl;
+            }
 
             // Track "View boat availability" clicks
             calendarLink.addEventListener('click', function() {
