@@ -31,11 +31,12 @@ const DAYS_AHEAD = parseInt(process.env.DAYS_AHEAD || '7', 10);
 // Initialize database
 const db = createDb(process.env.DATABASE_URL!);
 
-// Create scheduler
+// Create scheduler with injected logger for production visibility
 const scheduler = new ScrapeScheduler(db, {
   encryptionKey: ENCRYPTION_KEY,
   daysAhead: DAYS_AHEAD,
   debug: NODE_ENV === 'development',
+  logger,
 });
 
 /**

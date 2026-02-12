@@ -54,5 +54,6 @@ export {
 export {
   ScrapeScheduler,
   type SchedulerConfig,
+  type SchedulerLogger,
   type ClubScrapeResult,
 } from './scheduler.js';

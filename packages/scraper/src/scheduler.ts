@@ -13,13 +13,31 @@ import type { DataSourceAdapter, DateRange, SyncResult } from './adapter.js';
 import { RevSportAdapter } from './revsport/adapter.js';
 import { ScraperStorage } from './storage.js';
 
+/**
+ * Minimal logger interface so callers can inject their own (e.g. pino).
+ * Falls back to console if not provided.
+ */
+export interface SchedulerLogger {
+  info(obj: Record<string, unknown>, msg: string): void;
+  warn(obj: Record<string, unknown>, msg: string): void;
+  error(obj: Record<string, unknown>, msg: string): void;
+}
+
+const consoleLogger: SchedulerLogger = {
+  info: (obj, msg) => console.log(msg, obj),
+  warn: (obj, msg) => console.warn(msg, obj),
+  error: (obj, msg) => console.error(msg, obj),
+};
+
 export interface SchedulerConfig {
   /** Encryption key for decrypting credentials */
   encryptionKey: string;
   /** Number of days to fetch bookings for (default: 7) */
   daysAhead?: number;
-  /** Enable debug logging */
+  /** Enable verbose debug logging */
   debug?: boolean;
+  /** Logger for production-level output (defaults to console) */
+  logger?: SchedulerLogger;
 }
 
 export interface ClubScrapeResult {
@@ -38,9 +56,10 @@ export interface ClubScrapeResult {
 export class ScrapeScheduler {
   private running = false;
   private currentJob: Promise<void> | null = null;
-  private cronTask: cron.ScheduledTask | null = null;
+  private allTasks: cron.ScheduledTask[] = [];
   private debug: boolean;
   private daysAhead: number;
+  private logger: SchedulerLogger;
 
   constructor(
     private db: Database,
@@ -48,74 +67,81 @@ export class ScrapeScheduler {
   ) {
     this.debug = config.debug ?? false;
     this.daysAhead = config.daysAhead ?? 7;
+    this.logger = config.logger ?? consoleLogger;
   }
 
-  private log(message: string, data?: unknown): void {
+  private verbose(message: string, data?: unknown): void {
     if (this.debug) {
       console.log(`[ScrapeScheduler] ${message}`, data ?? '');
     }
   }
 
   /**
+   * Wrap async cron callback with error handling.
+   * Without this, unhandled promise rejections from async callbacks
+   * crash the process silently.
+   */
+  private scheduledRun = async (): Promise<void> => {
+    try {
+      const results = await this.runAllClubs();
+      const successful = results.filter(r => r.success).length;
+      const failed = results.length - successful;
+      this.logger.info(
+        { total: results.length, successful, failed },
+        'Scheduled scrape complete'
+      );
+      if (failed > 0) {
+        for (const r of results.filter(r => !r.success)) {
+          this.logger.warn(
+            { clubId: r.clubId, clubName: r.clubName, error: r.error },
+            'Club scrape failed'
+          );
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        { error: (error as Error).message, stack: (error as Error).stack },
+        'Scheduled scrape crashed'
+      );
+    }
+  };
+
+  /**
    * Start the scheduler with adaptive refresh rates
    *
-   * Default schedule:
+   * Default schedule (Australia/Sydney):
    * - 05:00-09:00: every 2 min (peak morning rowing)
    * - 09:00-17:00: every 5 min
    * - 17:00-21:00: every 2 min (evening rowing)
    * - 21:00-05:00: every 10 min
    */
   start(): void {
-    if (this.cronTask) {
-      this.log('Scheduler already running');
+    if (this.allTasks.length > 0) {
+      this.logger.warn({}, 'Scheduler already running');
       return;
     }
 
-    // Peak morning (05:00-09:00): every 2 minutes
-    const morningTask = cron.schedule('*/2 5-8 * * *', () => this.runAllClubs(), {
-      scheduled: true,
-      timezone: 'Australia/Sydney',
-    });
+    const opts = { scheduled: true, timezone: 'Australia/Sydney' };
 
-    // Daytime (09:00-17:00): every 5 minutes
-    const dayTask = cron.schedule('*/5 9-16 * * *', () => this.runAllClubs(), {
-      scheduled: true,
-      timezone: 'Australia/Sydney',
-    });
+    this.allTasks = [
+      cron.schedule('*/2 5-8 * * *', this.scheduledRun, opts),
+      cron.schedule('*/5 9-16 * * *', this.scheduledRun, opts),
+      cron.schedule('*/2 17-20 * * *', this.scheduledRun, opts),
+      cron.schedule('*/10 21-23,0-4 * * *', this.scheduledRun, opts),
+    ];
 
-    // Peak evening (17:00-21:00): every 2 minutes
-    const eveningTask = cron.schedule('*/2 17-20 * * *', () => this.runAllClubs(), {
-      scheduled: true,
-      timezone: 'Australia/Sydney',
-    });
-
-    // Night (21:00-05:00): every 10 minutes
-    const nightTask = cron.schedule('*/10 21-23,0-4 * * *', () => this.runAllClubs(), {
-      scheduled: true,
-      timezone: 'Australia/Sydney',
-    });
-
-    // Store reference to first task for stop()
-    this.cronTask = morningTask;
-
-    // Also store others for cleanup (in a real impl, track all)
-    (this as any)._allTasks = [morningTask, dayTask, eveningTask, nightTask];
-
-    this.log('Scheduler started with adaptive refresh rates');
+    this.logger.info({}, 'Scheduler started with adaptive refresh rates');
   }
 
   /**
    * Stop the scheduler
    */
   stop(): void {
-    if ((this as any)._allTasks) {
-      for (const task of (this as any)._allTasks) {
-        task.stop();
-      }
-      (this as any)._allTasks = null;
+    for (const task of this.allTasks) {
+      task.stop();
     }
-    this.cronTask = null;
-    this.log('Scheduler stopped');
+    this.allTasks = [];
+    this.logger.info({}, 'Scheduler stopped');
   }
 
   /**
@@ -124,7 +150,7 @@ export class ScrapeScheduler {
   async runAllClubs(): Promise<ClubScrapeResult[]> {
     // Skip if already running
     if (this.running) {
-      this.log('Scrape already in progress, skipping');
+      this.logger.warn({}, 'Scrape already in progress, skipping');
       return [];
     }
 
@@ -137,7 +163,7 @@ export class ScrapeScheduler {
         where: (c, { eq }) => eq(c.status, 'active'),
       });
 
-      this.log(`Starting scrape for ${activeClubs.length} clubs`);
+      this.verbose(`Starting scrape for ${activeClubs.length} clubs`);
 
       // Process clubs serially (one at a time for memory management)
       for (const club of activeClubs) {
@@ -148,7 +174,7 @@ export class ScrapeScheduler {
         await this.delay(1000);
       }
 
-      this.log(`Scrape complete: ${results.filter(r => r.success).length}/${results.length} clubs succeeded`);
+      this.verbose(`Scrape complete: ${results.filter(r => r.success).length}/${results.length} clubs succeeded`);
     } finally {
       this.running = false;
     }
