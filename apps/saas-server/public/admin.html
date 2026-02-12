@@ -281,12 +281,12 @@
 
                     <div class="form-group">
                         <label for="dsUsername">Username</label>
-                        <input type="text" id="dsUsername" name="revsport-username" autocomplete="revsport-username">
+                        <input type="text" id="dsUsername" readonly onfocus="this.removeAttribute('readonly')" autocomplete="off">
                     </div>
 
                     <div class="form-group">
                         <label for="dsPassword">Password</label>
-                        <input type="password" id="dsPassword" name="revsport-password" autocomplete="new-password" placeholder="Enter new password">
+                        <input type="text" id="dsPassword" readonly onfocus="this.removeAttribute('readonly');this.type='password'" autocomplete="off" placeholder="Enter new password">
                         <div class="help-text">Leave blank to keep the existing password. Only enter a value to change it.</div>
                     </div>
 
