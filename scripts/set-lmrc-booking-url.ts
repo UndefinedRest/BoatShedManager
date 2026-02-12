@@ -5,28 +5,18 @@
  * clickable boat names on the booking board.
  *
  * Usage:
- *   pnpm exec tsx scripts/set-lmrc-booking-url.ts
+ *   pnpm exec tsx scripts/set-lmrc-booking-url.ts              # dev
+ *   pnpm exec tsx scripts/set-lmrc-booking-url.ts --production  # production
  */
 
-import { config } from 'dotenv';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { eq } from 'drizzle-orm';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-config({ path: path.join(__dirname, '../packages/db/.env') });
-
-import { createDb, clubs } from '../packages/db/dist/index.js';
+import { loadEnv } from './lib/env.js';
+import { clubs } from '../packages/db/dist/index.js';
 
 const BOOKING_PAGE_URL = 'https://lakemacrowing.au/book-a-boat.html';
 
-if (!process.env.DATABASE_URL) {
-  console.error('Missing DATABASE_URL');
-  process.exit(1);
-}
-
 async function main() {
-  const db = createDb(process.env.DATABASE_URL!);
+  const { db, env } = await loadEnv();
 
   // Find LMRC club
   const lmrc = await db.query.clubs.findFirst({
@@ -54,8 +44,7 @@ async function main() {
     .set({ displayConfig: newConfig })
     .where(eq(clubs.id, lmrc.id));
 
-  console.log('\nUpdated displayConfig with bookingPageUrl:', BOOKING_PAGE_URL);
-  console.log('New displayConfig:', JSON.stringify(newConfig, null, 2));
+  console.log(`\nUpdated displayConfig with bookingPageUrl: ${BOOKING_PAGE_URL} [${env.toUpperCase()}]`);
 
   process.exit(0);
 }

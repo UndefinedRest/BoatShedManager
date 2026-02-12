@@ -8,31 +8,18 @@
  * - clubs.display_config: General display preferences (web/mobile)
  *
  * Usage:
- *   pnpm exec tsx scripts/migrate-lmrc-display-config.ts
- *
- * Required environment variables:
- *   - DATABASE_URL: Supabase connection string
+ *   pnpm exec tsx scripts/migrate-lmrc-display-config.ts              # dev
+ *   pnpm exec tsx scripts/migrate-lmrc-display-config.ts --production  # production
  */
 
-import { config } from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-
-// Load .env from packages/db
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-config({ path: path.join(__dirname, '../packages/db/.env') });
-
-// Direct imports from built packages
-import { createDb, clubs } from '../packages/db/dist/index.js';
 import { eq } from 'drizzle-orm';
+import { loadEnv } from './lib/env.js';
+import { clubs } from '../packages/db/dist/index.js';
 
-// Validate environment
-if (!process.env.DATABASE_URL) {
-  console.error('Missing DATABASE_URL environment variable');
-  console.error('Make sure packages/db/.env exists with DATABASE_URL set');
-  process.exit(1);
-}
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Read tv-display.json from Pi codebase
 const tvDisplayPath = path.join(__dirname, '../lmrc-booking-system/config/tv-display.json');
@@ -105,8 +92,7 @@ console.log(JSON.stringify(displayConfig, null, 2));
 console.log('');
 
 async function main() {
-  console.log('Connecting to database...');
-  const db = createDb(process.env.DATABASE_URL!);
+  const { db, env } = await loadEnv();
 
   // Find LMRC club
   const lmrcClub = await db.query.clubs.findFirst({
@@ -139,12 +125,7 @@ async function main() {
     .where(eq(clubs.id, lmrcClub.id));
 
   console.log('');
-  console.log('Migration complete!');
-  console.log('');
-  console.log('The LMRC club now has:');
-  console.log('  - Branding: logo and colors for all viewers');
-  console.log('  - TV Display Config: layout optimized for boatshed TV');
-  console.log('  - Display Config: general web/mobile preferences');
+  console.log(`Migration complete! [${env.toUpperCase()}]`);
   console.log('');
 
   process.exit(0);

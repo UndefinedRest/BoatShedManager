@@ -1,19 +1,18 @@
 /**
- * Create Admin User
+ * Reset Admin Password
  *
- * This script creates an admin user for a club in the database.
+ * Interactive script to reset an admin user's password.
  *
  * Usage:
- *   pnpm exec tsx scripts/create-admin-user.ts              # dev
- *   pnpm exec tsx scripts/create-admin-user.ts --production  # production
- *
- * You'll be prompted for the email, password, and optional full name.
+ *   pnpm exec tsx scripts/reset-admin-password.ts              # dev
+ *   pnpm exec tsx scripts/reset-admin-password.ts --production  # production
  */
 
 import * as readline from 'readline';
 import bcrypt from 'bcryptjs';
+import { eq } from 'drizzle-orm';
 import { loadEnv } from './lib/env.js';
-import { users } from '../packages/db/dist/index.js';
+import { users, auditLog } from '../packages/db/dist/index.js';
 
 async function main() {
   const { db, env } = await loadEnv();
@@ -30,7 +29,7 @@ async function main() {
     });
   }
 
-  console.log('=== Create Admin User ===');
+  console.log('=== Reset Admin Password ===');
   console.log('');
 
   // List available clubs
@@ -39,7 +38,7 @@ async function main() {
   });
 
   if (clubs.length === 0) {
-    console.error('No clubs found. Run the seed script first.');
+    console.error('No clubs found.');
     process.exit(1);
   }
 
@@ -65,8 +64,8 @@ async function main() {
     process.exit(1);
   }
 
-  // Check if user already exists
-  const existingUser = await db.query.users.findFirst({
+  // Find user
+  const user = await db.query.users.findFirst({
     where: (u, { and: andFn, eq: eqFn }) =>
       andFn(
         eqFn(u.email, email.trim().toLowerCase()),
@@ -74,49 +73,62 @@ async function main() {
       ),
   });
 
-  if (existingUser) {
-    console.error(`User ${email} already exists for ${selectedClub.name}`);
+  if (!user) {
+    console.error(`User ${email} not found for ${selectedClub.name}`);
     process.exit(1);
   }
 
-  // Get password
-  const password = await question('Password (min 8 chars): ');
+  if (!user.isActive) {
+    console.error(`User ${email} is inactive. Activate the account first.`);
+    process.exit(1);
+  }
+
+  console.log('');
+  console.log(`  User: ${user.email}`);
+  console.log(`  Name: ${user.fullName || '(not set)'}`);
+  console.log(`  Role: ${user.role}`);
+  console.log('');
+
+  // Get new password
+  const password = await question('New password (min 8 chars): ');
   if (password.length < 8) {
     console.error('Password must be at least 8 characters');
     process.exit(1);
   }
 
-  // Get full name (optional)
-  const fullName = await question('Full name (optional): ');
-
-  // Get role
-  const roleInput = await question('Role (1=club_admin, 2=super_admin) [1]: ');
-  const role = roleInput.trim() === '2' ? 'super_admin' : 'club_admin';
+  const confirm = await question('Confirm password: ');
+  if (password !== confirm) {
+    console.error('Passwords do not match');
+    process.exit(1);
+  }
 
   rl.close();
 
   console.log('');
-  console.log('Creating user...');
+  console.log('Resetting password...');
 
-  // Hash password
+  // Hash and update
   const passwordHash = await bcrypt.hash(password, 12);
 
-  // Insert user
-  const [newUser] = await db.insert(users).values({
+  await db
+    .update(users)
+    .set({ passwordHash })
+    .where(eq(users.id, user.id));
+
+  // Audit log
+  await db.insert(auditLog).values({
     clubId: selectedClub.id,
-    email: email.trim().toLowerCase(),
-    passwordHash,
-    fullName: fullName.trim() || null,
-    role,
-    isActive: true,
-  }).returning();
+    userId: user.id,
+    action: 'PASSWORD_RESET',
+    resourceType: 'user',
+    resourceId: user.id,
+    details: { method: 'cli_script', environment: env },
+  });
 
   console.log('');
-  console.log('Admin user created successfully!');
-  console.log(`  ID: ${newUser.id}`);
-  console.log(`  Email: ${newUser.email}`);
+  console.log('Password reset successfully!');
+  console.log(`  Email: ${user.email}`);
   console.log(`  Club: ${selectedClub.name}`);
-  console.log(`  Role: ${role}`);
   console.log(`  Environment: ${env.toUpperCase()}`);
   console.log('');
 

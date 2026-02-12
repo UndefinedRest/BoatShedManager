@@ -5,55 +5,48 @@
  * in the database so the scraper can fetch boat/booking data.
  *
  * Usage:
- *   pnpm exec tsx scripts/setup-lmrc-credentials.ts
- *
- * Required environment variables:
- *   - DATABASE_URL: Supabase connection string
- *   - ENCRYPTION_KEY: 64-character hex key for credential encryption
+ *   pnpm exec tsx scripts/setup-lmrc-credentials.ts              # dev
+ *   pnpm exec tsx scripts/setup-lmrc-credentials.ts --production  # production
  *
  * You'll be prompted for the RevSport URL, username, and password.
  */
 
-import { config } from 'dotenv';
 import * as readline from 'readline';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-
-// Load .env from packages/db (where DATABASE_URL and ENCRYPTION_KEY are defined)
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-config({ path: path.join(__dirname, '../packages/db/.env') });
-
-// Direct imports from built packages
-import { createDb, clubs } from '../packages/db/dist/index.js';
-import { encryptCredentials } from '../packages/crypto/dist/index.js';
 import { eq } from 'drizzle-orm';
-
-// Validate environment
-const requiredEnvVars = ['DATABASE_URL', 'ENCRYPTION_KEY'];
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    console.error(`Missing required environment variable: ${envVar}`);
-    console.error('');
-    console.error('Make sure you have a .env file in packages/db with:');
-    console.error('  DATABASE_URL=postgresql://...');
-    console.error('  ENCRYPTION_KEY=your-64-char-hex-key');
-    process.exit(1);
-  }
-}
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-function question(prompt: string): Promise<string> {
-  return new Promise((resolve) => {
-    rl.question(prompt, resolve);
-  });
-}
+import { loadEnv } from './lib/env.js';
+import { clubs } from '../packages/db/dist/index.js';
+import { encryptCredentials } from '../packages/crypto/dist/index.js';
 
 async function main() {
-  console.log('');
+  const { db, env, getEncryptionKey } = await loadEnv();
+
+  // Create readline AFTER loadEnv() — both use stdin and conflict on Windows
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  function question(prompt: string): Promise<string> {
+    return new Promise((resolve) => {
+      rl.question(prompt, resolve);
+    });
+  }
+
+  // Validate encryption key is available
+  let encryptionKey: string;
+  try {
+    encryptionKey = getEncryptionKey();
+  } catch (error) {
+    console.error((error as Error).message);
+    console.error('');
+    if (env === 'production') {
+      console.error('Set PRODUCTION_ENCRYPTION_KEY in your shell environment.');
+    } else {
+      console.error('Set ENCRYPTION_KEY in packages/db/.env');
+    }
+    process.exit(1);
+  }
+
   console.log('=== LMRC RevSport Credentials Setup ===');
   console.log('');
   console.log('This will encrypt your RevSport credentials and store them');
@@ -86,13 +79,8 @@ async function main() {
   // Encrypt credentials
   const encryptedCredentials = encryptCredentials(
     { username: username.trim(), password: password.trim() },
-    process.env.ENCRYPTION_KEY!
+    encryptionKey
   );
-
-  console.log('Connecting to database...');
-
-  // Connect to database
-  const db = createDb(process.env.DATABASE_URL!);
 
   // Find LMRC club
   const lmrcClub = await db.query.clubs.findFirst({
@@ -121,12 +109,7 @@ async function main() {
     .where(eq(clubs.id, lmrcClub.id));
 
   console.log('');
-  console.log('Done! LMRC club is now configured with RevSport credentials.');
-  console.log('');
-  console.log('Next steps:');
-  console.log('1. The background worker will automatically scrape on its next cycle');
-  console.log('2. Or restart the worker to trigger an immediate scrape');
-  console.log('3. Check https://lmrc.rowandlift.au/api/v1/boats for data');
+  console.log(`Done! Credentials stored. [${env.toUpperCase()}]`);
   console.log('');
 
   process.exit(0);

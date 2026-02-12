@@ -5,28 +5,18 @@
  * click-to-book on empty session cells in the booking board.
  *
  * Usage:
- *   pnpm exec tsx scripts/set-lmrc-booking-base-url.ts
+ *   pnpm exec tsx scripts/set-lmrc-booking-base-url.ts              # dev
+ *   pnpm exec tsx scripts/set-lmrc-booking-base-url.ts --production  # production
  */
 
-import { config } from 'dotenv';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { eq } from 'drizzle-orm';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-config({ path: path.join(__dirname, '../packages/db/.env') });
-
-import { createDb, clubs } from '../packages/db/dist/index.js';
+import { loadEnv } from './lib/env.js';
+import { clubs } from '../packages/db/dist/index.js';
 
 const BOOKING_BASE_URL = 'https://www.lakemacquarierowingclub.org.au/bookings/confirm/';
 
-if (!process.env.DATABASE_URL) {
-  console.error('Missing DATABASE_URL');
-  process.exit(1);
-}
-
 async function main() {
-  const db = createDb(process.env.DATABASE_URL!);
+  const { db, env } = await loadEnv();
 
   // Find LMRC club
   const lmrc = await db.query.clubs.findFirst({
@@ -54,8 +44,7 @@ async function main() {
     .set({ displayConfig: newConfig })
     .where(eq(clubs.id, lmrc.id));
 
-  console.log('\nUpdated displayConfig with bookingBaseUrl:', BOOKING_BASE_URL);
-  console.log('New displayConfig:', JSON.stringify(newConfig, null, 2));
+  console.log(`\nUpdated displayConfig with bookingBaseUrl: ${BOOKING_BASE_URL} [${env.toUpperCase()}]`);
 
   process.exit(0);
 }

@@ -674,13 +674,13 @@ Self-service admin config page so club administrators can manage their own setti
 
 **Remaining**:
 
-- [ ] **Step 9a**: Update `tv-display.js` to read session times from `displayConfig.sessions` instead of hardcoded values
-- [ ] **Step 9b**: Update `tv-display.js` to read boat grouping from `displayConfig.boatGroups` instead of hardcoded classification logic
-- [ ] **Step 9c**: Update `tv-display.js` to read sort order from `displayConfig.boatTypeSortOrder` instead of hardcoded `{ '4X': 1, '2X': 2, '1X': 3 }`
-- [ ] **Step 9d**: Verify `daysToDisplay` already works from config (expected to be a no-op)
-- [ ] **Production setup**: Create admin user via `scripts/create-admin-user.ts`
-- [ ] **Production config**: Ensure production database `displayConfig` contains `sessions`, `boatGroups`, and `boatTypeSortOrder` in the expected format
 - [ ] **End-to-end testing**: Verify admin page login, config save, and board reflects saved config
+
+**Verified complete** (2026-02-13):
+
+- ✅ **Step 9a-d**: Frontend already reads sessions, boatGroups, boatTypeSortOrder, and daysToDisplay from config with hardcoded fallbacks — implemented in a prior session
+- ✅ **Production setup**: Admin user exists (`gregevans2280@gmail.com`)
+- ✅ **Production config**: `displayConfig` populated with sessions, boatGroups, boatTypeSortOrder — all values match current board behaviour. Sort order has been expanded beyond hardcoded defaults to include all 6 boat types (8+, 4X, 4-, 2X, 2-, 1X)
 
 **Design decisions made during implementation** (diverged from original plan):
 
@@ -694,6 +694,48 @@ Self-service admin config page so club administrators can manage their own setti
 - Stripe billing integration
 - React-based polished dashboard with live preview
 - Member management
+
+---
+
+#### [A12] Admin Password Reset
+**Effort**: S (2-3 days) | **Risk**: Low | **Dependencies**: A5, A11
+**Status**: Not started
+
+Admin users need a way to reset a forgotten password. Required now — platform has a live admin user who cannot log in without this. Pulled forward from B3 (which covers the full email-based flow); this interim version uses a CLI script for immediate need, with an admin-page "forgot password" flow to follow.
+
+**Scope of work**:
+
+1. **CLI password reset script** (`scripts/reset-admin-password.ts`)
+   - Interactive script matching `create-admin-user.ts` pattern
+   - Prompts for club selection, email address, new password
+   - Validates user exists and is active
+   - Hashes with bcrypt (cost 12) and updates `users.passwordHash`
+   - Records `PASSWORD_RESET` action in `audit_log`
+   - Immediate need — unblocks admin access today
+
+2. **Admin page "Forgot Password" link** (`admin.html`)
+   - Add "Forgot password?" link below login form
+   - Shows instructional message: "Contact the platform administrator to reset your password" (Phase A)
+   - Placeholder for self-service email flow in Phase B
+
+3. **`POST /api/v1/admin/reset-password` endpoint** (Phase B, deferred)
+   - Email-based flow: user requests reset → token emailed → user sets new password
+   - Requires email sending infrastructure (not yet in place)
+   - Scoped under B3 Admin Authentication
+
+**Files**:
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `scripts/reset-admin-password.ts` | **CREATE** | Interactive CLI password reset |
+| `apps/saas-server/public/admin.html` | **MODIFY** | Add "Forgot password?" link |
+
+**Security considerations**:
+- CLI script requires direct database access (operator-only)
+- Password hashed with bcrypt cost 12 (matches `create-admin-user.ts`)
+- Audit log entry for all password resets
+- Rate limiting on future API endpoint (Phase B)
+- Reset tokens must expire (15 min) and be single-use (Phase B)
 
 ---
 
@@ -743,7 +785,7 @@ Tech stack: React + TypeScript + Tailwind CSS, served from the same Express app.
 - JWT session tokens (7-day expiry, refresh flow)
 - `super_admin` role for platform operator (you)
 - `club_admin` role scoped to their club only
-- Password reset flow (email-based)
+- Self-service password reset flow (email-based) — extends A12 CLI script with API endpoint and email delivery
 - Session management (logout, revoke all sessions)
 
 ---
@@ -1051,6 +1093,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.12 | 2026-02-01 | Marked [A7] Render Deployment as complete — `apps/saas-server` wiring all packages, `render.yaml` infrastructure config, Swagger docs. |
 | 2.13 | 2026-02-01 | Added UAT findings: bcryptjs ESM fix, optional tenant resolution for health endpoint, sourceId field for external system linking, admin scripts (create-admin-user.ts, set-custom-domain.ts), custom domain setup (board.lakemacrowing.au). |
 | 2.14 | 2026-02-12 | Updated [A11] status: admin UI (Steps 1-8) deployed to production. Step 9 (frontend consumer changes) pending. Documented design decisions (removed Custom CSS, Timezone; improved sort order and boat grouping UX). Fixed scheduler reliability (cron error handling + production logging). |
+| 2.15 | 2026-02-13 | Verified A11 Step 9 already implemented — frontend reads config with fallbacks. Production displayConfig confirmed populated and matching. Updated A11 remaining items. Added [A12] Admin Password Reset with scope of work (CLI script immediate, email flow deferred to B3). |
 
 ---
 

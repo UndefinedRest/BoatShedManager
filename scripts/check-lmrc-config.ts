@@ -4,25 +4,14 @@
  * Quick script to verify LMRC club configuration in the database.
  *
  * Usage:
- *   pnpm exec tsx scripts/check-lmrc-config.ts
+ *   pnpm exec tsx scripts/check-lmrc-config.ts              # dev
+ *   pnpm exec tsx scripts/check-lmrc-config.ts --production  # production
  */
 
-import { config } from 'dotenv';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-config({ path: path.join(__dirname, '../packages/db/.env') });
-
-import { createDb } from '../packages/db/dist/index.js';
-
-if (!process.env.DATABASE_URL) {
-  console.error('Missing DATABASE_URL');
-  process.exit(1);
-}
+import { loadEnv } from './lib/env.js';
 
 async function main() {
-  const db = createDb(process.env.DATABASE_URL!);
+  const { db, env } = await loadEnv();
 
   const lmrc = await db.query.clubs.findFirst({
     where: (clubs, { eq }) => eq(clubs.subdomain, 'lmrc'),
@@ -33,7 +22,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('=== LMRC Configuration Status ===');
+  console.log(`=== LMRC Configuration Status [${env.toUpperCase()}] ===`);
   console.log('');
   console.log('Club ID:', lmrc.id);
   console.log('Name:', lmrc.name);
