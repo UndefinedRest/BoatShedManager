@@ -48,14 +48,27 @@ async function seed() {
       secondaryColor: '#c9a227', // Gold accent
     },
     displayConfig: {
-      // Migrated from tv-display.json defaults
-      showCountdown: true,
+      // These values must match what the booking board actually displays.
+      // If these drift from the board's hardcoded fallbacks, saving from the
+      // admin page could change board behaviour unexpectedly.
       refreshInterval: 300000, // 5 minutes
-      sessionTimes: {
-        morning1: { start: '05:00', end: '07:00' },
-        morning2: { start: '07:00', end: '09:00' },
-        evening: { start: '16:00', end: '19:00' },
-      },
+      daysToDisplay: 7,
+      sessions: [
+        { id: 's1', label: 'Morning Session 1', shortLabel: 'AM1', startTime: '06:30', endTime: '07:30' },
+        { id: 's2', label: 'Morning Session 2', shortLabel: 'AM2', startTime: '07:30', endTime: '08:30' },
+      ],
+      boatGroups: [
+        { id: 'col1', name: 'CLUB BOATS', classifications: ['T', 'RT'], category: 'race', position: 'column1' },
+        { id: 'col2', name: 'RACE BOATS', classifications: ['R'], category: 'race', position: 'column2' },
+        { id: 'sub', name: 'TINNIES', classifications: [], category: 'tinnie', position: 'column2-sub' },
+      ],
+      boatTypeSortOrder: [
+        { type: '4X', order: 1 },
+        { type: '2X', order: 2 },
+        { type: '1X', order: 3 },
+      ],
+      bookingPageUrl: 'https://lakemacrowing.au/book-a-boat.html',
+      bookingBaseUrl: 'https://www.lakemacquarierowingclub.org.au/bookings/confirm/',
     },
     status: 'active',
     subscriptionTier: 'pro', // LMRC is the founding club
