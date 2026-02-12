@@ -1190,6 +1190,6 @@ A: Yes! Path updates needed but architecture unchanged.
 **Author**: Claude AI (Senior Software Engineer)
 
 **Related Documentation**:
-- [docs/planning/roadmap.md](../planning/roadmap.md#configurable-session-times) - Roadmap item
+- [Architectural Roadmap](../../ARCHITECTURAL_ROADMAP.md) - Technical backlog (A10/A11 cover session config)
 - [BoatBooking/book-a-boat.html](../../BoatBooking/book-a-boat.html) - Current implementation
 - [Netlify Functions Docs](https://docs.netlify.com/functions/overview/)

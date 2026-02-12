@@ -355,5 +355,5 @@ https://tools.google.com/dlpage/gaoptout
 **Status**: ⏳ Awaiting configuration
 
 **Related Documentation**:
-- [docs/planning/roadmap.md](../docs/planning/roadmap.md#google-analytics-integration) - Roadmap item
+- [Product Roadmap](../../PRODUCT_ROADMAP.md) - Product roadmap and strategy
 - [BoatBooking/book-a-boat.html](book-a-boat.html) - Implementation

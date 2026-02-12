@@ -49,7 +49,7 @@ npm init -y
 ### 2. Document Findings
 Extract learnings to permanent documentation:
 - `docs/research/` - Technical investigations
-- `docs/planning/roadmap.md` - Feature planning
+- `PRODUCT_ROADMAP.md` / `ARCHITECTURAL_ROADMAP.md` - Feature planning
 - Project `FEATURE_ROADMAP.md` files
 - Architecture decision records
 
@@ -69,7 +69,7 @@ rm -rf exploration/feature-name/*
 **Outcome**: Ready for production implementation
 
 **Findings captured in**:
-- `docs/planning/roadmap.md` - "Configurable Session Times" section (complete technical details)
+- `docs/architecture/configurable-session-times-design.md` - Configurable session times design
 - All implementation code snippets preserved in roadmap
 - Database schema, API functions, and performance optimizations documented
 

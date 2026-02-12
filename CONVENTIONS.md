@@ -912,7 +912,7 @@ npm init -y
 Before closing an investigation, extract findings to permanent documentation:
 
 - `docs/research/` - Technical investigation results
-- `docs/planning/roadmap.md` - Feature planning decisions
+- `PRODUCT_ROADMAP.md` / `ARCHITECTURAL_ROADMAP.md` - Feature planning decisions
 - Project `FEATURE_ROADMAP.md` - Feature-specific roadmaps
 - Architecture decision records (ADRs) - Design decisions
 

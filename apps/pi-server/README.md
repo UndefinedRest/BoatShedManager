@@ -9,7 +9,7 @@ Modern TypeScript application that fetches and displays 7-day booking views for 
 > This is one component of a multi-project solution. For complete documentation:
 > - **Solution documentation** → See [../docs/](../docs/)
 > - **Architecture overview** → See [../docs/architecture/overview.md](../docs/architecture/overview.md)
-> - **Product roadmap** → See [../docs/planning/roadmap.md](../docs/planning/roadmap.md)
+> - **Product roadmap** → See [../PRODUCT_ROADMAP.md](../PRODUCT_ROADMAP.md)
 > - **Deployment to Raspberry Pi** → See [../docs/deployment/production-setup.md](../docs/deployment/production-setup.md)
 > - **Getting started (dev)** → See [../docs/development/getting-started.md](../docs/development/getting-started.md)
 

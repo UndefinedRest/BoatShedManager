@@ -73,5 +73,5 @@ TODO: Document configuration management practices
 
 **See Also**:
 - [Architecture Overview](../architecture/overview.md)
-- [lmrc-config README](../../lmrc-config/README.md)
-- [IMPLEMENTATION_PLAN.md](../../IMPLEMENTATION_PLAN.md)
+- [@lmrc/config README](../../packages/config/README.md)
+- [Architectural Roadmap](../../ARCHITECTURAL_ROADMAP.md)

@@ -18,7 +18,7 @@ Go here: [Production Setup](deployment/production-setup.md)
 Read this: [Architecture Overview](architecture/overview.md)
 
 ### What's Next?
-See: [Roadmap & Todo](planning/todo.md)
+See: [Product Roadmap](../PRODUCT_ROADMAP.md) and [Architectural Roadmap](../ARCHITECTURAL_ROADMAP.md)
 
 ---
 
@@ -28,8 +28,8 @@ See: [Roadmap & Todo](planning/todo.md)
 System design, components, and how they fit together.
 
 - [Overview](architecture/overview.md) - High-level system architecture
-- [Deployment Architecture](architecture/deployment-architecture.md) - How deployment works
-- [Application Components](architecture/components.md) - Individual applications
+- [Monorepo Migration Plan](architecture/monorepo-migration-plan.md) - Pi-to-SaaS monorepo restructure
+- [Configurable Session Times](architecture/configurable-session-times-design.md) - Session time configuration design
 
 ### 🚀 Deployment
 Production deployment, operations, and maintenance.
@@ -54,9 +54,8 @@ Day-to-day operations, monitoring, and maintenance.
 ### 📋 Planning
 Roadmap, strategy, and future plans.
 
-- [Roadmap](planning/roadmap.md) - Product roadmap and strategy
-- [Todo & Next Actions](planning/todo.md) - Immediate next steps
-- [Implementation Plan](planning/implementation-plan.md) - Current phase details
+- [Product Roadmap](../PRODUCT_ROADMAP.md) - Product vision and strategy
+- [Architectural Roadmap](../ARCHITECTURAL_ROADMAP.md) - Technical backlog by phase
 
 ### 📚 Reference
 Configuration, API, and reference materials.
@@ -80,7 +79,7 @@ Each project has its own README with project-specific details:
   - **Deployment**: [NETLIFY_DEPLOYMENT.md](../BoatBooking/NETLIFY_DEPLOYMENT.md)
 
 ### Libraries
-- **[lmrc-config](../lmrc-config/README.md)** - Shared configuration library
+- **[@lmrc/config](../packages/config/README.md)** - Shared configuration library
 
 ---
 
@@ -107,7 +106,7 @@ Each project has its own README with project-specific details:
 → [Troubleshooting](deployment/troubleshooting.md)
 
 **...see what's coming next**
-→ [Roadmap](planning/roadmap.md) and [Todo](planning/todo.md)
+→ [Product Roadmap](../PRODUCT_ROADMAP.md) and [Architectural Roadmap](../ARCHITECTURAL_ROADMAP.md)
 
 **...configure the system**
 → [Configuration Reference](reference/configuration.md)
@@ -158,30 +157,45 @@ All documentation changes should:
 ## Documentation Index
 
 ### Architecture
+
 - [overview.md](architecture/overview.md)
-- [deployment-architecture.md](architecture/deployment-architecture.md)
-- [components.md](architecture/components.md)
+- [monorepo-migration-plan.md](architecture/monorepo-migration-plan.md)
+- [configurable-session-times-design.md](architecture/configurable-session-times-design.md)
 
 ### Deployment
+
 - [production-setup.md](deployment/production-setup.md)
 - [updating.md](deployment/updating.md)
 - [troubleshooting.md](deployment/troubleshooting.md)
+- [generic-linux-support.md](deployment/generic-linux-support.md)
+- [netlify-to-render-migration.md](deployment/netlify-to-render-migration.md)
 
 ### Development
+
 - [getting-started.md](development/getting-started.md)
 - [testing-guide.md](development/testing-guide.md)
 - [contributing.md](development/contributing.md)
 
 ### Operations
+
 - [monitoring.md](operations/monitoring.md)
 - [maintenance.md](operations/maintenance.md)
 
+### Standards
+
+- [TESTING_STANDARDS.md](standards/TESTING_STANDARDS.md)
+
+### Research
+
+- [booking-cancellation-investigation.md](research/booking-cancellation-investigation.md)
+
 ### Planning
-- [roadmap.md](planning/roadmap.md)
-- [todo.md](planning/todo.md)
-- [implementation-plan.md](planning/implementation-plan.md)
+
+- [Product Roadmap](../PRODUCT_ROADMAP.md)
+- [Architectural Roadmap](../ARCHITECTURAL_ROADMAP.md)
 
 ### Reference
+
 - [configuration.md](reference/configuration.md)
 - [api.md](reference/api.md)
 

@@ -342,8 +342,8 @@ See [BoatBooking/NETLIFY_DEPLOYMENT.md](../../BoatBooking/NETLIFY_DEPLOYMENT.md)
 
 ## Related Documentation
 
-- [Deployment Architecture](deployment-architecture.md) - Detailed deployment system
-- [Application Components](components.md) - Individual app details
+- [Monorepo Migration Plan](monorepo-migration-plan.md) - Pi-to-SaaS monorepo restructure
+- [Configurable Session Times](configurable-session-times-design.md) - Session time configuration design
 - [Production Setup](../deployment/production-setup.md) - How to deploy
 
 ---

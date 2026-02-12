@@ -83,8 +83,8 @@ See [lmrc-pi-deployment/README.md](lmrc-pi-deployment/README.md) for detailed de
 - **[Architecture Overview](docs/architecture/overview.md)** - System architecture and design
 - **[Production Setup](docs/deployment/production-setup.md)** - Deploy to Raspberry Pi
 - **[Getting Started](docs/development/getting-started.md)** - Developer setup guide
-- **[Product Roadmap](docs/planning/roadmap.md)** - Future vision and plans
-- **[Action Items](docs/planning/todo.md)** - Current priorities and next steps
+- **[Product Roadmap](PRODUCT_ROADMAP.md)** - Future vision and plans
+- **[Architectural Roadmap](ARCHITECTURAL_ROADMAP.md)** - Technical backlog and implementation status
 
 **For Claude Code**: See [.claude/CONTEXT.md](.claude/CONTEXT.md) for session context
 
