@@ -298,13 +298,15 @@ class AdminController {
       credStatus.innerHTML = '<span class="status-badge warning">No credentials set</span>';
     }
 
-    // Override browser autofill — browsers fill saved credentials after JS runs,
-    // so re-apply the correct values after a short delay
+    // Safety net: re-apply correct values after browser autofill runs
+    // (honeypot fields in HTML should absorb autofill, but just in case)
     const savedUsername = ds.username || '';
-    setTimeout(() => {
-      document.getElementById('dsUsername').value = savedUsername;
-      document.getElementById('dsPassword').value = '';
-    }, 200);
+    for (const delay of [100, 500, 1500]) {
+      setTimeout(() => {
+        document.getElementById('dsUsername').value = savedUsername;
+        document.getElementById('dsPassword').value = '';
+      }, delay);
+    }
   }
 
   // ── Branding ────────────────────────────────────────────────
