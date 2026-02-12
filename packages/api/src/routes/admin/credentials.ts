@@ -40,24 +40,25 @@ export function createCredentialsRouter(
 
       const input = credentialsUpdateSchema.parse(req.body);
 
-      // Encrypt the credentials
-      const encryptedCredentials = encryptCredentials(
-        {
-          username: input.username,
-          password: input.password,
-        },
-        encryptionKey
-      );
-
       // Get current config
       const currentConfig = (req.club.dataSourceConfig as Record<string, unknown>) ?? {};
 
-      // Update the club's data source config
-      const newConfig = {
+      // Build updated config: always update URL, only re-encrypt if password provided
+      const newConfig: Record<string, unknown> = {
         ...currentConfig,
         url: input.url,
-        credentials_encrypted: encryptedCredentials,
       };
+
+      if (input.password) {
+        const encryptedCredentials = encryptCredentials(
+          {
+            username: input.username,
+            password: input.password,
+          },
+          encryptionKey
+        );
+        newConfig.credentials_encrypted = encryptedCredentials;
+      }
 
       await db
         .update(clubs)

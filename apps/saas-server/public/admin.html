@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Rowing Boards</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner dark" style="width:32px;height:32px;border-width:3px;"></div>
+    </div>
+
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-card">
+            <h1>Admin Login</h1>
+            <p class="subtitle">Sign in to manage your club settings</p>
+            <div class="login-error" id="loginError"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="loginBtn">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin App (hidden until logged in) -->
+    <div class="admin-app" id="adminApp">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <h1>Rowing Boards</h1>
+                <span class="club-badge" id="clubBadge"></span>
+            </div>
+            <div class="top-bar-right">
+                <span class="user-email" id="userEmail"></span>
+                <button class="btn btn-secondary btn-sm" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-nav" id="tabNav">
+            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-btn" data-tab="branding">Branding</button>
+            <button class="tab-btn" data-tab="sessions">Sessions</button>
+            <button class="tab-btn" data-tab="boats">Boat Display</button>
+            <button class="tab-btn" data-tab="urls">Booking URLs</button>
+            <button class="tab-btn" data-tab="datasource">Data Source</button>
+        </nav>
+
+        <!-- Tab Panels -->
+        <div class="tab-content">
+
+            <!-- Dashboard Tab -->
+            <div class="tab-panel active" id="panel-dashboard">
+                <div class="stats-grid" id="dashboardStats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statLastScrape">--</div>
+                        <div class="stat-label">Last Scrape</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statBoats">--</div>
+                        <div class="stat-label">Boats</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statBookings">--</div>
+                        <div class="stat-label">Bookings</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat24hSuccess">--</div>
+                        <div class="stat-label">24h Success</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat24hFailed">--</div>
+                        <div class="stat-label">24h Failed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statAvgDuration">--</div>
+                        <div class="stat-label">Avg Duration</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Actions</h2>
+                    <div class="quick-links">
+                        <button class="btn btn-primary" id="triggerSyncBtn">Trigger Sync</button>
+                        <a href="/" target="_blank" class="btn btn-secondary">View Board</a>
+                        <a href="/?mode=tv" target="_blank" class="btn btn-secondary">View Board (TV)</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Recent Jobs</h2>
+                    <table class="jobs-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Error</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentJobsBody">
+                            <tr><td colspan="3">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Branding Tab -->
+            <div class="tab-panel" id="panel-branding">
+                <div class="card">
+                    <h2>Branding</h2>
+
+                    <div class="form-group">
+                        <label for="brandLogoUrl">Logo URL</label>
+                        <input type="url" id="brandLogoUrl" placeholder="https://example.com/logo.png">
+                        <div class="help-text">URL to your club logo image (PNG or SVG recommended)</div>
+                        <div class="logo-preview" id="logoPreview">
+                            <span class="no-logo">No logo set</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Primary Colour</label>
+                        <div class="colour-row">
+                            <input type="color" id="brandPrimaryColour" value="#1e3a5f">
+                            <input type="text" id="brandPrimaryHex" placeholder="#1e3a5f" maxlength="7">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Secondary Colour</label>
+                        <div class="colour-row">
+                            <input type="color" id="brandSecondaryColour" value="#c9a227">
+                            <input type="text" id="brandSecondaryHex" placeholder="#c9a227" maxlength="7">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="brandCustomCSS">Custom CSS (advanced)</label>
+                        <textarea id="brandCustomCSS" rows="4" placeholder="/* Custom styles */" maxlength="10000"></textarea>
+                        <div class="help-text">Optional CSS overrides applied to the booking board</div>
+                    </div>
+
+                    <div class="action-bar">
+                        <button class="btn btn-primary" id="saveBrandingBtn">Save Branding</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sessions Tab -->
+            <div class="tab-panel" id="panel-sessions">
+                <div class="card">
+                    <h2>Session Definitions</h2>
+                    <div class="help-text" style="margin-bottom:12px">Define the time slots shown on the booking board. Each session appears as a column header.</div>
+                    <div class="session-list" id="sessionList">
+                        <!-- Session rows inserted by JS -->
+                    </div>
+                    <div style="margin-top:12px">
+                        <button class="btn btn-secondary btn-sm" id="addSessionBtn">+ Add Session</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Display Settings</h2>
+                    <div class="form-group">
+                        <label for="cfgTimezone">Timezone</label>
+                        <select id="cfgTimezone">
+                            <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+                            <option value="Australia/Melbourne">Australia/Melbourne</option>
+                            <option value="Australia/Brisbane">Australia/Brisbane</option>
+                            <option value="Australia/Adelaide">Australia/Adelaide</option>
+                            <option value="Australia/Perth">Australia/Perth</option>
+                            <option value="Australia/Hobart">Australia/Hobart</option>
+                            <option value="Australia/Darwin">Australia/Darwin</option>
+                            <option value="Pacific/Auckland">Pacific/Auckland (NZST)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgDaysToDisplay">Days to Display</label>
+                        <input type="number" id="cfgDaysToDisplay" min="1" max="14" value="7">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgRefreshInterval">Auto-Refresh Interval</label>
+                        <select id="cfgRefreshInterval">
+                            <option value="60000">1 minute</option>
+                            <option value="120000">2 minutes</option>
+                            <option value="300000" selected>5 minutes</option>
+                            <option value="600000">10 minutes</option>
+                            <option value="900000">15 minutes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn btn-primary" id="saveSessionsBtn">Save Sessions</button>
+                </div>
+            </div>
+
+            <!-- Boat Display Tab -->
+            <div class="tab-panel" id="panel-boats">
+                <div class="card">
+                    <h2>Boat Column Groups</h2>
+                    <div class="help-text" style="margin-bottom:12px">Define how boats are grouped into columns on the booking board.</div>
+                    <div class="boat-group-list" id="boatGroupList">
+                        <!-- Boat group rows inserted by JS -->
+                    </div>
+                    <div style="margin-top:12px">
+                        <button class="btn btn-secondary btn-sm" id="addBoatGroupBtn">+ Add Group</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Boat Type Sort Order</h2>
+                    <div class="help-text" style="margin-bottom:12px">Set the display order for each boat type within a column. Lower numbers appear first.</div>
+                    <div class="sort-order-list" id="sortOrderList">
+                        <!-- Sort order items inserted by JS -->
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn btn-primary" id="saveBoatsBtn">Save Boat Display</button>
+                </div>
+            </div>
+
+            <!-- Booking URLs Tab -->
+            <div class="tab-panel" id="panel-urls">
+                <div class="card">
+                    <h2>Booking URLs</h2>
+
+                    <div class="form-group">
+                        <label for="urlBookingPage">Booking Page URL</label>
+                        <input type="url" id="urlBookingPage" placeholder="https://yourclub.org/bookings">
+                        <div class="help-text">Opens when a member clicks a boat name. Typically your club's booking calendar page.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="urlBookingBase">Booking Base URL (RevSport)</label>
+                        <input type="url" id="urlBookingBase" placeholder="https://yourclub.org/bookings/confirm">
+                        <div class="help-text">RevSport confirm URL base for direct session booking. Session parameters are appended automatically.</div>
+                    </div>
+
+                    <div class="action-bar">
+                        <button class="btn btn-primary" id="saveUrlsBtn">Save URLs</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Source Tab -->
+            <div class="tab-panel" id="panel-datasource">
+                <div class="card">
+                    <h2>Data Source</h2>
+
+                    <div class="credential-status" id="credentialStatus">
+                        <!-- Set by JS -->
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dsUrl">RevSport URL</label>
+                        <input type="url" id="dsUrl" placeholder="https://yourclub.revsport.net.au">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dsUsername">Username</label>
+                        <input type="text" id="dsUsername" autocomplete="off">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dsPassword">Password</label>
+                        <input type="password" id="dsPassword" autocomplete="new-password" placeholder="Enter new password">
+                        <div class="help-text">Leave blank to keep the existing password. Only enter a value to change it.</div>
+                    </div>
+
+                    <div class="action-bar">
+                        <button class="btn btn-primary" id="saveDatasourceBtn">Save Credentials</button>
+                        <button class="btn btn-secondary" id="testConnectionBtn">Test Connection</button>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /tab-content -->
+    </div><!-- /admin-app -->
+
+    <script src="/js/admin.js"></script>
+</body>
+</html>

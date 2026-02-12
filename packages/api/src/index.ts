@@ -56,6 +56,7 @@ import { createAuthRouter } from './routes/admin/auth.js';
 import { createStatusRouter } from './routes/admin/status.js';
 import { createCredentialsRouter } from './routes/admin/credentials.js';
 import { createDisplayRouter } from './routes/admin/display.js';
+import { createAdminConfigRouter } from './routes/admin/config.js';
 import { createSyncRouter, type SyncTriggerFn } from './routes/admin/sync.js';
 
 // Types
@@ -150,6 +151,7 @@ export function createApiRouter(
     adminReadLimit: config.adminRateLimit,
   }));
   adminReadRouter.use('/status', createStatusRouter(db));
+  adminReadRouter.use('/config', createAdminConfigRouter());
 
   // Write endpoints
   const adminWriteRouter = Router();

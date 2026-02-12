@@ -60,7 +60,7 @@ export const loginSchema = z.object({
 export const credentialsUpdateSchema = z.object({
   url: z.string().url('Invalid URL format'),
   username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().min(1).optional(),
 });
 
 /**

@@ -39,11 +39,17 @@ class TVDisplayController {
     this.daysToDisplay = 7;
     this.refreshInterval = 300000; // 5 minutes default
 
-    // Hardcoded session times for LMRC
-    this.sessions = {
-      morning1: { start: '06:30', end: '07:30' },
-      morning2: { start: '07:30', end: '08:30' }
-    };
+    // Session definitions (loaded from config, with fallback defaults)
+    this.sessions = [
+      { id: 's1', label: 'Morning Session 1', shortLabel: 'AM1', startTime: '06:30', endTime: '07:30' },
+      { id: 's2', label: 'Morning Session 2', shortLabel: 'AM2', startTime: '07:30', endTime: '08:30' },
+    ];
+
+    // Boat grouping config (loaded from config, with fallback defaults)
+    this.boatGroups = null; // null = use hardcoded logic
+
+    // Boat type sort order (loaded from config, with fallback defaults)
+    this.boatTypeSortOrder = null; // null = use hardcoded { '4X': 1, '2X': 2, '1X': 3 }
 
     this.elements = {
       loadingScreen: document.getElementById('loadingScreen'),
@@ -118,9 +124,11 @@ class TVDisplayController {
       console.log('[TV Display] TV mode enabled - fixed wide layout, no controls');
     }
 
-    // Load config to get booking URLs (interactive mode only)
+    // Load config (sessions, grouping, sort order, URLs) for all modes
+    await this.loadConfig();
+
+    // Setup interactive features (non-TV mode only)
     if (!this.isTvMode()) {
-      await this.loadConfig();
       this.setupBoatNameLinks();
       this.setupSessionBookingLinks();
     }
@@ -452,6 +460,17 @@ class TVDisplayController {
       return;
     }
 
+    // Update column titles from config if available
+    if (this.boatGroups) {
+      const col1Group = this.boatGroups.find(g => g.position === 'column1');
+      const col2Group = this.boatGroups.find(g => g.position === 'column2');
+      const subGroup = this.boatGroups.find(g => g.position === 'column2-sub');
+      const titles = document.querySelectorAll('.column-title');
+      if (col1Group && titles[0]) titles[0].textContent = col1Group.name;
+      if (col2Group && titles[1]) titles[1].textContent = col2Group.name;
+      if (subGroup && titles[2]) titles[2].textContent = subGroup.name;
+    }
+
     // Generate day headers for all columns
     this.renderDayHeaders();
 
@@ -561,53 +580,80 @@ class TVDisplayController {
   }
 
   /**
-   * Split boats by classification (Club vs Race) and category (Rowing vs Tinnie)
+   * Split boats by classification (Club vs Race) and category (Rowing vs Tinnie).
+   * Uses boatGroups from config if available, otherwise falls back to hardcoded logic.
    */
   splitBoatsByClassification() {
     const clubBoats = [];
     const raceBoats = [];
     const tinnies = [];
 
-    this.bookingData.boats.forEach(boat => {
-      // Filter out boats with Unknown type (unless they're tinnies)
-      if (boat.type === 'Unknown' && boat.category !== 'tinnie') {
-        return;
-      }
+    if (this.boatGroups) {
+      // Config-driven grouping: match boats to groups by classification and category
+      this.bookingData.boats.forEach(boat => {
+        if (boat.type === 'Unknown' && boat.category !== 'tinnie') return;
 
-      // Tinnies go to their own section
-      if (boat.category === 'tinnie') {
-        tinnies.push(boat);
-        return;
-      }
+        let matched = false;
+        for (const group of this.boatGroups) {
+          // Match by category first, then classification
+          if (group.category === 'tinnie' && boat.category === 'tinnie') {
+            tinnies.push(boat);
+            matched = true;
+            break;
+          }
+          if (group.classifications.includes(boat.classification)) {
+            if (group.position === 'column1') {
+              clubBoats.push(boat);
+            } else {
+              raceBoats.push(boat);
+            }
+            matched = true;
+            break;
+          }
+        }
+        // Unmatched boats go to column 1 by default
+        if (!matched) {
+          if (boat.category === 'tinnie') {
+            tinnies.push(boat);
+          } else {
+            clubBoats.push(boat);
+          }
+        }
+      });
+    } else {
+      // Hardcoded fallback grouping
+      this.bookingData.boats.forEach(boat => {
+        if (boat.type === 'Unknown' && boat.category !== 'tinnie') return;
 
-      // Race boats: classification = 'R' (Racer)
-      // Club boats: classification = 'T' (Training) or 'RT'
-      if (boat.classification === 'R') {
-        raceBoats.push(boat);
-      } else {
-        clubBoats.push(boat);
-      }
-    });
+        if (boat.category === 'tinnie') {
+          tinnies.push(boat);
+        } else if (boat.classification === 'R') {
+          raceBoats.push(boat);
+        } else {
+          clubBoats.push(boat);
+        }
+      });
+    }
 
-    // Sort by type (4X, 2X, 1X), then by nickname within type
-    const typeOrder = { '4X': 1, '2X': 2, '1X': 3 };
+    // Build sort order map from config or hardcoded defaults
+    const typeOrder = {};
+    if (this.boatTypeSortOrder) {
+      this.boatTypeSortOrder.forEach(s => { typeOrder[s.type] = s.order; });
+    } else {
+      Object.assign(typeOrder, { '4X': 1, '2X': 2, '1X': 3 });
+    }
+
     const getBoatName = (boat) => boat.nickname || boat.displayName;
 
     const sortBoats = (a, b) => {
-      // Sort by type first
       const typeA = typeOrder[a.type] || 999;
       const typeB = typeOrder[b.type] || 999;
-      if (typeA !== typeB) {
-        return typeA - typeB;
-      }
-      // Then by name within same type
+      if (typeA !== typeB) return typeA - typeB;
       return getBoatName(a).localeCompare(getBoatName(b));
     };
 
     clubBoats.sort(sortBoats);
     raceBoats.sort(sortBoats);
-
-    // Sort tinnies by display name
     tinnies.sort((a, b) => getBoatName(a).localeCompare(getBoatName(b)));
 
     return { clubBoats, raceBoats, tinnies };
@@ -779,15 +825,17 @@ class TVDisplayController {
     // Clear and render cards container
     this.elements.mobileCardsContainer.innerHTML = '';
 
-    // Render Club Boats section
-    this.renderMobileSection('club', 'CLUB BOATS', clubBoats, selectedDateStr);
+    // Determine section names from config or defaults
+    const col1Name = this.boatGroups?.find(g => g.position === 'column1')?.name || 'CLUB BOATS';
+    const col2Name = this.boatGroups?.find(g => g.position === 'column2')?.name || 'RACE BOATS';
+    const subName = this.boatGroups?.find(g => g.position === 'column2-sub')?.name || 'TINNIES';
 
-    // Render Race Boats section
-    this.renderMobileSection('race', 'RACE BOATS', raceBoats, selectedDateStr);
+    // Render sections
+    this.renderMobileSection('club', col1Name, clubBoats, selectedDateStr);
+    this.renderMobileSection('race', col2Name, raceBoats, selectedDateStr);
 
-    // Render Tinnies section (if any)
     if (tinnies.length > 0) {
-      this.renderMobileSection('tinnies', 'TINNIES', tinnies, selectedDateStr);
+      this.renderMobileSection('tinnies', subName, tinnies, selectedDateStr);
     }
   }
 
@@ -930,17 +978,20 @@ class TVDisplayController {
     const sessionsContainer = document.createElement('div');
     sessionsContainer.className = 'mobile-sessions';
 
-    // Get bookings for selected date
+    // Get bookings for selected date (array matching this.sessions)
     const bookings = this.getBookingsForDate(boat, dateStr);
     const bookable = this.isSessionBookable(boat);
 
-    // AM1 session
-    const am1Row = this.createMobileSessionRow('AM1', bookings.morning1, bookable ? { sourceId: boat.sourceId, date: dateStr, session: 1 } : null);
-    sessionsContainer.appendChild(am1Row);
-
-    // AM2 session
-    const am2Row = this.createMobileSessionRow('AM2', bookings.morning2, bookable ? { sourceId: boat.sourceId, date: dateStr, session: 2 } : null);
-    sessionsContainer.appendChild(am2Row);
+    // Render a row for each defined session
+    for (let si = 0; si < this.sessions.length; si++) {
+      const sess = this.sessions[si];
+      const row = this.createMobileSessionRow(
+        sess.shortLabel,
+        bookings[si],
+        bookable ? { sourceId: boat.sourceId, date: dateStr, session: si } : null
+      );
+      sessionsContainer.appendChild(row);
+    }
 
     // Add damaged overlay if applicable
     if (isDamaged) {
@@ -1074,17 +1125,19 @@ class TVDisplayController {
       const dayColumn = document.createElement('div');
       dayColumn.className = 'day-column';
 
-      // Get bookings for this day
+      // Get bookings for this day (array matching this.sessions)
       const bookings = this.getBookingsForDate(boat, dateStr);
-
-      // AM1 session for this day
       const bookable = this.isSessionBookable(boat);
-      const am1 = this.createSessionItem(bookings.morning1, boatName, bookable ? { sourceId: boat.sourceId, date: dateStr, session: 1 } : null);
-      dayColumn.appendChild(am1);
 
-      // AM2 session for this day
-      const am2 = this.createSessionItem(bookings.morning2, boatName, bookable ? { sourceId: boat.sourceId, date: dateStr, session: 2 } : null);
-      dayColumn.appendChild(am2);
+      // Render a session item for each defined session
+      for (let si = 0; si < this.sessions.length; si++) {
+        const item = this.createSessionItem(
+          bookings[si],
+          boatName,
+          bookable ? { sourceId: boat.sourceId, date: dateStr, session: si } : null
+        );
+        dayColumn.appendChild(item);
+      }
 
       daysGrid.appendChild(dayColumn);
     }
@@ -1154,41 +1207,35 @@ class TVDisplayController {
   }
 
   /**
-   * Get bookings for a specific date, determining session by time
+   * Parse a time string "HH:MM" into minutes since midnight
+   */
+  parseTimeToMinutes(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  /**
+   * Get bookings for a specific date, determining session by time.
+   * Returns an array matching this.sessions indices: [booking|null, booking|null, ...]
    */
   getBookingsForDate(boat, dateStr) {
-    const result = { morning1: null, morning2: null };
+    const result = new Array(this.sessions.length).fill(null);
 
-    // Check all bookings for this date
     boat.bookings.forEach(booking => {
       if (booking.date !== dateStr) return;
 
-      // Parse booking times
-      const [bookingStartHour, bookingStartMin] = booking.startTime.split(':').map(Number);
-      const [bookingEndHour, bookingEndMin] = booking.endTime.split(':').map(Number);
+      const bookingStart = this.parseTimeToMinutes(booking.startTime);
+      const bookingEnd = this.parseTimeToMinutes(booking.endTime);
 
-      // Parse session times
-      const [session1StartHour, session1StartMin] = this.sessions.morning1.start.split(':').map(Number);
-      const [session1EndHour, session1EndMin] = this.sessions.morning1.end.split(':').map(Number);
-      const [session2StartHour, session2StartMin] = this.sessions.morning2.start.split(':').map(Number);
-      const [session2EndHour, session2EndMin] = this.sessions.morning2.end.split(':').map(Number);
+      // Check overlap with each session
+      for (let i = 0; i < this.sessions.length; i++) {
+        const sess = this.sessions[i];
+        const sessStart = this.parseTimeToMinutes(sess.startTime);
+        const sessEnd = this.parseTimeToMinutes(sess.endTime);
 
-      // Convert to minutes for easier comparison
-      const bookingStart = bookingStartHour * 60 + bookingStartMin;
-      const bookingEnd = bookingEndHour * 60 + bookingEndMin;
-      const session1Start = session1StartHour * 60 + session1StartMin;
-      const session1End = session1EndHour * 60 + session1EndMin;
-      const session2Start = session2StartHour * 60 + session2StartMin;
-      const session2End = session2EndHour * 60 + session2EndMin;
-
-      // Check if booking overlaps with session 1
-      if (bookingStart < session1End && bookingEnd > session1Start) {
-        result.morning1 = booking;
-      }
-
-      // Check if booking overlaps with session 2
-      if (bookingStart < session2End && bookingEnd > session2Start) {
-        result.morning2 = booking;
+        if (bookingStart < sessEnd && bookingEnd > sessStart) {
+          result[i] = booking;
+        }
       }
     });
 
@@ -1337,7 +1384,7 @@ class TVDisplayController {
   // ============================================================================
 
   /**
-   * Load config from API to get booking page URL
+   * Load config from API to get sessions, grouping, sort order, and URLs
    */
   async loadConfig() {
     try {
@@ -1348,11 +1395,42 @@ class TVDisplayController {
       }
       const result = await response.json();
       const config = result.success ? result.data?.displayConfig : null;
-      if (config?.bookingPageUrl) {
+      if (!config) return;
+
+      // Session definitions
+      if (Array.isArray(config.sessions) && config.sessions.length > 0) {
+        this.sessions = config.sessions;
+        console.log('[TV Display] Sessions loaded from config:', this.sessions.length);
+      }
+
+      // Boat grouping
+      if (Array.isArray(config.boatGroups) && config.boatGroups.length > 0) {
+        this.boatGroups = config.boatGroups;
+        console.log('[TV Display] Boat groups loaded from config:', this.boatGroups.length);
+      }
+
+      // Sort order
+      if (Array.isArray(config.boatTypeSortOrder) && config.boatTypeSortOrder.length > 0) {
+        this.boatTypeSortOrder = config.boatTypeSortOrder;
+        console.log('[TV Display] Sort order loaded from config');
+      }
+
+      // Days to display
+      if (config.daysToDisplay) {
+        this.daysToDisplay = config.daysToDisplay;
+      }
+
+      // Refresh interval
+      if (config.refreshInterval) {
+        this.refreshInterval = config.refreshInterval;
+      }
+
+      // Booking URLs
+      if (config.bookingPageUrl) {
         this.bookingPageUrl = config.bookingPageUrl;
         console.log('[TV Display] Booking page URL loaded:', this.bookingPageUrl);
       }
-      if (config?.bookingBaseUrl) {
+      if (config.bookingBaseUrl) {
         this.bookingBaseUrl = config.bookingBaseUrl;
         console.log('[TV Display] Booking base URL loaded:', this.bookingBaseUrl);
       }
@@ -1470,24 +1548,27 @@ class TVDisplayController {
 
   /**
    * Build RevSport booking confirmation URL for a specific session
+   * @param {string} sourceId - Boat source ID
+   * @param {string} dateStr - Date in YYYY-MM-DD format
+   * @param {number} sessionIndex - Index into this.sessions array
    */
   buildBookingUrl(sourceId, dateStr, sessionIndex) {
     if (!this.bookingBaseUrl || !sourceId) return null;
 
+    const session = this.sessions[sessionIndex];
+    if (!session) return null;
+
     // Parse date from YYYY-MM-DD to DD/MM/YYYY (RevSport format)
     const [yyyy, mm, dd] = dateStr.split('-');
     const formattedDate = `${dd}/${mm}/${yyyy}`;
-
-    // Get session times
-    const session = sessionIndex === 1 ? this.sessions.morning1 : this.sessions.morning2;
 
     const params = new URLSearchParams({
       freq: '1',
       dateStart: '',
       dateEnd: '',
       date: formattedDate,
-      timeStart: session.start,
-      timeEnd: session.end,
+      timeStart: session.startTime,
+      timeEnd: session.endTime,
       booking_type: 'oneoff'
     });
 
