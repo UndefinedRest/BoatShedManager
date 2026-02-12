@@ -6,13 +6,15 @@
 
 import { Router } from 'express';
 import type { Response } from 'express';
+import { decryptCredentials } from '@lmrc/crypto';
 import type { ApiRequest, ApiSuccessResponse } from '../../types.js';
 import { asyncHandler, ApiError } from '../../middleware/errorHandler.js';
+import { logger } from '../../middleware/logging.js';
 
 /**
  * Create admin config router
  */
-export function createAdminConfigRouter(): Router {
+export function createAdminConfigRouter(encryptionKey: string): Router {
   const router = Router();
 
   /**
@@ -33,6 +35,21 @@ export function createAdminConfigRouter(): Router {
 
       const dataSourceConfig = (club.dataSourceConfig as Record<string, unknown>) ?? {};
 
+      // Decrypt username if credentials exist (never expose password)
+      let storedUsername: string | null = null;
+      const encryptedCreds = dataSourceConfig.credentials_encrypted as string | undefined;
+      if (encryptedCreds) {
+        try {
+          const decrypted = decryptCredentials(encryptedCreds, encryptionKey);
+          storedUsername = decrypted.username;
+        } catch (err) {
+          logger.warn(
+            { requestId: req.requestId, clubId: club.id, error: (err as Error).message },
+            'Failed to decrypt credentials for admin config display'
+          );
+        }
+      }
+
       const data = {
         club: {
           id: club.id,
@@ -47,7 +64,8 @@ export function createAdminConfigRouter(): Router {
         dataSource: {
           type: club.dataSourceType ?? null,
           url: (dataSourceConfig.url as string) ?? null,
-          hasCredentials: !!(dataSourceConfig.credentials_encrypted),
+          username: storedUsername,
+          hasCredentials: !!(encryptedCreds),
         },
       };
 

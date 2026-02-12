@@ -289,6 +289,7 @@ class AdminController {
     // Data source
     const ds = this.config.dataSource || {};
     document.getElementById('dsUrl').value = ds.url || '';
+    document.getElementById('dsUsername').value = ds.username || '';
     const credStatus = document.getElementById('credentialStatus');
     if (ds.hasCredentials) {
       credStatus.innerHTML = '<span class="status-badge success">Credentials configured</span>';

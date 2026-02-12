@@ -151,7 +151,7 @@ export function createApiRouter(
     adminReadLimit: config.adminRateLimit,
   }));
   adminReadRouter.use('/status', createStatusRouter(db));
-  adminReadRouter.use('/config', createAdminConfigRouter());
+  adminReadRouter.use('/config', createAdminConfigRouter(config.encryptionKey));
 
   // Write endpoints
   const adminWriteRouter = Router();
