@@ -655,17 +655,39 @@ Before onboarding a second club, all LMRC-specific values hardcoded in the SaaS 
 
 #### [A11] Interim Admin Configuration Page
 **Effort**: M (2-3 weeks) | **Risk**: Low | **Dependencies**: A5, A10
-**Status**: Not started
+**Status**: In progress — admin UI deployed, frontend consumer changes pending
 **Plan**: [plans/A11-admin-config-page.md](plans/A11-admin-config-page.md)
 
 Self-service admin config page so club administrators can manage their own settings without database access. Required before onboarding a second club — without it, the platform operator is a human bottleneck for every config change.
 
-**Scope**:
-- Pure static HTML + vanilla JS page at `/admin.html` (no build process)
-- Login via existing JWT auth (POST /admin/login)
-- New `GET /admin/config` endpoint returning full editable config
-- Six tabs: Dashboard (scrape health + sync trigger), Branding (logo, colours), Sessions (session definitions, timezone, refresh interval), Boat Display (column grouping, sort order), Booking URLs, Data Source (RevSport credentials)
-- Frontend consumer changes: `tv-display.js` updated to read sessions, boat grouping, and sort order from config (absorbs A10 display-related items)
+**Completed**:
+
+- ✅ `GET /api/v1/admin/config` endpoint returning full editable config
+- ✅ Admin page at `/admin.html` with login gate and tabbed interface
+- ✅ Dashboard tab (scrape health, trigger sync, view board links)
+- ✅ Branding tab (logo URL with preview, primary/secondary colours)
+- ✅ Sessions tab (dynamic session list with add/remove, days to display, refresh interval)
+- ✅ Boat Display tab (two-column card layout with classification checkboxes, drag-to-reorder sort order)
+- ✅ Booking URLs tab (booking page URL, booking base URL)
+- ✅ Data Source tab (RevSport URL, username, password with "credentials configured" indicator)
+- ✅ Scheduler reliability fix: cron callbacks now have error handling and production logging
+
+**Remaining**:
+
+- [ ] **Step 9a**: Update `tv-display.js` to read session times from `displayConfig.sessions` instead of hardcoded values
+- [ ] **Step 9b**: Update `tv-display.js` to read boat grouping from `displayConfig.boatGroups` instead of hardcoded classification logic
+- [ ] **Step 9c**: Update `tv-display.js` to read sort order from `displayConfig.boatTypeSortOrder` instead of hardcoded `{ '4X': 1, '2X': 2, '1X': 3 }`
+- [ ] **Step 9d**: Verify `daysToDisplay` already works from config (expected to be a no-op)
+- [ ] **Production setup**: Create admin user via `scripts/create-admin-user.ts`
+- [ ] **Production config**: Ensure production database `displayConfig` contains `sessions`, `boatGroups`, and `boatTypeSortOrder` in the expected format
+- [ ] **End-to-end testing**: Verify admin page login, config save, and board reflects saved config
+
+**Design decisions made during implementation** (diverged from original plan):
+
+- Removed Custom CSS field from Branding tab — nothing in the frontend consumes it, confusing for admins
+- Removed Timezone selector from Sessions tab — nothing in the frontend consumes it
+- Sort order uses drag-to-reorder ranked list instead of numeric inputs (better UX)
+- Boat grouping uses fixed two-section layout (Rowing Columns with classification checkboxes + Tinnies with just a name) instead of generic dynamic form rows
 
 **Deliberately deferred to Phase B**:
 - Self-service club creation/signup
@@ -1028,6 +1050,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.11 | 2026-02-01 | Marked [A5] API Layer as complete — `@lmrc/api` package with public/admin routes, JWT auth, Pino logging, rate limiting, Zod validation, 52 unit tests. |
 | 2.12 | 2026-02-01 | Marked [A7] Render Deployment as complete — `apps/saas-server` wiring all packages, `render.yaml` infrastructure config, Swagger docs. |
 | 2.13 | 2026-02-01 | Added UAT findings: bcryptjs ESM fix, optional tenant resolution for health endpoint, sourceId field for external system linking, admin scripts (create-admin-user.ts, set-custom-domain.ts), custom domain setup (board.lakemacrowing.au). |
+| 2.14 | 2026-02-12 | Updated [A11] status: admin UI (Steps 1-8) deployed to production. Step 9 (frontend consumer changes) pending. Documented design decisions (removed Custom CSS, Timezone; improved sort order and boat grouping UX). Fixed scheduler reliability (cron error handling + production logging). |
 
 ---
 
