@@ -110,6 +110,17 @@ body {
   margin-top: 4px;
 }
 
+.config-value {
+  padding: 8px 12px;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  font-size: 14px;
+  color: var(--admin-text);
+  font-family: monospace;
+  word-break: break-all;
+}
+
 .login-error {
   color: var(--admin-error);
   font-size: 14px;

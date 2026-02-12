@@ -274,31 +274,33 @@
                         <!-- Set by JS -->
                     </div>
 
-                    <div class="form-group">
-                        <label for="dsUrl">RevSport URL</label>
-                        <input type="url" id="dsUrl" placeholder="https://yourclub.revsport.net.au">
+                    <!-- Display mode: read-only text (no input fields = no browser autofill) -->
+                    <div id="dsDisplayMode">
+                        <div class="form-group">
+                            <label>RevSport URL</label>
+                            <div class="config-value" id="dsUrlDisplay">—</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Username</label>
+                            <div class="config-value" id="dsUsernameDisplay">—</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <div class="config-value" id="dsPasswordDisplay">—</div>
+                        </div>
+                        <div class="action-bar">
+                            <button class="btn btn-primary" id="editDatasourceBtn">Edit Credentials</button>
+                            <button class="btn btn-secondary" id="testConnectionBtn">Test Connection</button>
+                        </div>
                     </div>
 
-                    <!-- Hidden honeypot fields absorb browser autofill -->
-                    <div style="position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden" aria-hidden="true">
-                        <input type="text" name="fake-username" tabindex="-1">
-                        <input type="password" name="fake-password" tabindex="-1">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="dsUsername">Username</label>
-                        <input type="text" id="dsUsername" autocomplete="off">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="dsPassword">Password</label>
-                        <input type="password" id="dsPassword" autocomplete="off" placeholder="Enter new password">
-                        <div class="help-text">Leave blank to keep the existing password. Only enter a value to change it.</div>
-                    </div>
-
-                    <div class="action-bar">
-                        <button class="btn btn-primary" id="saveDatasourceBtn">Save Credentials</button>
-                        <button class="btn btn-secondary" id="testConnectionBtn">Test Connection</button>
+                    <!-- Edit mode: inputs injected by JS when Edit is clicked -->
+                    <div id="dsEditMode" style="display:none">
+                        <div id="dsEditFields"></div>
+                        <div class="action-bar">
+                            <button class="btn btn-primary" id="saveDatasourceBtn">Save Credentials</button>
+                            <button class="btn btn-secondary" id="cancelDatasourceBtn">Cancel</button>
+                        </div>
                     </div>
                 </div>
             </div>

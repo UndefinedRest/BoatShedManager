@@ -286,26 +286,16 @@ class AdminController {
     document.getElementById('urlBookingPage').value = dc.bookingPageUrl || '';
     document.getElementById('urlBookingBase').value = dc.bookingBaseUrl || '';
 
-    // Data source
+    // Data source — display mode (no input fields = no browser autofill)
     const ds = this.config.dataSource || {};
-    document.getElementById('dsUrl').value = ds.url || '';
-    document.getElementById('dsUsername').value = ds.username || '';
-    document.getElementById('dsPassword').value = '';
+    document.getElementById('dsUrlDisplay').textContent = ds.url || '(not configured)';
+    document.getElementById('dsUsernameDisplay').textContent = ds.username || '(not configured)';
+    document.getElementById('dsPasswordDisplay').textContent = ds.hasCredentials ? '********' : '(not set)';
     const credStatus = document.getElementById('credentialStatus');
     if (ds.hasCredentials) {
       credStatus.innerHTML = '<span class="status-badge success">Credentials configured</span>';
     } else {
       credStatus.innerHTML = '<span class="status-badge warning">No credentials set</span>';
-    }
-
-    // Safety net: re-apply correct values after browser autofill runs
-    // (honeypot fields in HTML should absorb autofill, but just in case)
-    const savedUsername = ds.username || '';
-    for (const delay of [100, 500, 1500]) {
-      setTimeout(() => {
-        document.getElementById('dsUsername').value = savedUsername;
-        document.getElementById('dsPassword').value = '';
-      }, delay);
     }
   }
 
@@ -660,13 +650,50 @@ class AdminController {
 
   // ── Data Source ─────────────────────────────────────────────
 
+  enterDsEditMode() {
+    const ds = this.config.dataSource || {};
+    const container = document.getElementById('dsEditFields');
+
+    // Create input fields dynamically — no inputs in static HTML means
+    // the browser's password manager has nothing to autofill
+    container.innerHTML = `
+      <div class="form-group">
+        <label>RevSport URL</label>
+        <input type="url" id="dsUrl" value="${this.escapeAttr(ds.url || '')}"
+               placeholder="https://yourclub.revsport.net.au">
+      </div>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="dsUsername" value="${this.escapeAttr(ds.username || '')}">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="dsPassword" placeholder="Enter new password">
+        <div class="help-text">Leave blank to keep the existing password. Only enter a value to change it.</div>
+      </div>
+    `;
+
+    document.getElementById('dsDisplayMode').style.display = 'none';
+    document.getElementById('dsEditMode').style.display = '';
+  }
+
+  cancelDsEditMode() {
+    document.getElementById('dsEditFields').innerHTML = '';
+    document.getElementById('dsEditMode').style.display = 'none';
+    document.getElementById('dsDisplayMode').style.display = '';
+  }
+
+  escapeAttr(str) {
+    return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   async saveCredentials() {
     const url = document.getElementById('dsUrl').value.trim();
     const username = document.getElementById('dsUsername').value.trim();
     const password = document.getElementById('dsPassword').value;
 
-    if (!url) throw new Error('RevSport URL is required');
-    if (!username) throw new Error('Username is required');
+    if (!url) { this.showToast('RevSport URL is required', 'error'); return; }
+    if (!username) { this.showToast('Username is required', 'error'); return; }
 
     const body = { url, username };
     if (password) {
@@ -681,10 +708,9 @@ class AdminController {
         body: JSON.stringify(body),
       });
       this.showToast('Credentials saved');
-      document.getElementById('dsPassword').value = '';
-      // Update credential status indicator
-      document.getElementById('credentialStatus').innerHTML =
-        '<span class="status-badge success">Credentials configured</span>';
+      // Reload config to refresh display values
+      await this.loadConfig();
+      this.cancelDsEditMode();
     } catch (err) {
       this.showToast(err.message, 'error');
     } finally {
@@ -803,7 +829,9 @@ class AdminController {
     document.getElementById('saveUrlsBtn').addEventListener('click', () => this.saveUrls());
 
     // Data Source
+    document.getElementById('editDatasourceBtn').addEventListener('click', () => this.enterDsEditMode());
     document.getElementById('saveDatasourceBtn').addEventListener('click', () => this.saveCredentials());
+    document.getElementById('cancelDatasourceBtn').addEventListener('click', () => this.cancelDsEditMode());
     document.getElementById('testConnectionBtn').addEventListener('click', () => this.testConnection());
   }
 }
