@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Booking Board - Lake Macquarie Rowing Club</title>
     <link rel="stylesheet" href="/css/tv-display.css">
+
+    <!-- Google Analytics 4 (interactive mode only — skipped in TV mode) -->
+    <script>
+        if (new URLSearchParams(window.location.search).get('mode') !== 'tv') {
+            var s = document.createElement('script');
+            s.async = true;
+            s.src = 'https://www.googletagmanager.com/gtag/js?id=G-X5KVZ5WXH3';
+            document.head.appendChild(s);
+
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-X5KVZ5WXH3');
+        } else {
+            function gtag(){}
+        }
+    </script>
 </head>
 <body>
     <div class="tv-display">

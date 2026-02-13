@@ -34,6 +34,7 @@ export const dateStringSchema = z
  */
 export const bookingsQuerySchema = paginationSchema.extend({
   boat: z.string().uuid().optional(),
+  sourceId: z.string().optional(),
   date: dateStringSchema.optional(),
   from: dateStringSchema.optional(),
   to: dateStringSchema.optional(),

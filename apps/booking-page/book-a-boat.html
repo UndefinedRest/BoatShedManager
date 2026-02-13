@@ -268,6 +268,27 @@
             box-shadow: var(--shadow-sm);
         }
 
+        .time-slot-btn.booked {
+            background: #94a3b8;
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.85;
+        }
+
+        .time-slot-btn.booked:hover {
+            background: #94a3b8;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .time-slot-btn .booked-info {
+            display: block;
+            margin-top: 6px;
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.95;
+        }
+
         .time-slot-btn small {
             display: block;
             margin-top: 6px;
@@ -896,9 +917,71 @@
             if (typeof trackDateChange === 'function') {
                 trackDateChange(formattedDate);
             }
+
+            // Re-check session availability for the new date
+            checkAvailability();
         });
 
 
+
+        /**
+         * Check session availability for the selected date.
+         * Fetches bookings from the API and disables buttons for booked sessions.
+         */
+        async function checkAvailability() {
+            if (isLocalDev()) return;
+
+            const dateInput = document.getElementById('todayDate');
+            const selectedDateStr = dateInput.value; // YYYY-MM-DD
+            if (!selectedDateStr) return;
+
+            const buttons = document.querySelectorAll('.time-slot-btn');
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/api/v1/bookings?sourceId=${encodeURIComponent(BOAT_ID)}&date=${selectedDateStr}`
+                );
+                if (!response.ok) throw new Error(`${response.status}`);
+
+                const result = await response.json();
+                if (!result.success) throw new Error('Invalid response');
+
+                const bookings = result.data || [];
+
+                // For each session button, check if there's a matching booking
+                buttons.forEach((btn, index) => {
+                    const session = SESSIONS[index];
+                    if (!session) return;
+
+                    // Find a booking that overlaps this session
+                    const match = bookings.find(b => {
+                        const bd = b.bookings;
+                        if (!bd || !bd.startTime) return false;
+                        return bd.startTime === session.startTime && bd.endTime === session.endTime;
+                    });
+
+                    if (match) {
+                        btn.classList.add('booked');
+                        btn.disabled = true;
+                        btn.onclick = null;
+                        const memberName = match.bookings?.memberName || 'another member';
+                        btn.innerHTML =
+                            `${escapeHtml(session.label)}<br><small>${escapeHtml(session.display)}</small>` +
+                            `<span class="booked-info">Booked by ${escapeHtml(memberName)}</span>`;
+                    } else {
+                        btn.classList.remove('booked');
+                        btn.disabled = false;
+                        btn.onclick = function() {
+                            bookSlot(session.startTime, session.endTime);
+                        };
+                        btn.innerHTML = `${escapeHtml(session.label)}<br><small>${escapeHtml(session.display)}</small>`;
+                    }
+                });
+            } catch (error) {
+                console.warn('[Availability] Could not check:', error.message);
+                // On error, leave all buttons enabled (fail-open)
+            }
+        }
 
         // Render session buttons, set links, and apply branding after config loads
         document.addEventListener('DOMContentLoaded', async function() {
@@ -914,7 +997,7 @@
             SESSIONS.forEach(session => {
                 const btn = document.createElement('button');
                 btn.className = 'time-slot-btn';
-                btn.innerHTML = `${session.label}<br><small>${session.display}</small>`;
+                btn.innerHTML = `${escapeHtml(session.label)}<br><small>${escapeHtml(session.display)}</small>`;
                 btn.onclick = function() {
                     bookSlot(session.startTime, session.endTime);
                 };
@@ -967,6 +1050,9 @@
                     }
                 });
             });
+
+            // Check session availability for the initially selected date
+            checkAvailability();
         });
         
 

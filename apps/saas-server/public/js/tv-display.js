@@ -1482,6 +1482,13 @@ class TVDisplayController {
       // Construct booking URL and open in new tab
       const bookingUrl = `${this.bookingPageUrl}?boat_id=${sourceId}`;
       console.log('[TV Display] Opening booking page:', bookingUrl);
+      if (typeof gtag === 'function') {
+        gtag('event', 'boat_name_click', {
+          'event_category': 'Board',
+          'boat_source_id': sourceId,
+          'boat_name': boatNameEl.textContent.trim(),
+        });
+      }
       window.open(bookingUrl, '_blank', 'noopener,noreferrer');
     });
 
@@ -1519,6 +1526,16 @@ class TVDisplayController {
       const bookingUrl = this.buildBookingUrl(sourceId, dateStr, sessionIndex);
       if (bookingUrl) {
         console.log('[TV Display] Opening session booking:', bookingUrl);
+        const session = this.sessions[sessionIndex];
+        if (typeof gtag === 'function') {
+          gtag('event', 'session_book_click', {
+            'event_category': 'Board',
+            'boat_source_id': sourceId,
+            'booking_date': dateStr,
+            'session_label': session?.shortLabel || `Session ${sessionIndex + 1}`,
+            'session_start': session?.startTime,
+          });
+        }
         window.open(bookingUrl, '_blank', 'noopener,noreferrer');
       }
     });
@@ -1742,6 +1759,12 @@ class TVDisplayController {
     console.log('[TV Display] Manual refresh triggered');
     this.lastManualRefresh = now;
 
+    if (typeof gtag === 'function') {
+      gtag('event', 'manual_refresh', {
+        'event_category': 'Board',
+      });
+    }
+
     // Show loading state on buttons
     this.setRefreshButtonState('refreshing');
 
@@ -1915,6 +1938,14 @@ class TVDisplayController {
       this.applyFontScale();
       this.saveFontScales();
       console.log('[TV Display] Font size increased to', newScale, 'for', this.getFontScaleViewMode());
+      if (typeof gtag === 'function') {
+        gtag('event', 'font_size_change', {
+          'event_category': 'Board',
+          'font_action': 'increase',
+          'font_scale': newScale,
+          'view_mode': this.getFontScaleViewMode(),
+        });
+      }
     }
   }
 
@@ -1930,6 +1961,14 @@ class TVDisplayController {
       this.applyFontScale();
       this.saveFontScales();
       console.log('[TV Display] Font size decreased to', newScale, 'for', this.getFontScaleViewMode());
+      if (typeof gtag === 'function') {
+        gtag('event', 'font_size_change', {
+          'event_category': 'Board',
+          'font_action': 'decrease',
+          'font_scale': newScale,
+          'view_mode': this.getFontScaleViewMode(),
+        });
+      }
     }
   }
 
@@ -1941,6 +1980,14 @@ class TVDisplayController {
     this.applyFontScale();
     this.saveFontScales();
     console.log('[TV Display] Font size reset to default for', this.getFontScaleViewMode());
+    if (typeof gtag === 'function') {
+      gtag('event', 'font_size_change', {
+        'event_category': 'Board',
+        'font_action': 'reset',
+        'font_scale': 1.0,
+        'view_mode': this.getFontScaleViewMode(),
+      });
+    }
   }
 
   /**

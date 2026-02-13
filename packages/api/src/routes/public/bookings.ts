@@ -46,9 +46,31 @@ export function createBookingsRouter(db: Database): Router {
       // Build where conditions
       const conditions: Array<ReturnType<typeof buildDateCondition>> = [];
 
-      // Filter by boat
+      // Filter by boat (internal UUID)
       if (query.boat) {
         conditions.push((bc: any, { eq }: any) => eq(bc.boatId, query.boat));
+      }
+
+      // Filter by external source ID (e.g., RevSport boat ID)
+      if (query.sourceId) {
+        const boat = await db.query.boatCache.findFirst({
+          where: (b, { eq, and }) =>
+            and(eq(b.clubId, req.club!.id), eq(b.revsportBoatId, query.sourceId!)),
+          columns: { id: true },
+        });
+        if (boat) {
+          conditions.push((bc: any, { eq }: any) => eq(bc.boatId, boat.id));
+        } else {
+          // No boat found for this sourceId — return empty result
+          const response: ApiSuccessResponse<BookingResponse[]> = {
+            success: true,
+            data: [],
+            meta: { total: 0, limit: query.limit, offset: query.offset, count: 0 },
+          };
+          res.setHeader('Cache-Control', 'max-age=30, stale-while-revalidate=120');
+          res.json(response);
+          return;
+        }
       }
 
       // Filter by single date
