@@ -17,10 +17,12 @@ class AdminController {
     this.config = null;
     /** @type {number|null} */
     this.expiryTimer = null;
-    /** @type {Array} Cached recent jobs for filtering */
+    /** @type {Array} Cached recent jobs (last 10) */
     this.recentJobs = [];
-    /** @type {string} Current job filter: 'all', 'failed', 'completed' */
-    this.jobFilter = 'all';
+    /** @type {Array} Cached failed jobs from last 24 hours */
+    this.recentFailedJobs = [];
+    /** @type {string} Current job filter: 'recent' or 'failed24h' */
+    this.jobFilter = 'recent';
 
     this.bindEvents();
 
@@ -224,6 +226,7 @@ class AdminController {
 
     // Cache jobs and render with current filter
     this.recentJobs = status.recentJobs || [];
+    this.recentFailedJobs = status.recentFailedJobs || [];
     this.renderRecentJobs();
   }
 
@@ -237,19 +240,19 @@ class AdminController {
 
   renderRecentJobs() {
     const tbody = document.getElementById('recentJobsBody');
-    const filtered = this.jobFilter === 'all'
-      ? this.recentJobs
-      : this.recentJobs.filter(j => j.status === this.jobFilter);
+    const jobs = this.jobFilter === 'failed24h'
+      ? this.recentFailedJobs
+      : this.recentJobs;
 
-    if (filtered.length === 0) {
-      const msg = this.jobFilter === 'all'
-        ? 'No scrape jobs recorded yet'
-        : `No ${this.jobFilter} jobs in recent history`;
+    if (jobs.length === 0) {
+      const msg = this.jobFilter === 'failed24h'
+        ? 'No failed jobs in the last 24 hours'
+        : 'No scrape jobs recorded yet';
       tbody.innerHTML = `<tr><td colspan="3">${msg}</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = filtered.map(job => {
+    tbody.innerHTML = jobs.map(job => {
       const time = job.completedAt ? this.formatTimeAgo(new Date(job.completedAt)) : '--';
       const badgeClass = job.status === 'completed' ? 'success' : (job.status === 'failed' ? 'error' : 'neutral');
       const error = job.error ? this.escapeHtml(job.error) : '--';

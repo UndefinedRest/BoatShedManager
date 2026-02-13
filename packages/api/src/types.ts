@@ -167,6 +167,11 @@ export interface AdminStatusResponse {
     status: string;
     error?: string;
   }>;
+  recentFailedJobs: Array<{
+    completedAt: string;
+    status: string;
+    error?: string;
+  }>;
   nextScheduled: string | null;
   scrapeStats: {
     last24h: {

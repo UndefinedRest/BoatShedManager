@@ -92,6 +92,11 @@ export function createStatusRouter(db: Database): Router {
           ? lastScrape.completedAt.getTime() - lastScrape.startedAt.getTime()
           : 0;
 
+      // Extract failed jobs from last 24h for the dashboard filter
+      const failedJobs24h = last24hJobs
+        .filter((j) => j.status === 'failed')
+        .sort((a, b) => (b.completedAt?.getTime() ?? 0) - (a.completedAt?.getTime() ?? 0));
+
       const data: AdminStatusResponse = {
         lastScrape: lastScrape
           ? {
@@ -103,6 +108,11 @@ export function createStatusRouter(db: Database): Router {
             }
           : null,
         recentJobs: recentJobs.map((job) => ({
+          completedAt: job.completedAt?.toISOString() ?? new Date().toISOString(),
+          status: job.status ?? 'unknown',
+          error: job.errorMessage ?? undefined,
+        })),
+        recentFailedJobs: failedJobs24h.map((job) => ({
           completedAt: job.completedAt?.toISOString() ?? new Date().toISOString(),
           status: job.status ?? 'unknown',
           error: job.errorMessage ?? undefined,

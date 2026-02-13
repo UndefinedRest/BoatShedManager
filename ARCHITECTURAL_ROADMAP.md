@@ -685,45 +685,20 @@ Self-service admin config page so club administrators can manage their own setti
 
 ---
 
-#### [A12] Admin Password Reset
+#### [A12] Admin Password Reset ✅ COMPLETE
 **Effort**: S (2-3 days) | **Risk**: Low | **Dependencies**: A5, A11
-**Status**: In progress — CLI script complete, admin page link and email flow deferred
+**Status**: Complete — CLI script implemented. Self-service UI flow deferred to B3.
 
-Admin users need a way to reset a forgotten password. Required now — platform has a live admin user who cannot log in without this. Pulled forward from B3 (which covers the full email-based flow); this interim version uses a CLI script for immediate need, with an admin-page "forgot password" flow to follow.
+Admin users need a way to reset a forgotten password. The CLI script covers the immediate operational need; a self-service "forgot password" flow (API endpoint + email delivery) is scoped under B3 Admin Authentication.
 
-**Scope of work**:
+**Completed**:
 
-1. **CLI password reset script** (`scripts/reset-admin-password.ts`)
-   - Interactive script matching `create-admin-user.ts` pattern
-   - Prompts for club selection, email address, new password
-   - Validates user exists and is active
-   - Hashes with bcrypt (cost 12) and updates `users.passwordHash`
-   - Records `PASSWORD_RESET` action in `audit_log`
-   - Immediate need — unblocks admin access today
+- ✅ **CLI password reset script** (`scripts/reset-admin-password.ts`) — interactive script matching `create-admin-user.ts` pattern. Prompts for club, email, new password. Validates user exists and is active. Hashes with bcrypt (cost 12), updates DB, records audit log entry.
 
-2. **Admin page "Forgot Password" link** (`admin.html`)
-   - Add "Forgot password?" link below login form
-   - Shows instructional message: "Contact the platform administrator to reset your password" (Phase A)
-   - Placeholder for self-service email flow in Phase B
+**Deferred to B3**:
 
-3. **`POST /api/v1/admin/reset-password` endpoint** (Phase B, deferred)
-   - Email-based flow: user requests reset → token emailed → user sets new password
-   - Requires email sending infrastructure (not yet in place)
-   - Scoped under B3 Admin Authentication
-
-**Files**:
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `scripts/reset-admin-password.ts` | **CREATE** | Interactive CLI password reset |
-| `apps/saas-server/public/admin.html` | **MODIFY** | Add "Forgot password?" link |
-
-**Security considerations**:
-- CLI script requires direct database access (operator-only)
-- Password hashed with bcrypt cost 12 (matches `create-admin-user.ts`)
-- Audit log entry for all password resets
-- Rate limiting on future API endpoint (Phase B)
-- Reset tokens must expire (15 min) and be single-use (Phase B)
+- Admin page "Forgot Password" link — no value until self-service flow exists
+- `POST /api/v1/admin/reset-password` endpoint — requires email sending infrastructure
 
 ---
 
@@ -1085,6 +1060,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.16 | 2026-02-13 | Marked [A11] complete — all steps verified on production. Added environment safety infrastructure (`scripts/lib/env.ts`, refactored all CLI scripts). Created password reset CLI script ([A12] in progress). Fixed admin Data Source tab: API returns decrypted username, display/edit mode prevents browser autofill. |
 | 2.17 | 2026-02-13 | **Roadmap reconciliation against codebase.** Marked [A8] LMRC Migration as complete (seed, boat cache, display config, credentials, custom domain, deployment all done). Marked [A9] Interactive Booking Board as complete (click-to-book, boat name links, font controls, manual refresh, TV mode). Marked [A10] Remove Hardcoding as complete (CORS, sessions, session count, sort order, boat grouping, tinnies all config-driven; two cosmetic items deferred). Added Definition of Done requirement: roadmap must be updated when any item is completed. |
 | 2.18 | 2026-02-13 | [A10] Booking page (`book-a-boat.html`) now fetches config from SaaS API — sessions, booking URL, logo, and links are config-driven. Replaced hardcoded HTML buttons with JS-rendered loading state. Updated architecture docs. |
+| 2.19 | 2026-02-13 | Marked [A12] Admin Password Reset as complete (CLI script covers operational need). Admin page "Forgot Password" link deferred to B3 — no value without self-service flow. **Phase A is now fully complete (A1-A12).** |
 
 ---
 
