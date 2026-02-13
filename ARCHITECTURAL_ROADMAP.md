@@ -632,6 +632,7 @@ All LMRC-specific values that would block onboarding a second club have been rep
 - ✅ **CORS origins**: Derives allowed origins from `BASE_DOMAIN` env var. Legacy `lakemacrowing.au` still allowed alongside. (`apps/saas-server/src/index.ts`)
 - ✅ **Session times**: Frontend reads `displayConfig.sessions` array from `/api/v1/config`. Falls back to hardcoded AM1/AM2 only if config missing. (`tv-display.js`)
 - ✅ **Session count**: Frontend loops `this.sessions.length` — fully dynamic, not limited to two.
+- ✅ **Booking page config**: `book-a-boat.html` fetches sessions, booking URL, logo, and links from `/api/v1/config` at page load. Falls back to hardcoded defaults if API unreachable. (`apps/booking-page/book-a-boat.html`)
 
 **Completed (Medium Priority — incorrect for some clubs)**:
 
@@ -1083,6 +1084,7 @@ A8 LMRC Migration ────────────┴── Phase A Complete
 | 2.15 | 2026-02-13 | Verified A11 Step 9 already implemented — frontend reads config with fallbacks. Production displayConfig confirmed populated and matching. Updated A11 remaining items. Added [A12] Admin Password Reset with scope of work (CLI script immediate, email flow deferred to B3). |
 | 2.16 | 2026-02-13 | Marked [A11] complete — all steps verified on production. Added environment safety infrastructure (`scripts/lib/env.ts`, refactored all CLI scripts). Created password reset CLI script ([A12] in progress). Fixed admin Data Source tab: API returns decrypted username, display/edit mode prevents browser autofill. |
 | 2.17 | 2026-02-13 | **Roadmap reconciliation against codebase.** Marked [A8] LMRC Migration as complete (seed, boat cache, display config, credentials, custom domain, deployment all done). Marked [A9] Interactive Booking Board as complete (click-to-book, boat name links, font controls, manual refresh, TV mode). Marked [A10] Remove Hardcoding as complete (CORS, sessions, session count, sort order, boat grouping, tinnies all config-driven; two cosmetic items deferred). Added Definition of Done requirement: roadmap must be updated when any item is completed. |
+| 2.18 | 2026-02-13 | [A10] Booking page (`book-a-boat.html`) now fetches config from SaaS API — sessions, booking URL, logo, and links are config-driven. Replaced hardcoded HTML buttons with JS-rendered loading state. Updated architecture docs. |
 
 ---
 

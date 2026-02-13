@@ -170,14 +170,15 @@
                     <h2>Display Settings</h2>
                     <div class="form-group">
                         <label for="cfgDaysToDisplay">Days to Display</label>
+                        <div class="help-text">Number of days shown on the booking board (1-14).</div>
                         <input type="number" id="cfgDaysToDisplay" min="1" max="14" value="7">
                     </div>
                     <div class="form-group">
-                        <label for="cfgRefreshInterval">Auto-Refresh Interval</label>
+                        <label for="cfgRefreshInterval">Board Auto-Refresh Interval</label>
+                        <div class="help-text">How often the booking board re-fetches data from the server. The server scrapes RevSport on a separate adaptive schedule (every 2 min during peak rowing hours, 5-10 min off-peak), so setting this below 2 minutes has no benefit.</div>
                         <select id="cfgRefreshInterval">
-                            <option value="60000">1 minute</option>
                             <option value="120000">2 minutes</option>
-                            <option value="300000" selected>5 minutes</option>
+                            <option value="300000" selected>5 minutes (recommended)</option>
                             <option value="600000">10 minutes</option>
                             <option value="900000">15 minutes</option>
                         </select>
