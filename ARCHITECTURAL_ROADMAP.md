@@ -4,7 +4,7 @@
 
 **Document Type**: Architectural Roadmap & Technical Backlog
 **Target Audience**: Product Management & Engineering
-**Last Updated**: 2026-02-06
+**Last Updated**: 2026-02-13
 **Status**: SaaS pivot - replaces Pi-centric roadmap (v1.0, Oct 2025)
 
 ---
@@ -658,7 +658,7 @@ Self-service admin config page so club administrators can manage their own setti
 **Completed**:
 
 - ✅ `GET /api/v1/admin/config` endpoint returning full editable config
-- ✅ Admin page at `/admin.html` with login gate and tabbed interface
+- ✅ Admin page at `/admin` with login gate and tabbed interface
 - ✅ Dashboard tab (scrape health, trigger sync, view board links)
 - ✅ Branding tab (logo URL with preview, primary/secondary colours)
 - ✅ Sessions tab (dynamic session list with add/remove, days to display, refresh interval)

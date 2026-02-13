@@ -17,8 +17,12 @@ apps/
 │       ├── index.html            Booking Board (TV + Interactive)
 │       ├── admin.html            Admin Config Page
 │       ├── config.html           Legacy config page
-│       ├── css/tv-display.css
-│       └── js/tv-display.js
+│       ├── css/
+│       │   ├── tv-display.css
+│       │   └── admin.css
+│       └── js/
+│           ├── tv-display.js
+│           └── admin.js
 │
 ├── booking-page/         ─── Render Static Site (lmrc-booking-page)
 │   ├── book-a-boat.html      lakemacrowing.au
@@ -67,7 +71,7 @@ render.yaml                   Render Blueprint (IaC for all 3 services)
    │  │                              │                         │       │  │
    │  │  Static files:               │        API:             │       │  │
    │  │  /           → index.html ◄──┘  /api/v1/boats     ◄───┤       │  │
-   │  │  /admin.html → admin.html ◄─────/api/v1/config    ◄───┤       │  │
+   │  │  /admin      → admin.html ◄─────/api/v1/config    ◄───┤       │  │
    │  │                                 /api/v1/admin/*    ◄───┘       │  │
    │  │                                 /api/v1/sync                   │  │
    │  │                                 /health  ◄── UptimeRobot      │  │
@@ -187,7 +191,7 @@ Admin operations run from the developer workstation. All use `loadEnv()` for dat
 3. **Booking Page** (separate static site) fetches config + boat data from the API via CORS
 4. **Pi kiosk** is Chromium in fullscreen pointed at the Web Service with `?mode=tv`
 5. **Members** access the interactive board or booking page from their own devices
-6. **Admins** configure sessions, branding, grouping via `admin.html` (writes to Supabase via API)
+6. **Admins** configure sessions, branding, grouping via `/admin` (writes to Supabase via API)
 
 ---
 
