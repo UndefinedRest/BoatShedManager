@@ -88,6 +88,8 @@ class TVDisplayController {
       // Refresh button elements
       refreshBtn: document.getElementById('refreshBtn'),
       refreshFab: document.getElementById('refreshFab'),
+      // Manage bookings link
+      manageBookingsLink: document.getElementById('manageBookingsLink'),
     };
 
     this.bookingData = null;
@@ -1438,6 +1440,15 @@ class TVDisplayController {
       if (config.bookingBaseUrl) {
         this.bookingBaseUrl = config.bookingBaseUrl;
         console.log('[TV Display] Booking base URL loaded:', this.bookingBaseUrl);
+
+        // Set up "My Bookings" link (interactive mode only)
+        if (!this.isTvMode() && this.elements.manageBookingsLink) {
+          try {
+            const siteOrigin = new URL(config.bookingBaseUrl).origin;
+            this.elements.manageBookingsLink.href = `${siteOrigin}/my-bookings`;
+            this.elements.manageBookingsLink.classList.remove('hidden');
+          } catch (e) { /* invalid URL, keep hidden */ }
+        }
       }
     } catch (error) {
       console.warn('[TV Display] Error loading config:', error.message);

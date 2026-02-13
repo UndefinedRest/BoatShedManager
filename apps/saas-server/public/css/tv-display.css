@@ -1702,6 +1702,31 @@ body.mode-mobile .boat-entry {
   font-weight: 500;
 }
 
+/* ===== Manage My Bookings Link (interactive mode only) ===== */
+.manage-bookings-link {
+  height: 28px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e40af;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.manage-bookings-link:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
 /* ===== Manual Refresh Button (Desktop, in footer) ===== */
 .refresh-btn-inline {
   width: 32px;
@@ -1899,7 +1924,8 @@ body.tv-mode .font-size-controls,
 body.tv-mode .font-size-fab,
 body.tv-mode .font-size-sheet,
 body.tv-mode .refresh-btn-inline,
-body.tv-mode .refresh-fab {
+body.tv-mode .refresh-fab,
+body.tv-mode .manage-bookings-link {
   display: none !important;
 }
 
