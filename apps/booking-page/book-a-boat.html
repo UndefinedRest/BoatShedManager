@@ -281,14 +281,6 @@
             box-shadow: none;
         }
 
-        .time-slot-btn .booked-info {
-            display: block;
-            margin-top: 6px;
-            font-size: 13px;
-            font-weight: 400;
-            opacity: 0.95;
-        }
-
         .time-slot-btn small {
             display: block;
             margin-top: 6px;
@@ -966,8 +958,8 @@
                         btn.onclick = null;
                         const memberName = match.bookings?.memberName || 'another member';
                         btn.innerHTML =
-                            `${escapeHtml(session.label)}<br><small>${escapeHtml(session.display)}</small>` +
-                            `<span class="booked-info">Booked by ${escapeHtml(memberName)}</span>`;
+                            `${escapeHtml(session.label)}<br>` +
+                            `<small>Booked by ${escapeHtml(memberName)}</small>`;
                     } else {
                         btn.classList.remove('booked');
                         btn.disabled = false;
