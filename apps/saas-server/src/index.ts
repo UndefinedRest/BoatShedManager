@@ -179,6 +179,11 @@ app.get('/', (_req: Request, res: Response) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 
+// Serve admin.html at /admin (clean URL)
+app.get('/admin', (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicPath, 'admin.html'));
+});
+
 // 404 handler for non-API routes
 app.use((req: Request, res: Response) => {
   res.status(404).json({
