@@ -88,8 +88,9 @@ class TVDisplayController {
       // Refresh button elements
       refreshBtn: document.getElementById('refreshBtn'),
       refreshFab: document.getElementById('refreshFab'),
-      // Manage bookings link
+      // Manage bookings elements
       manageBookingsLink: document.getElementById('manageBookingsLink'),
+      manageBookingsFab: document.getElementById('manageBookingsFab'),
     };
 
     this.bookingData = null;
@@ -1441,12 +1442,19 @@ class TVDisplayController {
         this.bookingBaseUrl = config.bookingBaseUrl;
         console.log('[TV Display] Booking base URL loaded:', this.bookingBaseUrl);
 
-        // Set up "My Bookings" link (interactive mode only)
-        if (!this.isTvMode() && this.elements.manageBookingsLink) {
+        // Set up "My Bookings" buttons (interactive mode only)
+        if (!this.isTvMode()) {
           try {
             const siteOrigin = new URL(config.bookingBaseUrl).origin;
-            this.elements.manageBookingsLink.href = `${siteOrigin}/my-bookings`;
-            this.elements.manageBookingsLink.classList.remove('hidden');
+            const myBookingsUrl = `${siteOrigin}/my-bookings`;
+            if (this.elements.manageBookingsLink) {
+              this.elements.manageBookingsLink.href = myBookingsUrl;
+              this.elements.manageBookingsLink.classList.remove('hidden');
+            }
+            if (this.elements.manageBookingsFab) {
+              this.elements.manageBookingsFab.href = myBookingsUrl;
+              this.elements.manageBookingsFab.classList.remove('hidden');
+            }
           } catch (e) { /* invalid URL, keep hidden */ }
         }
       }

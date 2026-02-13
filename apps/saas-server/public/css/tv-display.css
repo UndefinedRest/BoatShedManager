@@ -969,6 +969,12 @@ body {
     font-size: 15px;
     margin-right: 6px;
   }
+
+  .manage-bookings-inline {
+    width: 28px;
+    height: 24px;
+    font-size: 14px;
+  }
 }
 
 /* Mobile mode (<768px) */
@@ -1702,29 +1708,32 @@ body.mode-mobile .boat-entry {
   font-weight: 500;
 }
 
-/* ===== Manage My Bookings Link (interactive mode only) ===== */
-.manage-bookings-link {
+/* ===== Manage My Bookings Button (Desktop, in footer) ===== */
+.manage-bookings-inline {
+  width: 32px;
   height: 28px;
   border: 1px solid #cbd5e1;
   background: white;
   border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #1e40af;
+  font-size: 16px;
+  color: #374151;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 10px;
-  text-decoration: none;
-  white-space: nowrap;
   transition: all 0.15s ease;
+  text-decoration: none;
+  line-height: 1;
 }
 
-.manage-bookings-link:hover {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  color: #1d4ed8;
+.manage-bookings-inline:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.manage-bookings-inline:active {
+  background: #cbd5e1;
+  transform: scale(0.95);
 }
 
 /* ===== Manual Refresh Button (Desktop, in footer) ===== */
@@ -1842,6 +1851,38 @@ body.mode-mobile .boat-entry {
   background: #6b7280;
 }
 
+/* ===== Mobile My Bookings Floating Button ===== */
+.manage-bookings-fab {
+  position: fixed;
+  bottom: 182px; /* Above refresh FAB */
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #1e40af;
+  color: white;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.manage-bookings-fab:hover {
+  background: #1e3a8a;
+  transform: scale(1.05);
+}
+
+.manage-bookings-fab:active {
+  transform: scale(0.95);
+}
+
 /* ===== Mobile Font Size Bottom Sheet ===== */
 .font-size-sheet {
   position: fixed;
@@ -1925,7 +1966,8 @@ body.tv-mode .font-size-fab,
 body.tv-mode .font-size-sheet,
 body.tv-mode .refresh-btn-inline,
 body.tv-mode .refresh-fab,
-body.tv-mode .manage-bookings-link {
+body.tv-mode .manage-bookings-inline,
+body.tv-mode .manage-bookings-fab {
   display: none !important;
 }
 
@@ -1933,7 +1975,8 @@ body.tv-mode .manage-bookings-link {
 /* Desktop: show footer controls, hide FABs */
 @media (min-width: 768px) {
   .font-size-fab,
-  .refresh-fab {
+  .refresh-fab,
+  .manage-bookings-fab {
     display: none !important;
   }
 }
@@ -1941,7 +1984,8 @@ body.tv-mode .manage-bookings-link {
 /* Mobile portrait: show FABs, hide footer controls */
 @media (max-width: 767px) and (orientation: portrait) {
   .font-size-controls,
-  .refresh-btn-inline {
+  .refresh-btn-inline,
+  .manage-bookings-inline {
     display: none !important;
   }
 }
@@ -1949,7 +1993,8 @@ body.tv-mode .manage-bookings-link {
 /* Mobile landscape: show footer controls, hide FABs */
 @media (max-width: 767px) and (orientation: landscape) {
   .font-size-fab,
-  .refresh-fab {
+  .refresh-fab,
+  .manage-bookings-fab {
     display: none !important;
   }
 }
