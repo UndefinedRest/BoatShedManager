@@ -17,6 +17,7 @@ import { asyncHandler, ApiError } from '../../middleware/errorHandler.js';
  */
 interface BrandingResponse {
   logoUrl: string | null;
+  faviconUrl: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
   customCSS: string | null;
@@ -52,6 +53,7 @@ function extractBranding(club: any): BrandingResponse {
   const branding = club.branding as Record<string, unknown> | null;
   return {
     logoUrl: (branding?.logoUrl as string) ?? null,
+    faviconUrl: (branding?.faviconUrl as string) ?? null,
     primaryColor: (branding?.primaryColor as string) ?? null,
     secondaryColor: (branding?.secondaryColor as string) ?? null,
     customCSS: (branding?.customCSS as string) ?? null,

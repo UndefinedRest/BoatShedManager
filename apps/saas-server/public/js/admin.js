@@ -293,6 +293,8 @@ class AdminController {
     const b = this.config.branding || {};
     document.getElementById('brandLogoUrl').value = b.logoUrl || '';
     this.updateLogoPreview(b.logoUrl);
+    document.getElementById('brandFaviconUrl').value = b.faviconUrl || '';
+    this.updateFaviconPreview(b.faviconUrl);
     this.setColour('brandPrimaryColour', 'brandPrimaryHex', b.primaryColor || '#1e3a5f');
     this.setColour('brandSecondaryColour', 'brandSecondaryHex', b.secondaryColor || '#c9a227');
     // Sessions
@@ -362,10 +364,29 @@ class AdminController {
     }
   }
 
+  updateFaviconPreview(url) {
+    const preview = document.getElementById('faviconPreview');
+    if (url) {
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = 'Favicon preview';
+      img.style.maxWidth = '32px';
+      img.style.maxHeight = '32px';
+      img.onerror = () => {
+        preview.innerHTML = '<span class="no-logo">Failed to load image</span>';
+      };
+      preview.innerHTML = '';
+      preview.appendChild(img);
+    } else {
+      preview.innerHTML = '<span class="no-logo">No favicon set</span>';
+    }
+  }
+
   async saveBranding() {
     const data = {
       branding: {
         logoUrl: document.getElementById('brandLogoUrl').value.trim() || null,
+        faviconUrl: document.getElementById('brandFaviconUrl').value.trim() || null,
         primaryColor: document.getElementById('brandPrimaryHex').value.trim(),
         secondaryColor: document.getElementById('brandSecondaryHex').value.trim(),
       },
@@ -846,6 +867,9 @@ class AdminController {
     this.syncColour('brandSecondaryColour', 'brandSecondaryHex');
     document.getElementById('brandLogoUrl').addEventListener('change', (e) => {
       this.updateLogoPreview(e.target.value);
+    });
+    document.getElementById('brandFaviconUrl').addEventListener('change', (e) => {
+      this.updateFaviconPreview(e.target.value);
     });
     document.getElementById('saveBrandingBtn').addEventListener('click', () => this.saveBranding());
 

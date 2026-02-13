@@ -943,6 +943,14 @@
                 if (logoImg) logoImg.src = config.branding.logoUrl;
             }
 
+            // Update favicon from branding config (faviconUrl -> logoUrl -> keep hardcoded default)
+            const faviconSrc = config?.branding?.faviconUrl || config?.branding?.logoUrl;
+            if (faviconSrc) {
+                document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]').forEach(link => {
+                    link.href = faviconSrc;
+                });
+            }
+
             // Track "View boat availability" clicks
             calendarLink.addEventListener('click', function() {
                 if (typeof trackAvailabilityClick === 'function') {

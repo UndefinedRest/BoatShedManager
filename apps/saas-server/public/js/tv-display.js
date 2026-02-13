@@ -1395,6 +1395,11 @@ class TVDisplayController {
       }
       const result = await response.json();
       const config = result.success ? result.data?.displayConfig : null;
+      const branding = result.success ? result.data?.branding : null;
+
+      // Favicon: faviconUrl -> logoUrl -> default
+      this.setFavicon(branding?.faviconUrl || branding?.logoUrl);
+
       if (!config) return;
 
       // Session definitions
@@ -1437,6 +1442,21 @@ class TVDisplayController {
     } catch (error) {
       console.warn('[TV Display] Error loading config:', error.message);
     }
+  }
+
+  /**
+   * Set the page favicon dynamically
+   * @param {string|null} url - Favicon URL, or null to use default
+   */
+  setFavicon(url) {
+    if (!url) return;
+    let link = document.querySelector('link[rel="icon"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = url;
   }
 
   /**
