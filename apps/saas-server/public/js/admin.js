@@ -17,6 +17,10 @@ class AdminController {
     this.config = null;
     /** @type {number|null} */
     this.expiryTimer = null;
+    /** @type {Array} Cached recent jobs for filtering */
+    this.recentJobs = [];
+    /** @type {string} Current job filter: 'all', 'failed', 'completed' */
+    this.jobFilter = 'all';
 
     this.bindEvents();
 
@@ -218,14 +222,34 @@ class AdminController {
       ? `${(avgMs / 1000).toFixed(1)}s`
       : '--';
 
-    // Recent jobs table
+    // Cache jobs and render with current filter
+    this.recentJobs = status.recentJobs || [];
+    this.renderRecentJobs();
+  }
+
+  setJobFilter(filter) {
+    this.jobFilter = filter;
+    document.querySelectorAll('.job-filter').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    this.renderRecentJobs();
+  }
+
+  renderRecentJobs() {
     const tbody = document.getElementById('recentJobsBody');
-    if (!status.recentJobs || status.recentJobs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3">No scrape jobs recorded yet</td></tr>';
+    const filtered = this.jobFilter === 'all'
+      ? this.recentJobs
+      : this.recentJobs.filter(j => j.status === this.jobFilter);
+
+    if (filtered.length === 0) {
+      const msg = this.jobFilter === 'all'
+        ? 'No scrape jobs recorded yet'
+        : `No ${this.jobFilter} jobs in recent history`;
+      tbody.innerHTML = `<tr><td colspan="3">${msg}</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = status.recentJobs.map(job => {
+    tbody.innerHTML = filtered.map(job => {
       const time = job.completedAt ? this.formatTimeAgo(new Date(job.completedAt)) : '--';
       const badgeClass = job.status === 'completed' ? 'success' : (job.status === 'failed' ? 'error' : 'neutral');
       const error = job.error ? this.escapeHtml(job.error) : '--';
@@ -809,6 +833,10 @@ class AdminController {
 
     // Dashboard
     document.getElementById('triggerSyncBtn').addEventListener('click', () => this.triggerSync());
+    document.getElementById('jobFilters').addEventListener('click', (e) => {
+      const btn = e.target.closest('.job-filter');
+      if (btn) this.setJobFilter(btn.dataset.filter);
+    });
 
     // Branding
     this.syncColour('brandPrimaryColour', 'brandPrimaryHex');

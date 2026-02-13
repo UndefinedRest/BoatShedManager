@@ -375,6 +375,28 @@ body {
   color: #475569;
 }
 
+/* Job filters */
+.job-filters {
+  display: flex;
+  gap: 4px;
+}
+
+.job-filter {
+  background: var(--admin-border);
+  color: var(--admin-text-secondary);
+  border: none;
+  cursor: pointer;
+}
+
+.job-filter.active {
+  background: var(--admin-primary);
+  color: white;
+}
+
+.job-filter:hover:not(.active) {
+  background: #cbd5e1;
+}
+
 /* Jobs table */
 .jobs-table {
   width: 100%;
