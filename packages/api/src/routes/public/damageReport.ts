@@ -53,6 +53,7 @@ export function createDamageReportRouter(): Router {
         damageTypes: input.damageTypes,
         comment: input.comment,
         reportedAt: new Date().toISOString(),
+        timezone: req.club.timezone || 'Australia/Sydney',
         reporterIp: req.ip || req.socket.remoteAddress || 'unknown',
       });
 

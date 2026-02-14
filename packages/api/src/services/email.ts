@@ -42,6 +42,7 @@ export interface DamageReportEmailData {
   damageTypes: string[];
   comment: string;
   reportedAt: string;
+  timezone: string;
   reporterIp: string;
 }
 
@@ -69,15 +70,18 @@ export async function sendDamageReportEmail(data: DamageReportEmailData): Promis
   const commentText = data.comment?.trim() || 'None provided';
 
   const reportedDate = new Date(data.reportedAt);
+  const tz = data.timezone || 'Australia/Sydney';
   const formattedDate = reportedDate.toLocaleDateString('en-AU', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: tz,
   });
   const formattedTime = reportedDate.toLocaleTimeString('en-AU', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: tz,
   });
 
   const html = `
