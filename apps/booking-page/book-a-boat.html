@@ -80,8 +80,15 @@
             });
         }
 
+        // Track date navigation arrow clicks
+        function trackDateNavigation(direction) {
+            gtag('event', 'date_navigation', {
+                'event_category': 'Interaction',
+                'event_label': direction
+            });
+        }
+
         // Track date selection changes
-        function trackDateChange(selectedDate) {
             gtag('event', 'date_selection', {
                 'event_category': 'Interaction',
                 'event_label': selectedDate
@@ -242,25 +249,84 @@
             font-size: 14px;
         }
         
-        .date-display {
+        .date-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
             background: #eff6ff;
-            padding: 15px;
+            padding: 10px 12px;
             border-radius: 10px;
             margin-bottom: 25px;
-            text-align: center;
             border: 1px solid var(--border);
         }
 
-        .date-display h2 {
+        .date-nav-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border: none;
+            background: none;
             color: var(--primary-color);
-            font-size: 18px;
-            margin-bottom: 5px;
-            font-weight: 600;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .date-display p {
+        .date-nav-arrow:hover {
+            background: rgba(30, 64, 175, 0.08);
+        }
+
+        .date-nav-arrow:active {
+            background: rgba(30, 64, 175, 0.15);
+        }
+
+        .date-nav-arrow:disabled {
+            color: var(--border);
+            cursor: default;
+        }
+
+        .date-nav-arrow:disabled:hover {
+            background: none;
+        }
+
+        .date-nav-label {
+            flex: 1;
+            text-align: center;
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 8px 4px;
+            border-radius: 8px;
+            transition: background 0.15s;
+            font-family: inherit;
+            line-height: 1.3;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .date-nav-label:hover {
+            background: rgba(30, 64, 175, 0.08);
+        }
+
+        .date-nav-label:active {
+            background: rgba(30, 64, 175, 0.15);
+        }
+
+        .date-nav-label small {
+            display: block;
+            font-size: 12px;
+            font-weight: 400;
             color: var(--text-secondary);
-            font-size: 14px;
+            margin-top: 1px;
         }
         
         .time-slots {
@@ -424,37 +490,13 @@
             100% { transform: rotate(360deg); }
         }
 
-        input[type="date"] {
-            font-size: 16px;
-            padding: 10px 14px;
-            border-radius: 8px;
-            border: 2px solid var(--border);
-            background: var(--surface);
-            color: var(--text-primary);
-            outline: none;
-            transition: border 0.2s, box-shadow 0.2s, background 0.2s;
-            box-shadow: var(--shadow-sm);
-            margin-top: 8px;
-            margin-bottom: 2px;
-            width: 80%;
-            max-width: 240px;
-            text-align: center;
-        }
-
-        input[type="date"]:focus {
-            border: 2px solid var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
-            background: var(--surface);
-        }
-
-        /* Remove calendar icon background in Chrome */
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: opacity(0.6);
-            cursor: pointer;
-        }
-
-        input[type="date"]::-webkit-calendar-picker-indicator:hover {
-            filter: opacity(1);
+        /* Hidden date input — opened programmatically via showPicker() */
+        .date-nav input[type="date"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
         }
 
         /* Mobile portrait optimization - PRIMARY USE CASE */
@@ -506,19 +548,13 @@
                 gap: 16px;
             }
 
-            .date-display {
-                padding: 18px;
+            .date-nav {
+                padding: 8px 8px;
                 margin-bottom: 20px;
             }
 
-            input[type="date"] {
+            .date-nav-label {
                 font-size: 17px;
-                padding: 12px 12px;
-                width: 92%;
-                max-width: 100%;
-                box-sizing: border-box;
-                display: block;
-                margin: 8px auto 2px auto;
             }
 
             .secondary-action {
@@ -737,8 +773,12 @@
             <p class="contact-info"><span id="contactEmail"></span></p>
         </div>
 
-        <div class="date-display" id="dateDisplay">
-            <h2>Select date</h2>
+        <div class="date-nav" id="dateDisplay">
+            <button class="date-nav-arrow" id="datePrev" aria-label="Previous day" onclick="navigateDate(-1)">&#8249;</button>
+            <button class="date-nav-label" id="dateLabel" onclick="openDatePicker()">
+                Loading...
+            </button>
+            <button class="date-nav-arrow" id="dateNext" aria-label="Next day" onclick="navigateDate(1)">&#8250;</button>
             <input type="date" id="todayDate">
         </div>
 
@@ -1111,6 +1151,117 @@
         }
         
 
+        // Get today's date string (YYYY-MM-DD) for comparisons
+        function getTodayStr() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        }
+
+        // Format a YYYY-MM-DD string into a readable label
+        // "Today, Fri 14 Feb" / "Tomorrow, Sat 15 Feb" / "Sun 16 Feb"
+        function getDateLabel(dateStr) {
+            const today = getTodayStr();
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const date = new Date(y, m - 1, d);
+
+            // Calculate tomorrow string
+            const todayDate = new Date();
+            const tomorrow = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() + 1);
+            const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+            const dayName = date.toLocaleDateString('en-AU', { weekday: 'short' });
+            const dayNum = date.getDate();
+            const monthName = date.toLocaleDateString('en-AU', { month: 'short' });
+
+            let label = `${dayName} ${dayNum} ${monthName}`;
+
+            if (dateStr === today) {
+                label = `Today, ${label}`;
+            } else if (dateStr === tomorrowStr) {
+                label = `Tomorrow, ${label}`;
+            }
+
+            return label;
+        }
+
+        // Update the visible date label and arrow states
+        function updateDateDisplay() {
+            const dateInput = document.getElementById('todayDate');
+            const dateStr = dateInput.value;
+            if (!dateStr) return;
+
+            // Update label
+            const labelEl = document.getElementById('dateLabel');
+            const label = getDateLabel(dateStr);
+            labelEl.innerHTML = label + '<small>tap to pick date</small>';
+
+            // Disable prev arrow if at today
+            const prevBtn = document.getElementById('datePrev');
+            prevBtn.disabled = (dateStr <= getTodayStr());
+        }
+
+        // Navigate date by delta days (+1 or -1)
+        function navigateDate(delta) {
+            const dateInput = document.getElementById('todayDate');
+            const [y, m, d] = dateInput.value.split('-').map(Number);
+            const current = new Date(y, m - 1, d);
+            current.setDate(current.getDate() + delta);
+
+            // Don't allow navigating before today
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (current < today) return;
+
+            const newStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+            dateInput.value = newStr;
+
+            if (typeof trackDateNavigation === 'function') {
+                trackDateNavigation(delta > 0 ? 'next' : 'prev');
+            }
+
+            updateDateDisplay();
+            onDateChanged();
+        }
+
+        // Open the native date picker
+        function openDatePicker() {
+            const dateInput = document.getElementById('todayDate');
+            // Set min to today to prevent past selection
+            dateInput.min = getTodayStr();
+            try {
+                dateInput.showPicker();
+            } catch (e) {
+                // Fallback for older browsers: make it briefly visible
+                dateInput.style.position = 'static';
+                dateInput.style.opacity = '1';
+                dateInput.style.width = 'auto';
+                dateInput.style.height = 'auto';
+                dateInput.style.pointerEvents = 'auto';
+                dateInput.focus();
+                dateInput.click();
+                setTimeout(() => {
+                    dateInput.style.position = 'absolute';
+                    dateInput.style.opacity = '0';
+                    dateInput.style.width = '0';
+                    dateInput.style.height = '0';
+                    dateInput.style.pointerEvents = 'none';
+                }, 100);
+            }
+        }
+
+        // Common handler for date changes (from arrows or picker)
+        function onDateChanged() {
+            const selectedDate = getSelectedDate();
+            const formattedDate = formatDate(selectedDate);
+            console.log('Selected Date:', formattedDate);
+
+            if (typeof trackDateChange === 'function') {
+                trackDateChange(formattedDate);
+            }
+
+            checkAvailability();
+        }
+
         // Set date picker to today or tomorrow based on current time
         function setTodayDatePicker() {
             const now = new Date();
@@ -1125,7 +1276,6 @@
             const currentMinute = now.getMinutes();
 
             if (currentHour > endHour || (currentHour === endHour && currentMinute >= endMinute)) {
-                // After last session ends (8:30 AM), set to tomorrow
                 defaultDate.setDate(defaultDate.getDate() + 1);
             }
 
@@ -1133,7 +1283,11 @@
             const mm = String(defaultDate.getMonth() + 1).padStart(2, '0');
             const dd = String(defaultDate.getDate()).padStart(2, '0');
             const defaultDateStr = `${yyyy}-${mm}-${dd}`;
-            document.getElementById('todayDate').value = defaultDateStr;
+            const dateInput = document.getElementById('todayDate');
+            dateInput.value = defaultDateStr;
+            dateInput.min = getTodayStr();
+
+            updateDateDisplay();
         }
 
 
@@ -1149,17 +1303,8 @@
         setTodayDatePicker();
 
         document.getElementById('todayDate').addEventListener('change', () => {
-            const selectedDate = getSelectedDate();
-            const formattedDate = formatDate(selectedDate);
-            console.log('Selected Date:', formattedDate);
-
-            // Track date selection change
-            if (typeof trackDateChange === 'function') {
-                trackDateChange(formattedDate);
-            }
-
-            // Re-check session availability for the new date
-            checkAvailability();
+            updateDateDisplay();
+            onDateChanged();
         });
 
 
@@ -1228,7 +1373,7 @@
             // Wait for config from SaaS API (falls back to defaults on failure)
             const config = await configLoaded;
 
-            // Re-set date picker default in case session end times changed
+            // Re-set date picker default in case session end times changed from config
             setTodayDatePicker();
 
             // Render session buttons from (possibly updated) SESSIONS
