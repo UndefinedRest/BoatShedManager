@@ -167,6 +167,7 @@ app.use('/api/v1', createApiRouter(db, {
   publicRateLimit: parseInt(process.env.PUBLIC_RATE_LIMIT || '100', 10),
   adminRateLimit: parseInt(process.env.ADMIN_RATE_LIMIT || '30', 10),
   publicSyncFn,
+  resendApiKey: process.env.RESEND_API_KEY,
 }));
 
 // Static frontend (booking board display)

@@ -40,6 +40,7 @@ import {
   createAdminWriteRateLimiter,
   createLoginRateLimiter,
   createSyncRateLimiter,
+  createDamageReportRateLimiter,
 } from './middleware/rateLimit.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createAuthMiddleware } from './middleware/auth.js';
@@ -50,6 +51,8 @@ import { createBookingsRouter } from './routes/public/bookings.js';
 import { createConfigRouter } from './routes/public/config.js';
 import { createHealthRouter } from './routes/public/health.js';
 import { createPublicSyncRouter, type PublicSyncFn } from './routes/public/sync.js';
+import { createDamageReportRouter } from './routes/public/damageReport.js';
+import { initEmailService } from './services/email.js';
 
 // Admin routes
 import { createAuthRouter } from './routes/admin/auth.js';
@@ -91,6 +94,8 @@ export interface CreateApiRouterConfig extends ApiConfig {
   syncTrigger?: SyncTriggerFn;
   /** Optional public sync function for manual refresh (runs scrape synchronously) */
   publicSyncFn?: PublicSyncFn;
+  /** Resend API key for transactional emails (damage reports) */
+  resendApiKey?: string;
 }
 
 /**
@@ -101,6 +106,9 @@ export function createApiRouter(
   config: CreateApiRouterConfig
 ): Router {
   const router = Router();
+
+  // Initialize email service for damage reports
+  initEmailService(config.resendApiKey);
 
   // Request context (correlation ID, timing)
   router.use(requestContext);
@@ -121,6 +129,7 @@ export function createApiRouter(
   publicRouter.use('/bookings', createBookingsRouter(db));
   publicRouter.use('/config', createConfigRouter());
   publicRouter.use('/sync', createSyncRateLimiter(), createPublicSyncRouter(config.publicSyncFn));
+  publicRouter.use('/damage-report', createDamageReportRateLimiter(), createDamageReportRouter());
 
   router.use(publicRouter);
 
@@ -208,6 +217,7 @@ export {
   createAdminWriteRateLimiter,
   createLoginRateLimiter,
   createSyncRateLimiter,
+  createDamageReportRateLimiter,
   type RateLimitConfig,
 } from './middleware/rateLimit.js';
 

@@ -314,6 +314,7 @@ class AdminController {
     // URLs
     document.getElementById('urlBookingPage').value = dc.bookingPageUrl || '';
     document.getElementById('urlBookingBase').value = dc.bookingBaseUrl || '';
+    document.getElementById('urlDamageReportEmail').value = dc.damageReportEmail || '';
 
     // Data source — display mode (no input fields = no browser autofill)
     const ds = this.config.dataSource || {};
@@ -690,6 +691,7 @@ class AdminController {
       displayConfig: {
         bookingPageUrl: document.getElementById('urlBookingPage').value.trim() || null,
         bookingBaseUrl: document.getElementById('urlBookingBase').value.trim() || null,
+        damageReportEmail: document.getElementById('urlDamageReportEmail').value.trim() || null,
       },
     };
 

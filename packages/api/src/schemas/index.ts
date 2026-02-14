@@ -69,6 +69,7 @@ export const credentialsUpdateSchema = z.object({
  */
 export const brandingSchema = z.object({
   logoUrl: z.string().url().optional().nullable(),
+  faviconUrl: z.string().url().optional().nullable(),
   primaryColor: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color')
@@ -92,6 +93,21 @@ export const displayConfigUpdateSchema = z.object({
 });
 
 /**
+ * Damage report submission
+ */
+export const damageReportSchema = z.object({
+  boatId: z.string().min(1, 'Boat ID is required'),
+  boatName: z.string().min(1, 'Boat name is required'),
+  responsibility: z.enum(['caused_by_me', 'found_like_this', 'witnessed_by_others'], {
+    errorMap: () => ({ message: 'Responsibility selection is required' }),
+  }),
+  damageTypes: z
+    .array(z.enum(['fin', 'hull', 'rigger', 'seat', 'oarlock', 'stretcher', 'other']))
+    .min(1, 'At least one damage type is required'),
+  comment: z.string().max(2000).optional().default(''),
+});
+
+/**
  * Type exports for use in route handlers
  */
 export type PaginationQuery = z.infer<typeof paginationSchema>;
@@ -99,3 +115,4 @@ export type BookingsQuery = z.infer<typeof bookingsQuerySchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CredentialsUpdateInput = z.infer<typeof credentialsUpdateSchema>;
 export type DisplayConfigUpdateInput = z.infer<typeof displayConfigUpdateSchema>;
+export type DamageReportInput = z.infer<typeof damageReportSchema>;

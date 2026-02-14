@@ -59,6 +59,10 @@ export class ApiError extends Error {
   static accountLocked(message = 'Account is locked'): ApiError {
     return new ApiError('ACCOUNT_LOCKED', message, 423);
   }
+
+  static serviceUnavailable(message = 'Service not available'): ApiError {
+    return new ApiError('SERVICE_UNAVAILABLE', message, 503);
+  }
 }
 
 /**

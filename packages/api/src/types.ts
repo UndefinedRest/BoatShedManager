@@ -90,7 +90,8 @@ export type ErrorCode =
   | 'SCRAPE_IN_PROGRESS'
   | 'UPSTREAM_ERROR'
   | 'INTERNAL_ERROR'
-  | 'ACCOUNT_LOCKED';
+  | 'ACCOUNT_LOCKED'
+  | 'SERVICE_UNAVAILABLE';
 
 /**
  * API configuration options

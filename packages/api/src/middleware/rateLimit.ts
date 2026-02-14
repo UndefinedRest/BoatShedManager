@@ -167,3 +167,26 @@ export function createLoginRateLimiter(config: RateLimitConfig = {}) {
     legacyHeaders: false,
   });
 }
+
+/**
+ * Create rate limiter for damage report submissions.
+ * 5 reports per hour per tenant+IP.
+ */
+export function createDamageReportRateLimiter() {
+  return rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5,
+    keyGenerator: getTenantKey,
+    handler: (_req, res) => {
+      res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMITED',
+          message: 'Too many damage reports submitted. Please try again later.',
+        },
+      });
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+}
