@@ -100,7 +100,7 @@ export const damageReportSchema = z.object({
   boatName: z.string().min(1, 'Boat name is required'),
   description: z.string().min(1, 'Description is required').max(500),
   damageTypes: z
-    .array(z.enum(['fin', 'hull', 'rigger', 'seat', 'oarlock', 'stretcher', 'other']))
+    .array(z.enum(['fin', 'hull', 'rigger', 'seat', 'gate_oarlock', 'foot_stretcher', 'other']))
     .min(1, 'At least one damage type is required'),
   comment: z.string().max(2000).optional().default(''),
 });

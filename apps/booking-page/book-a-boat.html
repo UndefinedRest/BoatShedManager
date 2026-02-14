@@ -72,6 +72,14 @@
             });
         }
 
+        // Track club logo clicks
+        function trackLogoClick() {
+            gtag('event', 'logo_click', {
+                'event_category': 'Navigation',
+                'event_label': 'Club Logo'
+            });
+        }
+
         // Track date selection changes
         function trackDateChange(selectedDate) {
             gtag('event', 'date_selection', {
@@ -777,8 +785,8 @@
                     <label><input type="checkbox" name="damageType" value="hull"> Hull</label>
                     <label><input type="checkbox" name="damageType" value="rigger"> Rigger</label>
                     <label><input type="checkbox" name="damageType" value="seat"> Seat</label>
-                    <label><input type="checkbox" name="damageType" value="oarlock"> Oarlock</label>
-                    <label><input type="checkbox" name="damageType" value="stretcher"> Stretcher</label>
+                    <label><input type="checkbox" name="damageType" value="gate_oarlock"> Gate / oarlock</label>
+                    <label><input type="checkbox" name="damageType" value="foot_stretcher"> Foot stretcher</label>
                     <label><input type="checkbox" name="damageType" value="other"> Other</label>
                 </div>
                 <div class="form-error" id="damageTypeError">Please select at least one damage type</div>
@@ -1263,6 +1271,16 @@
             if (faviconSrc) {
                 document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]').forEach(link => {
                     link.href = faviconSrc;
+                });
+            }
+
+            // Track club logo clicks
+            const logoLink = document.querySelector('.header a[href]');
+            if (logoLink) {
+                logoLink.addEventListener('click', function() {
+                    if (typeof trackLogoClick === 'function') {
+                        trackLogoClick();
+                    }
                 });
             }
 

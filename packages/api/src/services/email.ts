@@ -54,8 +54,17 @@ export async function sendDamageReportEmail(data: DamageReportEmailData): Promis
     throw new Error('Email service not initialized');
   }
 
+  const damageTypeLabels: Record<string, string> = {
+    fin: 'Fin',
+    hull: 'Hull',
+    rigger: 'Rigger',
+    seat: 'Seat',
+    gate_oarlock: 'Gate / oarlock',
+    foot_stretcher: 'Foot stretcher',
+    other: 'Other',
+  };
   const damageTypesList = data.damageTypes
-    .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
+    .map((t) => damageTypeLabels[t] || t)
     .join(', ');
   const commentText = data.comment?.trim() || 'None provided';
 
