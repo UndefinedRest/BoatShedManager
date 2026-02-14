@@ -38,18 +38,12 @@ export interface DamageReportEmailData {
   clubName: string;
   boatId: string;
   boatName: string;
-  responsibility: string;
+  description: string;
   damageTypes: string[];
   comment: string;
   reportedAt: string;
   reporterIp: string;
 }
-
-const RESPONSIBILITY_LABELS: Record<string, string> = {
-  caused_by_me: 'Caused by me',
-  found_like_this: 'Found like this',
-  witnessed_by_others: 'Witnessed by others',
-};
 
 /**
  * Send a damage report email via Resend.
@@ -60,7 +54,6 @@ export async function sendDamageReportEmail(data: DamageReportEmailData): Promis
     throw new Error('Email service not initialized');
   }
 
-  const responsibilityLabel = RESPONSIBILITY_LABELS[data.responsibility] || data.responsibility;
   const damageTypesList = data.damageTypes
     .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
     .join(', ');
@@ -91,8 +84,8 @@ export async function sendDamageReportEmail(data: DamageReportEmailData): Promis
       <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #0f172a;">${escapeHtml(data.boatName)} (ID: ${escapeHtml(data.boatId)})</td>
     </tr>
     <tr>
-      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600; vertical-align: top; color: #0f172a;">Responsibility</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #0f172a;">${escapeHtml(responsibilityLabel)}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600; vertical-align: top; color: #0f172a;">What happened</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #0f172a;">${escapeHtml(data.description)}</td>
     </tr>
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600; vertical-align: top; color: #0f172a;">Damage Type(s)</td>

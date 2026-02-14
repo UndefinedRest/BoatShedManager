@@ -98,9 +98,7 @@ export const displayConfigUpdateSchema = z.object({
 export const damageReportSchema = z.object({
   boatId: z.string().min(1, 'Boat ID is required'),
   boatName: z.string().min(1, 'Boat name is required'),
-  responsibility: z.enum(['caused_by_me', 'found_like_this', 'witnessed_by_others'], {
-    errorMap: () => ({ message: 'Responsibility selection is required' }),
-  }),
+  description: z.string().min(1, 'Description is required').max(500),
   damageTypes: z
     .array(z.enum(['fin', 'hull', 'rigger', 'seat', 'oarlock', 'stretcher', 'other']))
     .min(1, 'At least one damage type is required'),

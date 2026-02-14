@@ -49,7 +49,7 @@ export function createDamageReportRouter(): Router {
         clubName: req.club.name,
         boatId: input.boatId,
         boatName: input.boatName,
-        responsibility: input.responsibility,
+        description: input.description,
         damageTypes: input.damageTypes,
         comment: input.comment,
         reportedAt: new Date().toISOString(),

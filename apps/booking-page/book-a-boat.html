@@ -90,10 +90,9 @@
         }
 
         // Track damage report submitted
-        function trackDamageReportSubmit(boatId, responsibility) {
+        function trackDamageReportSubmit(boatId) {
             gtag('event', 'damage_report_submit', {
                 'event_category': 'Damage Report',
-                'event_label': responsibility,
                 'boat_id': boatId
             });
         }
@@ -586,33 +585,6 @@
             color: var(--text-primary);
         }
 
-        .modal .radio-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .modal .radio-group label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 400;
-            font-size: 15px;
-            cursor: pointer;
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            transition: background 0.15s;
-        }
-
-        .modal .radio-group label:hover {
-            background: #f8fafc;
-        }
-
-        .modal .radio-group input[type="radio"] {
-            accent-color: var(--damaged-icon);
-        }
-
         .modal .checkbox-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -792,13 +764,10 @@
             <p class="modal-boat-name" id="damageModalBoatName"></p>
 
             <div class="form-section">
-                <label>Responsibility *</label>
-                <div class="radio-group">
-                    <label><input type="radio" name="responsibility" value="caused_by_me"> Caused by me</label>
-                    <label><input type="radio" name="responsibility" value="found_like_this"> Found like this</label>
-                    <label><input type="radio" name="responsibility" value="witnessed_by_others"> Witnessed by others</label>
-                </div>
-                <div class="form-error" id="responsibilityError">Please select a responsibility option</div>
+                <label for="damageDescription">What happened? *</label>
+                <textarea id="damageDescription" placeholder="e.g. Found damage to the fin before launching, or Hit the pontoon while docking" maxlength="500" oninput="updateDescCharCount()"></textarea>
+                <div class="char-count"><span id="descCharCount">0</span> / 500</div>
+                <div class="form-error" id="descriptionError">Please describe what happened</div>
             </div>
 
             <div class="form-section">
@@ -1340,11 +1309,12 @@
             boatNameEl.textContent = boatName;
 
             // Reset form
-            document.querySelectorAll('#damageModal input[type="radio"]').forEach(r => r.checked = false);
+            document.getElementById('damageDescription').value = '';
+            document.getElementById('descCharCount').textContent = '0';
             document.querySelectorAll('#damageModal input[type="checkbox"]').forEach(c => c.checked = false);
             document.getElementById('damageComment').value = '';
             document.getElementById('charCount').textContent = '0';
-            document.getElementById('responsibilityError').style.display = 'none';
+            document.getElementById('descriptionError').style.display = 'none';
             document.getElementById('damageTypeError').style.display = 'none';
             document.getElementById('damageSubmitStatus').textContent = '';
             document.getElementById('damageSubmitStatus').className = 'submit-status';
@@ -1366,20 +1336,25 @@
             document.getElementById('charCount').textContent = textarea.value.length;
         }
 
+        function updateDescCharCount() {
+            const textarea = document.getElementById('damageDescription');
+            document.getElementById('descCharCount').textContent = textarea.value.length;
+        }
+
         // Close modal on overlay click
         document.getElementById('damageModal').addEventListener('click', function(e) {
             if (e.target === this) closeDamageModal();
         });
 
         async function submitDamageReport() {
-            // Validate responsibility
-            const responsibility = document.querySelector('#damageModal input[name="responsibility"]:checked');
-            const responsibilityError = document.getElementById('responsibilityError');
-            if (!responsibility) {
-                responsibilityError.style.display = 'block';
+            // Validate description
+            const description = document.getElementById('damageDescription').value.trim();
+            const descriptionError = document.getElementById('descriptionError');
+            if (!description) {
+                descriptionError.style.display = 'block';
                 return;
             }
-            responsibilityError.style.display = 'none';
+            descriptionError.style.display = 'none';
 
             // Validate damage types
             const damageTypes = Array.from(
@@ -1413,7 +1388,7 @@
                     body: JSON.stringify({
                         boatId: BOAT_ID,
                         boatName,
-                        responsibility: responsibility.value,
+                        description,
                         damageTypes,
                         comment,
                     }),
@@ -1429,7 +1404,7 @@
                 statusEl.className = 'submit-status success';
 
                 if (typeof trackDamageReportSubmit === 'function') {
-                    trackDamageReportSubmit(BOAT_ID, responsibility.value);
+                    trackDamageReportSubmit(BOAT_ID);
                 }
 
                 // Close modal after a short delay
