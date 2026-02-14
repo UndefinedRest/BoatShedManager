@@ -297,14 +297,12 @@
         }
 
         .date-nav-label {
+            position: relative;
             flex: 1;
             text-align: center;
-            background: none;
-            border: none;
             color: var(--primary-color);
             font-size: 16px;
             font-weight: 600;
-            cursor: pointer;
             padding: 8px 4px;
             border-radius: 8px;
             transition: background 0.15s;
@@ -319,6 +317,17 @@
 
         .date-nav-label:active {
             background: rgba(30, 64, 175, 0.15);
+        }
+
+        /* Date input overlays the label — tapping the label opens the native picker */
+        .date-nav-label input[type="date"] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            font-size: 16px; /* prevent iOS zoom */
         }
 
         .time-slots {
@@ -480,15 +489,6 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-
-        /* Hidden date input — opened programmatically via showPicker() */
-        .date-nav input[type="date"] {
-            position: absolute;
-            opacity: 0;
-            width: 0;
-            height: 0;
-            pointer-events: none;
         }
 
         /* Mobile portrait optimization - PRIMARY USE CASE */
@@ -767,11 +767,11 @@
 
         <div class="date-nav" id="dateDisplay">
             <button class="date-nav-arrow" id="datePrev" aria-label="Previous day" onclick="navigateDate(-1)">&#8249;</button>
-            <button class="date-nav-label" id="dateLabel" onclick="openDatePicker()">
-                Loading...
-            </button>
+            <div class="date-nav-label">
+                <span id="dateLabel">Loading...</span>
+                <input type="date" id="todayDate" aria-label="Pick a date">
+            </div>
             <button class="date-nav-arrow" id="dateNext" aria-label="Next day" onclick="navigateDate(1)">&#8250;</button>
-            <input type="date" id="todayDate">
         </div>
 
         <div class="time-slots" id="timeSlots">
@@ -1213,32 +1213,6 @@
 
             updateDateDisplay();
             onDateChanged();
-        }
-
-        // Open the native date picker
-        function openDatePicker() {
-            const dateInput = document.getElementById('todayDate');
-            // Set min to today to prevent past selection
-            dateInput.min = getTodayStr();
-            try {
-                dateInput.showPicker();
-            } catch (e) {
-                // Fallback for older browsers: make it briefly visible
-                dateInput.style.position = 'static';
-                dateInput.style.opacity = '1';
-                dateInput.style.width = 'auto';
-                dateInput.style.height = 'auto';
-                dateInput.style.pointerEvents = 'auto';
-                dateInput.focus();
-                dateInput.click();
-                setTimeout(() => {
-                    dateInput.style.position = 'absolute';
-                    dateInput.style.opacity = '0';
-                    dateInput.style.width = '0';
-                    dateInput.style.height = '0';
-                    dateInput.style.pointerEvents = 'none';
-                }, 100);
-            }
         }
 
         // Common handler for date changes (from arrows or picker)
