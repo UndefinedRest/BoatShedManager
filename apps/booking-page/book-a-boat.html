@@ -343,16 +343,37 @@
             box-shadow: var(--shadow-sm);
         }
 
-        .info {
-            background: #f8fafc;
-            border-left: 3px solid #cbd5e1;
-            padding: 12px;
-            margin-top: 20px;
-            border-radius: 6px;
+        .secondary-links {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 14px;
             font-size: 13px;
-            color: #64748b;
         }
-        
+
+        .secondary-links a,
+        .secondary-links button {
+            color: var(--text-secondary);
+            text-decoration: none;
+            background: none;
+            border: none;
+            font: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 0;
+            transition: color 0.2s;
+        }
+
+        .secondary-links a:hover,
+        .secondary-links button:hover {
+            color: var(--primary-color);
+        }
+
+        .secondary-links .link-separator {
+            color: var(--border);
+            user-select: none;
+        }
+
         .footer {
             text-align: center;
             margin-top: 25px;
@@ -497,11 +518,6 @@
                 margin-top: 25px;
                 padding-top: 20px;
             }
-
-            .info {
-                font-size: 12px;
-                padding: 10px;
-            }
         }
 
         /* Tablet and desktop - SECONDARY USE CASE */
@@ -517,38 +533,6 @@
             .calendar-btn:hover {
                 cursor: pointer;
             }
-        }
-
-        /* ── Damage Report Button ───────────────────────────── */
-        .damage-report-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            background: var(--damaged-bg);
-            color: var(--damaged-text);
-            border: 2px solid var(--damaged-border);
-            border-radius: 10px;
-            padding: 14px 20px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.2s;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .damage-report-btn:hover {
-            background: #fecaca;
-            border-color: #f87171;
-            box-shadow: var(--shadow-md);
-            transform: translateY(-1px);
-        }
-
-        .damage-report-btn:active {
-            transform: translateY(0);
-            box-shadow: var(--shadow-sm);
         }
 
         /* ── Damage Report Modal ────────────────────────────── */
@@ -793,18 +777,11 @@
                 <span style="font-size: 20px;">📅</span>
                 View boat availability
             </a>
-            <a href="https://www.lakemacquarierowingclub.org.au/my-bookings" target="_blank" class="calendar-btn" style="margin-top: 10px;">
-                <span style="font-size: 20px;">📋</span>
-                Manage my bookings
-            </a>
-            <button class="damage-report-btn" id="damageReportBtn" style="display: none;" onclick="openDamageModal()">
-                <span style="font-size: 20px;">⚠️</span>
-                Report Damage
-            </button>
-        </div>
-        
-        <div class="info">
-            <strong>Note:</strong> You'll be redirected to the club's booking system
+            <div class="secondary-links">
+                <a href="https://www.lakemacquarierowingclub.org.au/my-bookings" target="_blank" id="manageBookingsLink">Manage my bookings</a>
+                <span class="link-separator" id="damageLinkSeparator" style="display: none;">·</span>
+                <button id="damageReportBtn" style="display: none;" onclick="openDamageModal()">Report damage</button>
+            </div>
         </div>
     </div>
 
@@ -1033,11 +1010,9 @@
                 document.getElementById('dateDisplay').style.display = 'none';
                 document.getElementById('timeSlots').style.display = 'none';
 
-                // Hide secondary action and info if they exist
+                // Hide secondary action if it exists
                 const secondaryAction = document.querySelector('.secondary-action');
-                const infoDiv = document.querySelector('.info');
                 if (secondaryAction) secondaryAction.style.display = 'none';
-                if (infoDiv) infoDiv.style.display = 'none';
             }
         }
     })();
@@ -1342,11 +1317,12 @@
             // Check session availability for the initially selected date
             checkAvailability();
 
-            // Show damage report button if configured and boat is not already damaged
+            // Show damage report link if configured and boat is not already damaged
             const dc = config?.displayConfig || {};
             const isDamaged = boatData?.boats?.[BOAT_ID] && isDamagedBoat(boatData.boats[BOAT_ID]);
             if (dc.damageReportEmail && !isDamaged) {
-                document.getElementById('damageReportBtn').style.display = 'flex';
+                document.getElementById('damageReportBtn').style.display = 'inline';
+                document.getElementById('damageLinkSeparator').style.display = 'inline';
             }
         });
 
