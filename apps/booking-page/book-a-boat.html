@@ -321,14 +321,6 @@
             background: rgba(30, 64, 175, 0.15);
         }
 
-        .date-nav-label small {
-            display: block;
-            font-size: 12px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            margin-top: 1px;
-        }
-        
         .time-slots {
             display: grid;
             gap: 12px;
@@ -1193,7 +1185,7 @@
             // Update label
             const labelEl = document.getElementById('dateLabel');
             const label = getDateLabel(dateStr);
-            labelEl.innerHTML = label + '<small>tap to pick date</small>';
+            labelEl.textContent = label;
 
             // Disable prev arrow if at today
             const prevBtn = document.getElementById('datePrev');
