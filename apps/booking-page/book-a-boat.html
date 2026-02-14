@@ -328,6 +328,14 @@
             opacity: 0;
             cursor: pointer;
             font-size: 16px; /* prevent iOS zoom */
+            pointer-events: none; /* Desktop: div click handler uses showPicker() */
+        }
+
+        /* Touch devices: let direct input tap open the native picker */
+        @media (hover: none) and (pointer: coarse) {
+            .date-nav-label input[type="date"] {
+                pointer-events: auto;
+            }
         }
 
         .time-slots {
@@ -1271,6 +1279,14 @@
         document.getElementById('todayDate').addEventListener('change', () => {
             updateDateDisplay();
             onDateChanged();
+        });
+
+        // Desktop: click on the label div opens picker via showPicker()
+        // (On touch devices, the transparent input overlay handles this directly)
+        document.querySelector('.date-nav-label').addEventListener('click', () => {
+            const dateInput = document.getElementById('todayDate');
+            dateInput.min = getTodayStr();
+            try { dateInput.showPicker(); } catch (e) { /* fallback: input overlay */ }
         });
 
 
